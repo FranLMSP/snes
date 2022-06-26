@@ -1,0 +1,3 @@
+[workspace]
+members = ["snes-core", "snes-frontend"]
+resolver = "2"
