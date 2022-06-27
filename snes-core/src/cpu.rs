@@ -8,6 +8,7 @@ struct Registers {
     pbr: u8, // Program bank register
     dbr: u8, // Data bank register
     pc: u16, // Program counter
+    emulation_mode: bool, // Program counter
 }
 
 impl Registers {
@@ -22,15 +23,8 @@ impl Registers {
             pbr: 0,
             dbr: 0,
             pc: 0,
+            emulation_mode: false,
         }
-    }
-
-    pub fn get_p(&self) -> u8 {
-        self.p
-    }
-
-    pub fn set_p(&mut self, val: u8) {
-        self.p = val;
     }
 
     pub fn get_carry_flag(&self) -> bool {
@@ -78,6 +72,15 @@ impl Registers {
         self.p = self.p | ((val as u8) << 4);
     }
 
+    pub fn get_memory_select_flag(&self) -> bool {
+        ((self.p & 0b0010_0000) >> 5) == 1
+    }
+
+    pub fn set_memory_select_flag(&mut self, val: bool) {
+        self.p = self.p & 0b1101_1111;
+        self.p = self.p | ((val as u8) << 5);
+    }
+
     pub fn get_overflow_flag(&self) -> bool {
         ((self.p & 0b0100_0000) >> 6) == 1
     }
@@ -110,8 +113,39 @@ impl CPU {
         }
     }
 
+    pub fn adc(&mut self, value: u16) {
+        let carry = self.registers.get_carry_flag();
+        let carry_result = match self.registers.a.checked_add(value) {
+            None => true,
+            Some(res) => match res.checked_add(carry as u16) {
+                None => true,
+                Some(_) => false,
+            },
+        };
+        self.registers.a = self.registers.a
+            .wrapping_add(value)
+            .wrapping_add(carry as u16);
+        self.registers.set_carry_flag(carry_result);
+    }
+
     pub fn adc_const(&mut self, value: u16) {
+        self.registers.pc.wrapping_add(2);
         self.cycles += 2;
+        if self.registers.get_memory_select_flag() {
+            self.registers.pc.wrapping_add(1);
+            self.cycles += 1;
+        }
+        if self.registers.get_decimal_mode_flag() {
+            self.cycles += 1;
+        }
+        self.adc(value);
+    }
+
+    pub fn decode_instruction(&mut self, opcode: u8) {
+        match opcode {
+            0x69 => self.adc_const(0x00), // TODO: read value from Bus
+            _ => (),
+        }
     }
 }
 
@@ -120,11 +154,36 @@ impl CPU {
 mod cpu_instructions_tests {
     use super::*;
 
-    
     #[test]
-    fn test_adc_const() {
+    fn test_adc() {
         let mut cpu = CPU::new();
-        assert!(true);
+        cpu.registers.a = 0x00;
+        cpu.adc(0x40);
+        assert_eq!(cpu.registers.a, 0x40);
+        assert!(!cpu.registers.get_carry_flag());
+
+        cpu.registers.a = 0xFFFF;
+        cpu.adc(0x01);
+        assert_eq!(cpu.registers.a, 0x0000);
+        assert!(cpu.registers.get_carry_flag());
+
+        cpu.registers.a = 0xFFFF;
+        cpu.registers.set_carry_flag(true);
+        cpu.adc(0x01);
+        assert_eq!(cpu.registers.a, 0x0001);
+        assert!(cpu.registers.get_carry_flag());
+
+        cpu.registers.a = 0xFFFD;
+        cpu.registers.set_carry_flag(true);
+        cpu.adc(0x01);
+        assert_eq!(cpu.registers.a, 0xFFFF);
+        assert!(!cpu.registers.get_carry_flag());
+
+        cpu.registers.a = 0x0000;
+        cpu.registers.set_carry_flag(true);
+        cpu.adc(0x01);
+        assert_eq!(cpu.registers.a, 0x0002);
+        assert!(!cpu.registers.get_carry_flag());
     }
 }
 
@@ -137,49 +196,56 @@ mod cpu_registers_tests {
     #[test]
     fn test_status_registers() {
         let mut registers = Registers::new();
-        registers.set_p(0x00);
+        registers.p = 0x00;
 
         registers.set_carry_flag(true);
         assert!(registers.get_carry_flag());
-        assert_eq!(registers.get_p(), 0b0000_0001);
+        assert_eq!(registers.p, 0b0000_0001);
         registers.set_carry_flag(false);
         assert!(!registers.get_carry_flag());
-        assert_eq!(registers.get_p(), 0b0000_0000);
+        assert_eq!(registers.p, 0b0000_0000);
 
         registers.set_zero_flag(true);
         assert!(registers.get_zero_flag());
-        assert_eq!(registers.get_p(), 0b0000_0010);
+        assert_eq!(registers.p, 0b0000_0010);
         registers.set_zero_flag(false);
         assert!(!registers.get_zero_flag());
-        assert_eq!(registers.get_p(), 0b0000_0000);
+        assert_eq!(registers.p, 0b0000_0000);
 
         registers.set_irq_disable_flag(true);
         assert!(registers.get_irq_disable_flag());
-        assert_eq!(registers.get_p(), 0b0000_0100);
+        assert_eq!(registers.p, 0b0000_0100);
         registers.set_irq_disable_flag(false);
         assert!(!registers.get_irq_disable_flag());
-        assert_eq!(registers.get_p(), 0b0000_0000);
+        assert_eq!(registers.p, 0b0000_0000);
 
         registers.set_decimal_mode_flag(true);
         assert!(registers.get_decimal_mode_flag());
-        assert_eq!(registers.get_p(), 0b0000_1000);
+        assert_eq!(registers.p, 0b0000_1000);
         registers.set_decimal_mode_flag(false);
         assert!(!registers.get_decimal_mode_flag());
-        assert_eq!(registers.get_p(), 0b0000_0000);
+        assert_eq!(registers.p, 0b0000_0000);
+
+        registers.set_memory_select_flag(true);
+        assert!(registers.get_memory_select_flag());
+        assert_eq!(registers.p, 0b0010_0000);
+        registers.set_memory_select_flag(false);
+        assert!(!registers.get_memory_select_flag());
+        assert_eq!(registers.p, 0b0000_0000);
 
         registers.set_break_instruction_flag(true);
         assert!(registers.get_break_instruction_flag());
-        assert_eq!(registers.get_p(), 0b0001_0000);
+        assert_eq!(registers.p, 0b0001_0000);
         registers.set_break_instruction_flag(false);
         assert!(!registers.get_break_instruction_flag());
-        assert_eq!(registers.get_p(), 0b0000_0000);
+        assert_eq!(registers.p, 0b0000_0000);
 
         registers.set_overflow_flag(true);
         assert!(registers.get_overflow_flag());
-        assert_eq!(registers.get_p(), 0b0100_0000);
+        assert_eq!(registers.p, 0b0100_0000);
         registers.set_overflow_flag(false);
         assert!(!registers.get_overflow_flag());
-        assert_eq!(registers.get_p(), 0b0000_0000);
+        assert_eq!(registers.p, 0b0000_0000);
     }
 }
 
