@@ -129,10 +129,10 @@ impl CPU {
     }
 
     pub fn adc_const(&mut self, value: u16) {
-        self.registers.pc.wrapping_add(2);
+        self.registers.pc = self.registers.pc.wrapping_add(2);
         self.cycles += 2;
         if self.registers.get_memory_select_flag() {
-            self.registers.pc.wrapping_add(1);
+            self.registers.pc = self.registers.pc.wrapping_add(1);
             self.cycles += 1;
         }
         if self.registers.get_decimal_mode_flag() {
@@ -144,7 +144,7 @@ impl CPU {
     pub fn decode_instruction(&mut self, opcode: u8) {
         match opcode {
             0x69 => self.adc_const(0x00), // TODO: read value from Bus
-            _ => (),
+            _ => todo!("Opcode missing!"),
         }
     }
 }
