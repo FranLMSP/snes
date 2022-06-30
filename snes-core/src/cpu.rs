@@ -65,6 +65,15 @@ impl Registers {
         self.p = self.p | ((val as u8) << 3);
     }
 
+    pub fn get_index_register_select_flag(&self) -> bool {
+        ((self.p & 0b0001_0000) >> 4) == 1
+    }
+
+    pub fn set_index_register_select_flag(&mut self, val: bool) {
+        self.p = self.p & 0b1110_1111;
+        self.p = self.p | ((val as u8) << 4);
+    }
+
     pub fn get_break_instruction_flag(&self) -> bool {
         ((self.p & 0b0001_0000) >> 4) == 1
     }
@@ -281,6 +290,13 @@ mod cpu_registers_tests {
         assert_eq!(registers.p, 0b0010_0000);
         registers.set_memory_select_flag(false);
         assert!(!registers.get_memory_select_flag());
+        assert_eq!(registers.p, 0b0000_0000);
+
+        registers.set_index_register_select_flag(true);
+        assert!(registers.get_index_register_select_flag());
+        assert_eq!(registers.p, 0b0001_0000);
+        registers.set_index_register_select_flag(false);
+        assert!(!registers.get_index_register_select_flag());
         assert_eq!(registers.p, 0b0000_0000);
 
         registers.set_break_instruction_flag(true);
