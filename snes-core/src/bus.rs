@@ -68,7 +68,7 @@ mod bus_tests {
     use super::*;
 
     #[test]
-    fn memory_map() {
+    fn test_memory_map() {
         assert_eq!(Bus::map_address(0x7E0000), MemoryMap::WRAM);
         assert_eq!(Bus::map_address(0x7F0000), MemoryMap::WRAM);
         assert_eq!(Bus::map_address(0x7E0500), MemoryMap::WRAM);
@@ -115,6 +115,17 @@ mod bus_tests {
         assert_eq!(Bus::map_address(0x804017), MemoryMap::Joypad);
         assert_eq!(Bus::map_address(0xBF4016), MemoryMap::Joypad);
         assert_eq!(Bus::map_address(0xBF4017), MemoryMap::Joypad);
+    }
+
+    #[test]
+    fn test_wram_mirror() {
+        let mut bus = Bus::new();
+        bus.write(0x00_0000, 0x1F);
+        assert_eq!(bus.read(0x7E_0000), 0x1F);
+        assert_eq!(bus.read(0x80_0000), 0x1F);
+        bus.write(0x80_0000, 0xEE);
+        assert_eq!(bus.read(0x7E_0000), 0xEE);
+        assert_eq!(bus.read(0x00_0000), 0xEE);
     }
 }
 

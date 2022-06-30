@@ -1,3 +1,5 @@
+use crate::bus::Bus;
+
 struct Registers {
     sp: u16, // Stack pointer
     x: u16, // Index X
@@ -98,6 +100,10 @@ impl Registers {
         self.p = self.p & 0b0111_1111;
         self.p = self.p | ((val as u8) << 7);
     }
+
+    pub fn get_pc_address(&self) -> u32 {
+        ((self.pbr as u32) << 16) | (self.pc as u32)
+    }
 }
 
 pub struct CPU {
@@ -113,7 +119,7 @@ impl CPU {
         }
     }
 
-    pub fn adc(&mut self, value: u16) {
+    fn adc(&mut self, value: u16) {
         let carry = self.registers.get_carry_flag();
         let carry_result = match self.registers.a.checked_add(value) {
             None => true,
@@ -128,7 +134,7 @@ impl CPU {
         self.registers.set_carry_flag(carry_result);
     }
 
-    pub fn adc_const(&mut self, value: u16) {
+    fn adc_const(&mut self, value: u16) {
         self.registers.pc = self.registers.pc.wrapping_add(2);
         self.cycles += 2;
         if self.registers.get_memory_select_flag() {
@@ -141,11 +147,29 @@ impl CPU {
         self.adc(value);
     }
 
-    pub fn decode_instruction(&mut self, opcode: u8) {
+    fn read_immediate(&self, bus: &Bus) -> u16 {
+        // If the "m" flag is set to 1, read only 8 bits.
+        // Otherwise, read 16 bits
+        let address = self.registers.get_pc_address();
+        if self.registers.get_memory_select_flag() {
+            return bus.read(address + 1) as u16;
+        } else {
+            return (bus.read(address + 1) as u16) | ((bus.read(address + 2) as u16) << 8);
+        }
+
+    }
+
+    fn execute_opcode(&mut self, opcode: u8, bus: &Bus) {
         match opcode {
-            0x69 => self.adc_const(0x00), // TODO: read value from Bus
+            0x69 => self.adc_const(self.read_immediate(bus)),
             _ => todo!("Opcode missing!"),
         }
+    }
+
+    pub fn tick(&mut self, bus: &Bus) {
+        let address = self.registers.get_pc_address();
+        let opcode = bus.read(address);
+        self.execute_opcode(opcode, bus);
     }
 }
 
@@ -153,6 +177,20 @@ impl CPU {
 #[cfg(test)]
 mod cpu_instructions_tests {
     use super::*;
+
+    #[test]
+    fn test_read_immediate() {
+        let mut bus = Bus::new();
+        let mut cpu = CPU::new();
+        cpu.registers.set_memory_select_flag(true);
+        cpu.registers.pc = 0x0000;
+        // write to WRAM
+        bus.write(0x00_0001, 0x01);
+        bus.write(0x00_0002, 0x02);
+        assert_eq!(cpu.read_immediate(&bus), 0x0001);
+        cpu.registers.set_memory_select_flag(false);
+        assert_eq!(cpu.read_immediate(&bus), 0x0201);
+    }
 
     #[test]
     fn test_adc() {
@@ -191,6 +229,18 @@ mod cpu_instructions_tests {
 #[cfg(test)]
 mod cpu_registers_tests {
     use super::*;
+
+    #[test]
+    fn test_get_pc_address() {
+        let mut registers = Registers::new();
+        registers.pc = 0x8016;
+        registers.pbr = 0x01;
+        assert_eq!(registers.get_pc_address(), 0x018016);
+        registers.pbr = 0xFF;
+        assert_eq!(registers.get_pc_address(), 0xFF8016);
+        registers.pc = 0x1680;
+        assert_eq!(registers.get_pc_address(), 0xFF1680);
+    }
 
     
     #[test]
