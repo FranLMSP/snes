@@ -143,7 +143,8 @@ impl CPU {
         self.registers.set_carry_flag(carry_result);
     }
 
-    fn adc_const(&mut self, value: u16) {
+    fn adc_const(&mut self, bus: &Bus) {
+        let value = self.read_immediate(bus);
         self.registers.pc = self.registers.pc.wrapping_add(2);
         self.cycles += 2;
         if self.registers.get_memory_select_flag() {
@@ -156,6 +157,44 @@ impl CPU {
         self.adc(value);
     }
 
+    fn adc_addr(&mut self, bus: &Bus) {
+        let address = ((self.registers.pbr as u32) << 16) | (self.read_absolute(bus) as u32);
+        self.registers.pc = self.registers.pc.wrapping_add(3);
+        self.cycles += 4;
+        if self.registers.get_memory_select_flag() {
+            self.cycles += 1;
+        }
+        if self.registers.get_decimal_mode_flag() {
+            self.cycles += 1;
+        }
+        let value = bus.read(address);
+        self.adc(value as u16);
+    }
+
+    fn adc_long(&mut self, bus: &Bus) {
+        let address = self.read_absolute_long(bus);
+        self.registers.pc = self.registers.pc.wrapping_add(4);
+        self.cycles += 5;
+        if self.registers.get_memory_select_flag() {
+            self.cycles += 1;
+        }
+        if self.registers.get_decimal_mode_flag() {
+            self.cycles += 1;
+        }
+        let value = bus.read(address);
+        self.adc(value as u16);
+    }
+
+    fn read_absolute(&self, bus: &Bus) -> u16 {
+        let pc = self.registers.pc as u32;
+        (bus.read(pc + 1) as u16) | ((bus.read(pc + 2) as u16) << 8)
+    }
+
+    fn read_absolute_long(&self, bus: &Bus) -> u32 {
+        let pc = self.registers.pc as u32;
+        (bus.read(pc + 1) as u32) | ((bus.read(pc + 2) as u32) << 8) | ((bus.read(pc + 3) as u32) << 16)
+    }
+
     fn read_immediate(&self, bus: &Bus) -> u16 {
         // If the "m" flag is set to 1, read only 8 bits.
         // Otherwise, read 16 bits
@@ -165,13 +204,14 @@ impl CPU {
         } else {
             return (bus.read(address + 1) as u16) | ((bus.read(address + 2) as u16) << 8);
         }
-
     }
 
     fn execute_opcode(&mut self, opcode: u8, bus: &Bus) {
         match opcode {
-            0x69 => self.adc_const(self.read_immediate(bus)),
-            _ => todo!("Opcode missing!"),
+            0x69 => self.adc_const(bus),
+            0x6D => self.adc_addr(bus),
+            0x6F => self.adc_long(bus),
+            _ => todo!("Missing opcode implementation: {:02X}", opcode),
         }
     }
 
@@ -199,6 +239,29 @@ mod cpu_instructions_tests {
         assert_eq!(cpu.read_immediate(&bus), 0x0001);
         cpu.registers.set_memory_select_flag(false);
         assert_eq!(cpu.read_immediate(&bus), 0x0201);
+    }
+
+    #[test]
+    fn test_read_absolute() {
+        let mut bus = Bus::new();
+        let mut cpu = CPU::new();
+        cpu.registers.pc = 0x0000;
+        // write to WRAM
+        bus.write(0x00_0001, 0x01);
+        bus.write(0x00_0002, 0x02);
+        assert_eq!(cpu.read_absolute(&bus), 0x0201);
+    }
+
+    #[test]
+    fn test_read_absolute_long() {
+        let mut bus = Bus::new();
+        let mut cpu = CPU::new();
+        cpu.registers.pc = 0x0000;
+        // write to WRAM
+        bus.write(0x00_0001, 0x01);
+        bus.write(0x00_0002, 0x02);
+        bus.write(0x00_0003, 0x03);
+        assert_eq!(cpu.read_absolute_long(&bus), 0x030201);
     }
 
     #[test]
