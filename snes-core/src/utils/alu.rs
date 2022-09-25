@@ -107,4 +107,37 @@ mod alu_tests {
         assert_eq!(negative, true);
         assert_eq!(zero, false);
     }
+
+    #[test]
+    fn test_adc8bcd() {
+        let (result, carry, negative, zero) = adc8bcd(0, 0, false);
+        assert_eq!(result, 0);
+        assert_eq!(carry, false);
+        assert_eq!(negative, false);
+        assert_eq!(zero, true);
+
+        let (result, carry, negative, zero) = adc8bcd(0, 50, false);
+        assert_eq!(result, 50);
+        assert_eq!(carry, false);
+        assert_eq!(negative, false);
+        assert_eq!(zero, false);
+
+        let (result, carry, negative, zero) = adc8bcd(200, 155, false);
+        assert_eq!(result, 99);
+        assert_eq!(carry, true);
+        assert_eq!(negative, false);
+        assert_eq!(zero, false);
+
+        let (result, carry, negative, zero) = adc8bcd(200, 155, true);
+        assert_eq!(result, 100);
+        assert_eq!(carry, true);
+        assert_eq!(negative, false);
+        assert_eq!(zero, false);
+
+        let (result, carry, negative, zero) = adc8bcd(200, 54, true);
+        assert_eq!(result, 255);
+        assert_eq!(carry, false);
+        assert_eq!(negative, true);
+        assert_eq!(zero, false);
+    }
 }
