@@ -1,5 +1,4 @@
 use crate::bus::Bus;
-/// NOTE: These functions only return the `address` in BUS of where the actual value is stored.
 
 /// OPCODE #const
 pub fn immediate(pc_addr: u32) -> u32 {
@@ -85,6 +84,55 @@ pub fn stack_relative(bus: &Bus, pc_addr: u32, stack_pointer: u16) -> u32 {
 /// OPCODE (sr,S),Y
 pub fn stack_relative_indirect_indexed(bus: &Bus, pc_addr: u32, stack_pointer: u16, xy: u16) -> u32 {
     absolute_indexed(bus, pc_addr, stack_pointer) + (xy as u32)
+}
+
+#[derive(Copy, Clone)]
+pub enum AddressingMode {
+    Immediate,
+    Absolute,
+    AbsoluteLong,
+    DirectPage,
+    DirectPageIndirect,
+    DirectPageIndirectLong,
+    AbsoluteIndexed,
+    AbsoluteLongIndexed,
+    DirectPageIndexed,
+    DirectPageIndexedIndirect,
+    DirectPageIndirectIndexed,
+    DirectPageIndirectLongIndexed,
+    StackRelative,
+    StackRelativeIndirectIndexed,
+}
+
+impl AddressingMode {
+    pub fn effective_address(self, bus: &Bus, pc_addr: u32, direct_page_register: u16, stack_pointer: u16, xy: u16) -> u32 {
+        match self {
+            AddressingMode::Immediate => immediate(pc_addr),
+            AddressingMode::Absolute => absolute(bus, pc_addr),
+            AddressingMode::AbsoluteLong => absolute_long(bus, pc_addr),
+            AddressingMode::DirectPage => direct_page(bus, pc_addr, direct_page_register),
+            AddressingMode::DirectPageIndirect => direct_page_indirect(bus, pc_addr, direct_page_register),
+            AddressingMode::DirectPageIndirectLong => direct_page_indirect_long(bus, pc_addr, direct_page_register),
+            AddressingMode::AbsoluteIndexed => absolute_indexed(bus, pc_addr, xy),
+            AddressingMode::AbsoluteLongIndexed => absolute_long_indexed(bus, pc_addr, xy),
+            AddressingMode::DirectPageIndexed => direct_page_indexed(bus, pc_addr, direct_page_register, xy),
+            AddressingMode::DirectPageIndexedIndirect => direct_page_indexed_indirect(bus, pc_addr, direct_page_register, xy),
+            AddressingMode::DirectPageIndirectIndexed => direct_page_indirect_indexed(bus, pc_addr, direct_page_register, xy),
+            AddressingMode::DirectPageIndirectLongIndexed => direct_page_indirect_long_indexed(bus, pc_addr, direct_page_register, xy),
+            AddressingMode::StackRelative => stack_relative(bus, pc_addr, stack_pointer),
+            AddressingMode::StackRelativeIndirectIndexed => stack_relative_indirect_indexed(bus, pc_addr, stack_pointer, xy),
+        }
+    }
+
+    pub fn value_8bit(self, bus: &Bus, pc_addr: u32, direct_page_register: u16, stack_pointer: u16, xy: u16) -> u8 {
+        let address = self.effective_address(bus, pc_addr, direct_page_register, stack_pointer, xy);
+        return bus.read(address);
+    }
+
+    pub fn value_16bit(self, bus: &Bus, pc_addr: u32, direct_page_register: u16, stack_pointer: u16, xy: u16) -> u16 {
+        let address = self.effective_address(bus, pc_addr, direct_page_register, stack_pointer, xy);
+        return (bus.read(address) as u16) | ((bus.read(address + 1) as u16) << 8);
+    }
 }
 
 #[cfg(test)]
@@ -332,5 +380,25 @@ mod addressing_modes_tests {
         bus.write(pc_addr + 1, 0x01);
         bus.write(pc_addr + 2, 0x02);
         assert_eq!(stack_relative_indirect_indexed(&bus, pc_addr, 0x02, 0x02), 0x7F0205);
+    }
+
+    #[test]
+    fn test_address_value() {
+        let mut bus = Bus::new();
+        let pc_addr = 0x000000;
+        bus.write(pc_addr + 1, 0x20);
+        bus.write(pc_addr + 2, 0x10);
+        bus.write(0x001020, 0xFE);
+        let val = AddressingMode::Absolute.value_8bit(&bus, pc_addr, 0x00, 0x00, 0x00);
+        assert_eq!(val, 0xFE);
+
+        let mut bus = Bus::new();
+        let pc_addr = 0x000000;
+        bus.write(pc_addr + 1, 0x20);
+        bus.write(pc_addr + 2, 0x10);
+        bus.write(0x001020, 0xFF);
+        bus.write(0x001021, 0xEE);
+        let val = AddressingMode::Absolute.value_16bit(&bus, pc_addr, 0x00, 0x00, 0x00);
+        assert_eq!(val, 0xEEFF);
     }
 }
