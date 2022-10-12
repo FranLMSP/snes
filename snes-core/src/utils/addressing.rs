@@ -107,20 +107,20 @@ pub enum AddressingMode {
 impl AddressingMode {
     pub fn effective_address(self, bus: &Bus, pc_addr: u32, direct_page_register: u16, stack_pointer: u16, xy: u16) -> u32 {
         match self {
-            AddressingMode::Immediate => immediate(pc_addr),
-            AddressingMode::Absolute => absolute(bus, pc_addr),
-            AddressingMode::AbsoluteLong => absolute_long(bus, pc_addr),
-            AddressingMode::DirectPage => direct_page(bus, pc_addr, direct_page_register),
-            AddressingMode::DirectPageIndirect => direct_page_indirect(bus, pc_addr, direct_page_register),
-            AddressingMode::DirectPageIndirectLong => direct_page_indirect_long(bus, pc_addr, direct_page_register),
-            AddressingMode::AbsoluteIndexed => absolute_indexed(bus, pc_addr, xy),
-            AddressingMode::AbsoluteLongIndexed => absolute_long_indexed(bus, pc_addr, xy),
-            AddressingMode::DirectPageIndexed => direct_page_indexed(bus, pc_addr, direct_page_register, xy),
-            AddressingMode::DirectPageIndexedIndirect => direct_page_indexed_indirect(bus, pc_addr, direct_page_register, xy),
-            AddressingMode::DirectPageIndirectIndexed => direct_page_indirect_indexed(bus, pc_addr, direct_page_register, xy),
-            AddressingMode::DirectPageIndirectLongIndexed => direct_page_indirect_long_indexed(bus, pc_addr, direct_page_register, xy),
-            AddressingMode::StackRelative => stack_relative(bus, pc_addr, stack_pointer),
-            AddressingMode::StackRelativeIndirectIndexed => stack_relative_indirect_indexed(bus, pc_addr, stack_pointer, xy),
+            Self::Immediate => immediate(pc_addr),
+            Self::Absolute => absolute(bus, pc_addr),
+            Self::AbsoluteLong => absolute_long(bus, pc_addr),
+            Self::DirectPage => direct_page(bus, pc_addr, direct_page_register),
+            Self::DirectPageIndirect => direct_page_indirect(bus, pc_addr, direct_page_register),
+            Self::DirectPageIndirectLong => direct_page_indirect_long(bus, pc_addr, direct_page_register),
+            Self::AbsoluteIndexed => absolute_indexed(bus, pc_addr, xy),
+            Self::AbsoluteLongIndexed => absolute_long_indexed(bus, pc_addr, xy),
+            Self::DirectPageIndexed => direct_page_indexed(bus, pc_addr, direct_page_register, xy),
+            Self::DirectPageIndexedIndirect => direct_page_indexed_indirect(bus, pc_addr, direct_page_register, xy),
+            Self::DirectPageIndirectIndexed => direct_page_indirect_indexed(bus, pc_addr, direct_page_register, xy),
+            Self::DirectPageIndirectLongIndexed => direct_page_indirect_long_indexed(bus, pc_addr, direct_page_register, xy),
+            Self::StackRelative => stack_relative(bus, pc_addr, stack_pointer),
+            Self::StackRelativeIndirectIndexed => stack_relative_indirect_indexed(bus, pc_addr, stack_pointer, xy),
         }
     }
 
