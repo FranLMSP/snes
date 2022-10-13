@@ -1,192 +1,84 @@
 use super::cpu::CPU;
 use crate::bus::Bus;
+use crate::utils::addressing::{AddressingMode, IndexRegister};
+use crate::utils::alu;
 
 impl CPU {
-    fn adc8bcd(&mut self, value: u8) {
-        let carry = self.registers.get_carry_flag();
-        let a = self.registers.a as u8;
-        let carry_result = match a.checked_add(value) {
-            None => true,
-            Some(res) => match res.checked_add(carry as u8) {
-                None => true,
-                Some(_) => false,
-            },
-        };
-        let result = a
-            .wrapping_add(value)
-            .wrapping_add(carry as u8);
-        self.registers.a = (self.registers.a & 0xFF00) | (result as u16);
-        self.registers.set_carry_flag(carry_result);
-        self.registers.set_negative_flag((result >> 7) == 1);
-        self.registers.set_zero_flag(result == 0);
+    fn get_8bit_from_address(&self, bus: &Bus, addressing_mode: AddressingMode) -> u8 {
+        addressing_mode.value_8bit(
+            bus,
+            self.registers.get_pc_address(),
+            self.registers.d,
+            self.registers.sp,
+            self.registers.x, self.registers.y
+        )
     }
 
-    fn adc16bcd(&mut self, value: u16) {
-        let carry = self.registers.get_carry_flag();
-        let carry_result = match self.registers.a.checked_add(value) {
-            None => true,
-            Some(res) => match res.checked_add(carry as u16) {
-                None => true,
-                Some(_) => false,
-            },
-        };
-        let result = self.registers.a
-            .wrapping_add(value)
-            .wrapping_add(carry as u16);
-        self.registers.a = result;
-        self.registers.set_carry_flag(carry_result);
-        self.registers.set_negative_flag((result >> 7) == 1);
-        self.registers.set_zero_flag(result == 0);
+    fn get_16bit_from_address(&self, bus: &Bus, addressing_mode: AddressingMode) -> u16 {
+        addressing_mode.value_16bit(
+            bus,
+            self.registers.get_pc_address(),
+            self.registers.d,
+            self.registers.sp,
+            self.registers.x, self.registers.y
+        )
     }
 
-    fn adc8(&mut self, value: u8) {
-        let carry = self.registers.get_carry_flag();
-        let a = self.registers.a as u8;
-        let carry_result = match a.checked_add(value) {
-            None => true,
-            Some(res) => match res.checked_add(carry as u8) {
-                None => true,
-                Some(_) => false,
-            },
-        };
-        let result = a
-            .wrapping_add(value)
-            .wrapping_add(carry as u8);
-        self.registers.a = (self.registers.a & 0xFF00) | (result as u16);
-        self.registers.set_carry_flag(carry_result);
-        self.registers.set_negative_flag((result >> 7) == 1);
-        self.registers.set_zero_flag(result == 0);
-    }
-
-    fn adc16(&mut self, value: u16) {
-        let carry = self.registers.get_carry_flag();
-        let carry_result = match self.registers.a.checked_add(value) {
-            None => true,
-            Some(res) => match res.checked_add(carry as u16) {
-                None => true,
-                Some(_) => false,
-            },
-        };
-        let result = self.registers.a
-            .wrapping_add(value)
-            .wrapping_add(carry as u16);
-        self.registers.a = result;
-        self.registers.set_carry_flag(carry_result);
-        self.registers.set_negative_flag((result >> 15) == 1);
-        self.registers.set_zero_flag(result == 0);
-    }
-
-    fn adc(&mut self, value: u16) {
+    fn adc(&mut self, bus: &Bus, addressing_mode: AddressingMode) {
         // if the M flag is set, perform 8 bit addition.
         // Otherwise, 16 bit addition
-        if self.registers.get_memory_select_flag() {
-            if self.registers.get_decimal_mode_flag() {
-                self.adc8bcd(value as u8);
-            } else {
-                self.adc8(value as u8);
+        let carry_flag = self.registers.get_carry_flag();
+        let is_decimal_mode = self.registers.get_decimal_mode_flag();
+        let is_8bit = self.registers.get_memory_select_flag();
+        let target = self.registers.a;
+        match is_8bit {
+            true => {
+                let value = self.get_8bit_from_address(bus, addressing_mode);
+                let (result, is_carry, is_negative, is_zero) = match is_decimal_mode {
+                    true => alu::adc8bcd(target as u8, value, carry_flag),
+                    false => alu::adc8bin(target as u8, value, carry_flag),
+                };
+                self.registers.a = result as u16;
+                self.registers.set_carry_flag(is_carry);
+                self.registers.set_negative_flag(is_negative);
+                self.registers.set_zero_flag(is_zero);
+            },
+            false => {
+                let value = self.get_16bit_from_address(bus, addressing_mode);
+                let (result, is_carry, is_negative, is_zero) = match is_decimal_mode {
+                    true => alu::adc16bcd(target, value, carry_flag),
+                    false => alu::adc16bin(target, value, carry_flag),
+                };
+                self.registers.a = result;
+                self.registers.set_carry_flag(is_carry);
+                self.registers.set_negative_flag(is_negative);
+                self.registers.set_zero_flag(is_zero);
             }
-        } else {
-            if self.registers.get_decimal_mode_flag() {
-                self.adc16bcd(value);
-            } else {
-                self.adc16(value);
-            }
-        }
+        };
     }
 
-    pub fn adc_const(&mut self, bus: &Bus) {
-        let value = self.get_immediate(bus);
-        self.registers.pc = self.registers.pc.wrapping_add(2);
-        self.cycles += 2;
-        if self.registers.get_memory_select_flag() {
-            self.registers.pc = self.registers.pc.wrapping_add(1);
-            self.cycles += 1;
+    pub fn execute_opcode(&mut self, opcode: u8, bus: &Bus) {
+        type A = AddressingMode;
+        type I = IndexRegister;
+        match opcode {
+            // ADC
+            0x69 => self.adc(bus, A::Immediate),
+            0x6D => self.adc(bus, A::Absolute),
+            0x6F => self.adc(bus, A::AbsoluteLong),
+            0x65 => self.adc(bus, A::DirectPage),
+            0x72 => self.adc(bus, A::DirectPageIndirect),
+            0x67 => self.adc(bus, A::DirectPageIndirectLong),
+            0x7D => self.adc(bus, A::AbsoluteIndexed(I::X)),
+            0x7F => self.adc(bus, A::AbsoluteLongIndexed(I::X)),
+            0x79 => self.adc(bus, A::AbsoluteIndexed(I::Y)),
+            0x75 => self.adc(bus, A::DirectPageIndexed(I::X)),
+            0x61 => self.adc(bus, A::DirectPageIndexedIndirect(I::X)),
+            0x71 => self.adc(bus, A::DirectPageIndirectIndexed(I::Y)),
+            0x77 => self.adc(bus, A::DirectPageIndirectLongIndexed(I::Y)),
+            0x63 => self.adc(bus, A::StackRelative),
+            0x73 => self.adc(bus, A::StackRelativeIndirectIndexed(I::Y)),
+            _ => println!("Invalid opcode: {:02X}", opcode),
         }
-        if self.registers.get_decimal_mode_flag() {
-            self.cycles += 1;
-        }
-        self.adc(value);
-    }
-
-    pub fn adc_addr(&mut self, bus: &Bus) {
-        let address = ((self.registers.pbr as u32) << 16) | (self.get_absolute(bus) as u32);
-        self.registers.pc = self.registers.pc.wrapping_add(3);
-        self.cycles += 4;
-        if self.registers.get_memory_select_flag() {
-            self.cycles += 1;
-        }
-        if self.registers.get_decimal_mode_flag() {
-            self.cycles += 1;
-        }
-        let value = bus.read(address);
-        self.adc(value as u16);
-    }
-
-    pub fn adc_long(&mut self, bus: &Bus) {
-        let address = self.get_absolute_long(bus);
-        self.registers.pc = self.registers.pc.wrapping_add(4);
-        self.cycles += 5;
-        if self.registers.get_memory_select_flag() {
-            self.cycles += 1;
-        }
-        if self.registers.get_decimal_mode_flag() {
-            self.cycles += 1;
-        }
-        let value = bus.read(address);
-        self.adc(value as u16);
-    }
-
-    pub fn adc_dp(&mut self, bus: &Bus) {
-        let address = self.get_direct_page(bus);
-        self.registers.pc = self.registers.pc.wrapping_add(2);
-        self.cycles += 3;
-        if self.registers.get_memory_select_flag() {
-            self.cycles += 1;
-        }
-        if address != 0 {
-            self.cycles += 1;
-        }
-        if self.registers.get_decimal_mode_flag() {
-            self.cycles += 1;
-        }
-        let value = bus.read(address as u32);
-        self.adc(value as u16);
-    }
-
-    pub fn adc_dp_indirect(&mut self, bus: &Bus) {
-        let pointer = self.get_direct_page(bus) as u32;
-        let address = ((bus.read(pointer) as u32) << 8) | (bus.read(pointer + 1) as u32);
-        self.registers.pc = self.registers.pc.wrapping_add(2);
-        self.cycles += 3;
-        if self.registers.get_memory_select_flag() {
-            self.cycles += 1;
-        }
-        if address != 0 {
-            self.cycles += 1;
-        }
-        if self.registers.get_decimal_mode_flag() {
-            self.cycles += 1;
-        }
-        let value = bus.read(address);
-        self.adc(value as u16);
-    }
-
-    pub fn adc_dp_indirect_long(&mut self, bus: &Bus) {
-        let pointer = self.get_direct_page(bus) as u32;
-        let address = ((bus.read(pointer) as u32) << 16) | ((bus.read(pointer + 1) as u32) << 8) | (bus.read(pointer + 2) as u32);
-        self.registers.pc = self.registers.pc.wrapping_add(2);
-        self.cycles += 3;
-        if self.registers.get_memory_select_flag() {
-            self.cycles += 1;
-        }
-        if address != 0 {
-            self.cycles += 1;
-        }
-        if self.registers.get_decimal_mode_flag() {
-            self.cycles += 1;
-        }
-        let value = bus.read(address);
-        self.adc(value as u16);
     }
 }
 
@@ -197,32 +89,14 @@ mod cpu_instructions_tests {
     #[test]
     fn test_adc() {
         let mut cpu = CPU::new();
-        cpu.registers.a = 0x00;
-        cpu.adc(0x40);
+        let mut bus = Bus::new();
+        cpu.registers.a   = 0x0000;
+        cpu.registers.pbr = 0x00;
+        cpu.registers.pc  = 0x0000;
+        cpu.registers.set_memory_select_flag(true);
+        bus.write(0x000001, 0x40);
+        cpu.adc(&bus, AddressingMode::Immediate);
         assert_eq!(cpu.registers.a, 0x40);
-        assert!(!cpu.registers.get_carry_flag());
-
-        cpu.registers.a = 0xFFFF;
-        cpu.adc(0x01);
-        assert_eq!(cpu.registers.a, 0x0000);
-        assert!(cpu.registers.get_carry_flag());
-
-        cpu.registers.a = 0xFFFF;
-        cpu.registers.set_carry_flag(true);
-        cpu.adc(0x01);
-        assert_eq!(cpu.registers.a, 0x0001);
-        assert!(cpu.registers.get_carry_flag());
-
-        cpu.registers.a = 0xFFFD;
-        cpu.registers.set_carry_flag(true);
-        cpu.adc(0x01);
-        assert_eq!(cpu.registers.a, 0xFFFF);
-        assert!(!cpu.registers.get_carry_flag());
-
-        cpu.registers.a = 0x0000;
-        cpu.registers.set_carry_flag(true);
-        cpu.adc(0x01);
-        assert_eq!(cpu.registers.a, 0x0002);
         assert!(!cpu.registers.get_carry_flag());
     }
 }

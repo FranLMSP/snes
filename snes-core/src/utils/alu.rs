@@ -32,26 +32,15 @@ pub fn adc16bin(target: u16, value: u16, carry: bool) -> (u16, bool, bool, bool)
 
 pub fn adc8bcd(target: u8, value: u8, carry: bool) -> (u8, bool, bool, bool) {
     let mut is_carry = carry;
-    let mut result: u8 = 0;
-    let mut operand_mask: u8 = 0x0F;
-    let mut result_mask: u8 = 0x00;
-    let mut carry_check: u8= 0x09;
-    let mut carry_add: u8 = 0x06;
-    let mut is_carry_shifts: u8 = 0;
-    for _ in 0..2 {
-        result = (result & result_mask)
-            .wrapping_add(target & operand_mask)
-            .wrapping_add(value & operand_mask)
-            .wrapping_add((is_carry as u8) << is_carry_shifts);
-        is_carry = result > carry_check;
-        if is_carry {
-            result = result.wrapping_add(carry_add);
-        }
-        operand_mask = operand_mask << 4;
-        carry_add = carry_add << 4;
-        carry_check = (carry_check << 4) | 0x0F;
-        result_mask = (result_mask << 4) | 0x0F;
-        is_carry_shifts += 4;
+    let mut result = (target & 0xF) + (value & 0xF) + (is_carry as u8);
+    is_carry = result > 9;
+    if is_carry {
+        result += 6;
+    }
+    result = (result & 0xF0) + (target & 0xF0) + (value & 0xF0) + ((is_carry as u8) << 4);
+    is_carry = result > 0x9F;
+    if is_carry {
+        result = result.wrapping_add(0x60);
     }
     let is_negative = (result >> 7) == 1;
     let is_zero = result == 0;
@@ -60,26 +49,29 @@ pub fn adc8bcd(target: u8, value: u8, carry: bool) -> (u8, bool, bool, bool) {
 
 pub fn adc16bcd(target: u16, value: u16, carry: bool) -> (u16, bool, bool, bool) {
     let mut is_carry = carry;
-    let mut result: u16 = 0;
-    let mut operand_mask: u16 = 0x0F;
-    let mut result_mask: u16 = 0x00;
-    let mut carry_check: u16 = 0x09;
-    let mut carry_add: u16 = 0x06;
-    let mut is_carry_shifts: u16 = 0;
-    for _ in 0..4 {
-        result = (result & result_mask)
-            .wrapping_add(target & operand_mask)
-            .wrapping_add(value & operand_mask)
-            .wrapping_add((is_carry as u16) << is_carry_shifts);
-        is_carry = result > carry_check;
-        if is_carry {
-            result = result.wrapping_add(carry_add);
-        }
-        operand_mask = operand_mask << 4;
-        carry_add = carry_add << 4;
-        carry_check = (carry_check << 4) | 0x0F;
-        result_mask = (result_mask << 4) | 0x0F;
-        is_carry_shifts += 4;
+    let mut result = (target & 0xF) + (value & 0xF) + (is_carry as u16);
+    is_carry = false;
+    if result > 9 {
+        result += 6;
+        is_carry = true;
+    }
+    result = (result & 0xF0) + (target & 0xF0) + (value & 0xF0) + ((is_carry as u16) << 4);
+    is_carry = false;
+    if result > 0x9F {
+        result += 0x60;
+        is_carry = true;
+    }
+    result = (result & 0xF00) + (target & 0xF00) + (value & 0xF00) + ((is_carry as u16) << 8);
+    is_carry = false;
+    if result > 0x9FF {
+        result += 0x600;
+        is_carry = true;
+    }
+    result = (result & 0xF000) + (target & 0xF000) + (target & 0xF000) + ((is_carry as u16) << 12);
+    is_carry = false;
+    if result > 0x9FFF {
+        result += 0x6000;
+        is_carry = true;
     }
     let is_negative = (result >> 15) == 1;
     let is_zero = result == 0;
