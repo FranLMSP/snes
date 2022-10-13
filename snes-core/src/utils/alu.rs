@@ -33,15 +33,14 @@ pub fn adc16bin(target: u16, value: u16, carry: bool) -> (u16, bool, bool, bool)
 pub fn adc8bcd(target: u8, value: u8, carry: bool) -> (u8, bool, bool, bool) {
     let mut is_carry = carry;
     let mut result = (target & 0xF) + (value & 0xF) + (is_carry as u8);
-    is_carry = result > 9;
-    if is_carry {
+    if result > 9 {
         result += 6;
     }
-    result = (result & 0xF0) + (target & 0xF0) + (value & 0xF0) + ((is_carry as u8) << 4);
-    is_carry = result > 0x9F;
-    if is_carry {
-        result = result.wrapping_add(0x60);
+    result += (target & 0xF0) + (value & 0xF0);
+    if result > 0x9F {
+        result += 0x60;
     }
+    is_carry = result > 0x9F;
     let is_negative = (result >> 7) == 1;
     let is_zero = result == 0;
     (result, is_carry, is_negative, is_zero)
@@ -50,29 +49,18 @@ pub fn adc8bcd(target: u8, value: u8, carry: bool) -> (u8, bool, bool, bool) {
 pub fn adc16bcd(target: u16, value: u16, carry: bool) -> (u16, bool, bool, bool) {
     let mut is_carry = carry;
     let mut result = (target & 0xF) + (value & 0xF) + (is_carry as u16);
-    is_carry = false;
     if result > 9 {
         result += 6;
-        is_carry = true;
     }
-    result = (result & 0xF0) + (target & 0xF0) + (value & 0xF0) + ((is_carry as u16) << 4);
-    is_carry = false;
+    result += (target & 0xF0) + (value & 0xF0);
     if result > 0x9F {
         result += 0x60;
-        is_carry = true;
     }
-    result = (result & 0xF00) + (target & 0xF00) + (value & 0xF00) + ((is_carry as u16) << 8);
-    is_carry = false;
+    result += (target & 0xF00) + (value & 0xF00);
     if result > 0x9FF {
         result += 0x600;
-        is_carry = true;
     }
-    result = (result & 0xF000) + (target & 0xF000) + (target & 0xF000) + ((is_carry as u16) << 12);
-    is_carry = false;
-    if result > 0x9FFF {
-        result += 0x6000;
-        is_carry = true;
-    }
+    is_carry = result > 0x9FFF;
     let is_negative = (result >> 15) == 1;
     let is_zero = result == 0;
     (result, is_carry, is_negative, is_zero)
@@ -180,6 +168,12 @@ mod alu_tests {
         assert_eq!(carry, false);
         assert_eq!(negative, false);
         assert_eq!(zero, true);
+
+        let (result, carry, negative, zero) = adc8bcd(0b0001_1001, 0b0010_1000, false);
+        assert_eq!(result, 0b0100_0111);
+        assert_eq!(carry, false);
+        assert_eq!(negative, false);
+        assert_eq!(zero, false);
     }
 
     #[test]
@@ -216,6 +210,12 @@ mod alu_tests {
 
         let (result, carry, negative, zero) = adc16bcd(0x0500, 0x0500, false);
         assert_eq!(result, 0b0001_0000_0000_0000);
+        assert_eq!(carry, false);
+        assert_eq!(negative, false);
+        assert_eq!(zero, false);
+
+        let (result, carry, negative, zero) = adc16bcd(0b0001_1001, 0b0010_1000, false);
+        assert_eq!(result, 0b0100_0111);
         assert_eq!(carry, false);
         assert_eq!(negative, false);
         assert_eq!(zero, false);
