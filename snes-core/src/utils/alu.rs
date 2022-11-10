@@ -1,3 +1,5 @@
+/// TODO: refactor functions to work with generic types (either u8 or 16) to reduce duplication
+
 pub fn adc8bin(target: u8, value: u8, carry: bool) -> (u8, bool, bool, bool) {
     let is_carry = match target.checked_add(value) {
         None => true,
@@ -66,6 +68,72 @@ pub fn adc16bcd(target: u16, value: u16, carry: bool) -> (u16, bool, bool, bool)
     (result, is_carry, is_negative, is_zero)
 }
 
+pub fn dec8bin(target: u8, value: u8, carry: bool) -> (u8, bool, bool, bool) {
+    let is_carry = match target.checked_sub(value) {
+        None => true,
+        Some(res) => match res.checked_sub(carry as u8) {
+            None => true,
+            Some(_) => false,
+        },
+    };
+    let result = target
+        .wrapping_sub(value)
+        .wrapping_sub(carry as u8);
+    let is_negative = (result >> 7) == 1;
+    let is_zero = result == 0;
+    (result, is_carry, is_negative, is_zero)
+}
+
+pub fn dec16bin(target: u16, value: u16, carry: bool) -> (u16, bool, bool, bool) {
+    let is_carry = match target.checked_sub(value) {
+        None => true,
+        Some(res) => match res.checked_sub(carry as u16) {
+            None => true,
+            Some(_) => false,
+        },
+    };
+    let result = target
+        .wrapping_sub(value)
+        .wrapping_sub(carry as u16);
+    let is_negative = (result >> 15) == 1;
+    let is_zero = result == 0;
+    (result, is_carry, is_negative, is_zero)
+}
+
+pub fn dec8bcd(target: u8, value: u8, carry: bool) -> (u8, bool, bool, bool) {
+    let mut is_carry = carry;
+    let value = (!value).wrapping_add(1); // complement of value
+    let six_complement = (!6 as u8).wrapping_add(1);
+    let mut result = (target & 0xF) + (value & 0xF) + (is_carry as u8) + 1;
+    if result > 0xF {
+        result = result.wrapping_add(six_complement);
+    }
+    result = result.wrapping_add(target & 0xF0).wrapping_add(value & 0xF0).wrapping_add(1);
+    is_carry = result < 0xFF;
+    let is_negative = (result >> 7) == 1;
+    let is_zero = result == 0;
+    (result, is_carry, is_negative, is_zero)
+}
+
+pub fn dec16bcd(target: u16, value: u16, carry: bool) -> (u16, bool, bool, bool) {
+    let mut is_carry = carry;
+    let mut result = (target & 0xF) + (value & 0xF) + (is_carry as u16);
+    if result > 9 {
+        result += 6;
+    }
+    result += (target & 0xF0) + (value & 0xF0);
+    if result > 0x9F {
+        result += 0x60;
+    }
+    result += (target & 0xF00) + (value & 0xF00);
+    if result > 0x9FF {
+        result += 0x600;
+    }
+    is_carry = result > 0x9FFF;
+    let is_negative = (result >> 15) == 1;
+    let is_zero = result == 0;
+    (result, is_carry, is_negative, is_zero)
+}
 
 #[cfg(test)]
 mod alu_tests {
@@ -216,6 +284,66 @@ mod alu_tests {
 
         let (result, carry, negative, zero) = adc16bcd(0b0001_1001, 0b0010_1000, false);
         assert_eq!(result, 0b0100_0111);
+        assert_eq!(carry, false);
+        assert_eq!(negative, false);
+        assert_eq!(zero, false);
+    }
+
+    #[test]
+    fn test_dec8bin() {
+        let (result, carry, negative, zero) = dec8bin(1, 1, false);
+        assert_eq!(result, 0);
+        assert_eq!(carry, false);
+        assert_eq!(negative, false);
+        assert_eq!(zero, true);
+
+        let (result, carry, negative, zero) = dec8bin(0, 1, false);
+        assert_eq!(result, 0b11111111);
+        assert_eq!(carry, true);
+        assert_eq!(negative, true);
+        assert_eq!(zero, false);
+
+        let (result, carry, negative, zero) = dec8bin(0, 1, true);
+        assert_eq!(result, 0b11111110);
+        assert_eq!(carry, true);
+        assert_eq!(negative, true);
+        assert_eq!(zero, false);
+    }
+
+    #[test]
+    fn test_dec16bin() {
+        let (result, carry, negative, zero) = dec16bin(1, 1, false);
+        assert_eq!(result, 0);
+        assert_eq!(carry, false);
+        assert_eq!(negative, false);
+        assert_eq!(zero, true);
+
+        let (result, carry, negative, zero) = dec16bin(0, 1, false);
+        assert_eq!(result, 0b11111111_11111111);
+        assert_eq!(carry, true);
+        assert_eq!(negative, true);
+        assert_eq!(zero, false);
+
+        let (result, carry, negative, zero) = dec16bin(0, 1, true);
+        assert_eq!(result, 0b11111111_11111110);
+        assert_eq!(carry, true);
+        assert_eq!(negative, true);
+        assert_eq!(zero, false);
+    }
+
+    #[test]
+    fn test_dec8bcd() {
+        let (result, carry, negative, zero) = dec8bcd(0b0100_0111, 0b0010_1000, false);
+        assert_eq!(result, 0b0001_1001);
+        assert_eq!(carry, false);
+        assert_eq!(negative, false);
+        assert_eq!(zero, false);
+    }
+
+    #[test]
+    fn test_dec16bcd() {
+        let (result, carry, negative, zero) = dec16bcd(0b0100_0111, 0b0010_1000, false);
+        assert_eq!(result, 0b0001_1001);
         assert_eq!(carry, false);
         assert_eq!(negative, false);
         assert_eq!(zero, false);

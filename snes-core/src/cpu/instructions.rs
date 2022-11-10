@@ -38,7 +38,7 @@ impl CPU {
                     true => alu::adc8bcd(target as u8, value, carry_flag),
                     false => alu::adc8bin(target as u8, value, carry_flag),
                 };
-                self.registers.a = result as u16;
+                self.registers.a = (self.registers.a & 0x00FF) | (result as u16);
                 self.registers.set_carry_flag(is_carry);
                 self.registers.set_negative_flag(is_negative);
                 self.registers.set_zero_flag(is_zero);
@@ -98,5 +98,22 @@ mod cpu_instructions_tests {
         cpu.adc(&bus, AddressingMode::Immediate);
         assert_eq!(cpu.registers.a, 0x40);
         assert!(!cpu.registers.get_carry_flag());
+    }
+
+    #[test]
+    fn test_dec() {
+        /*
+        let mut cpu = CPU::new();
+        let mut bus = Bus::new();
+        cpu.registers.a   = 0x0000;
+        cpu.registers.pbr = 0x00;
+        cpu.registers.pc  = 0x0000;
+        cpu.registers.set_memory_select_flag(true);
+        bus.write(0x000001, 1);
+        cpu.dec(&bus, AddressingMode::Immediate);
+        assert_eq!(cpu.registers.a, 1);
+        assert!(!cpu.registers.get_carry_flag());
+        assert!(!cpu.registers.get_zero_flag());
+        */
     }
 }
