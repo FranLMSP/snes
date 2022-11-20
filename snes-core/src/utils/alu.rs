@@ -68,7 +68,7 @@ pub fn adc16bcd(target: u16, value: u16, carry: bool) -> (u16, bool, bool, bool)
     (result, is_carry, is_negative, is_zero)
 }
 
-pub fn dec8bin(target: u8, value: u8, carry: bool) -> (u8, bool, bool, bool) {
+pub fn sbc8bin(target: u8, value: u8, carry: bool) -> (u8, bool, bool, bool) {
     let is_carry = match target.checked_sub(value) {
         None => true,
         Some(res) => match res.checked_sub(carry as u8) {
@@ -84,7 +84,7 @@ pub fn dec8bin(target: u8, value: u8, carry: bool) -> (u8, bool, bool, bool) {
     (result, is_carry, is_negative, is_zero)
 }
 
-pub fn dec16bin(target: u16, value: u16, carry: bool) -> (u16, bool, bool, bool) {
+pub fn sbc16bin(target: u16, value: u16, carry: bool) -> (u16, bool, bool, bool) {
     let is_carry = match target.checked_sub(value) {
         None => true,
         Some(res) => match res.checked_sub(carry as u16) {
@@ -100,7 +100,7 @@ pub fn dec16bin(target: u16, value: u16, carry: bool) -> (u16, bool, bool, bool)
     (result, is_carry, is_negative, is_zero)
 }
 
-pub fn dec8bcd(target: u8, value: u8, carry: bool) -> (u8, bool, bool, bool) {
+pub fn sbc8bcd(target: u8, value: u8, carry: bool) -> (u8, bool, bool, bool) {
     let mut is_carry = carry;
     let target = target as u16;
     let value = !(value as u16);
@@ -120,7 +120,7 @@ pub fn dec8bcd(target: u8, value: u8, carry: bool) -> (u8, bool, bool, bool) {
     (result, is_carry, is_negative, is_zero)
 }
 
-pub fn dec16bcd(target: u16, value: u16, carry: bool) -> (u16, bool, bool, bool) {
+pub fn sbc16bcd(target: u16, value: u16, carry: bool) -> (u16, bool, bool, bool) {
     let mut is_carry = carry;
     let target = target as u32;
     let value = !(value as u32);
@@ -307,19 +307,19 @@ mod alu_tests {
 
     #[test]
     fn test_dec8bin() {
-        let (result, carry, negative, zero) = dec8bin(1, 1, false);
+        let (result, carry, negative, zero) = sbc8bin(1, 1, false);
         assert_eq!(result, 0);
         assert_eq!(carry, false);
         assert_eq!(negative, false);
         assert_eq!(zero, true);
 
-        let (result, carry, negative, zero) = dec8bin(0, 1, false);
+        let (result, carry, negative, zero) = sbc8bin(0, 1, false);
         assert_eq!(result, 0b11111111);
         assert_eq!(carry, true);
         assert_eq!(negative, true);
         assert_eq!(zero, false);
 
-        let (result, carry, negative, zero) = dec8bin(0, 1, true);
+        let (result, carry, negative, zero) = sbc8bin(0, 1, true);
         assert_eq!(result, 0b11111110);
         assert_eq!(carry, true);
         assert_eq!(negative, true);
@@ -328,19 +328,19 @@ mod alu_tests {
 
     #[test]
     fn test_dec16bin() {
-        let (result, carry, negative, zero) = dec16bin(1, 1, false);
+        let (result, carry, negative, zero) = sbc16bin(1, 1, false);
         assert_eq!(result, 0);
         assert_eq!(carry, false);
         assert_eq!(negative, false);
         assert_eq!(zero, true);
 
-        let (result, carry, negative, zero) = dec16bin(0, 1, false);
+        let (result, carry, negative, zero) = sbc16bin(0, 1, false);
         assert_eq!(result, 0b11111111_11111111);
         assert_eq!(carry, true);
         assert_eq!(negative, true);
         assert_eq!(zero, false);
 
-        let (result, carry, negative, zero) = dec16bin(0, 1, true);
+        let (result, carry, negative, zero) = sbc16bin(0, 1, true);
         assert_eq!(result, 0b11111111_11111110);
         assert_eq!(carry, true);
         assert_eq!(negative, true);
@@ -349,13 +349,13 @@ mod alu_tests {
 
     #[test]
     fn test_dec8bcd() {
-        let (result, carry, negative, zero) = dec8bcd(0x49, 0x48, false);
+        let (result, carry, negative, zero) = sbc8bcd(0x49, 0x48, false);
         assert_eq!(result, 0x00);
         assert_eq!(carry, true);
         assert_eq!(negative, false);
         assert_eq!(zero, true);
 
-        let (result, carry, negative, zero) = dec8bcd(0x49, 0x50, true);
+        let (result, carry, negative, zero) = sbc8bcd(0x49, 0x50, true);
         assert_eq!(result, 0x99);
         assert_eq!(carry, false);
         assert_eq!(negative, true);
@@ -364,13 +364,13 @@ mod alu_tests {
 
     #[test]
     fn test_dec16bcd() {
-        let (result, carry, negative, zero) = dec16bcd(0x4999, 0x4998, false);
+        let (result, carry, negative, zero) = sbc16bcd(0x4999, 0x4998, false);
         assert_eq!(result, 0x0000);
         assert_eq!(carry, true);
         assert_eq!(negative, false);
         assert_eq!(zero, true);
 
-        let (result, carry, negative, zero) = dec16bcd(0x4999, 0x5000, true);
+        let (result, carry, negative, zero) = sbc16bcd(0x4999, 0x5000, true);
         assert_eq!(result, 0x9999);
         assert_eq!(carry, false);
         assert_eq!(negative, true);

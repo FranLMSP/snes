@@ -38,7 +38,7 @@ impl CPU {
                     true => alu::adc8bcd(target as u8, value, carry_flag),
                     false => alu::adc8bin(target as u8, value, carry_flag),
                 };
-                self.registers.a = (self.registers.a & 0x00FF) | (result as u16);
+                self.registers.a = (self.registers.a & 0xFF00) | (result as u16);
                 self.registers.set_carry_flag(is_carry);
                 self.registers.set_negative_flag(is_negative);
                 self.registers.set_zero_flag(is_zero);
@@ -48,6 +48,39 @@ impl CPU {
                 let (result, is_carry, is_negative, is_zero) = match is_decimal_mode {
                     true => alu::adc16bcd(target, value, carry_flag),
                     false => alu::adc16bin(target, value, carry_flag),
+                };
+                self.registers.a = result;
+                self.registers.set_carry_flag(is_carry);
+                self.registers.set_negative_flag(is_negative);
+                self.registers.set_zero_flag(is_zero);
+            }
+        };
+    }
+
+    fn sbc(&mut self, bus: &Bus, addressing_mode: AddressingMode) {
+        // if the M flag is set, perform 8 bit addition.
+        // Otherwise, 16 bit addition
+        let carry_flag = self.registers.get_carry_flag();
+        let is_decimal_mode = self.registers.get_decimal_mode_flag();
+        let is_8bit = self.registers.get_memory_select_flag();
+        let target = self.registers.a;
+        match is_8bit {
+            true => {
+                let value = self.get_8bit_from_address(bus, addressing_mode);
+                let (result, is_carry, is_negative, is_zero) = match is_decimal_mode {
+                    true => alu::sbc8bcd(target as u8, value, carry_flag),
+                    false => alu::sbc8bin(target as u8, value, carry_flag),
+                };
+                self.registers.a = (self.registers.a & 0xFF00) | (result as u16);
+                self.registers.set_carry_flag(is_carry);
+                self.registers.set_negative_flag(is_negative);
+                self.registers.set_zero_flag(is_zero);
+            },
+            false => {
+                let value = self.get_16bit_from_address(bus, addressing_mode);
+                let (result, is_carry, is_negative, is_zero) = match is_decimal_mode {
+                    true => alu::sbc16bcd(target, value, carry_flag),
+                    false => alu::sbc16bin(target, value, carry_flag),
                 };
                 self.registers.a = result;
                 self.registers.set_carry_flag(is_carry);
@@ -77,6 +110,22 @@ impl CPU {
             0x77 => self.adc(bus, A::DirectPageIndirectLongIndexed(I::Y)),
             0x63 => self.adc(bus, A::StackRelative),
             0x73 => self.adc(bus, A::StackRelativeIndirectIndexed(I::Y)),
+            // SBC
+            0xE9 => self.sbc(bus, A::Immediate),
+            0xED => self.sbc(bus, A::Absolute),
+            0xEF => self.sbc(bus, A::AbsoluteLong),
+            0xE5 => self.sbc(bus, A::DirectPage),
+            0xF2 => self.sbc(bus, A::DirectPageIndirect),
+            0xE7 => self.sbc(bus, A::DirectPageIndirectLong),
+            0xFD => self.sbc(bus, A::AbsoluteIndexed(I::X)),
+            0xFF => self.sbc(bus, A::AbsoluteLongIndexed(I::X)),
+            0xF9 => self.sbc(bus, A::AbsoluteIndexed(I::Y)),
+            0xF5 => self.sbc(bus, A::DirectPageIndexed(I::X)),
+            0xE1 => self.sbc(bus, A::DirectPageIndexedIndirect(I::X)),
+            0xF1 => self.sbc(bus, A::DirectPageIndirectIndexed(I::Y)),
+            0xF7 => self.sbc(bus, A::DirectPageIndirectLongIndexed(I::Y)),
+            0xE3 => self.sbc(bus, A::StackRelative),
+            0xF3 => self.sbc(bus, A::StackRelativeIndirectIndexed(I::Y)),
             _ => println!("Invalid opcode: {:02X}", opcode),
         }
     }
@@ -101,19 +150,17 @@ mod cpu_instructions_tests {
     }
 
     #[test]
-    fn test_dec() {
-        /*
+    fn test_sbc() {
         let mut cpu = CPU::new();
         let mut bus = Bus::new();
-        cpu.registers.a   = 0x0000;
+        cpu.registers.a   = 0x0001;
         cpu.registers.pbr = 0x00;
         cpu.registers.pc  = 0x0000;
         cpu.registers.set_memory_select_flag(true);
         bus.write(0x000001, 1);
-        // cpu.dec(&bus, AddressingMode::Immediate);
-        assert_eq!(cpu.registers.a, 1);
+        cpu.sbc(&bus, AddressingMode::Immediate);
+        assert_eq!(cpu.registers.a, 0);
         assert!(!cpu.registers.get_carry_flag());
-        assert!(!cpu.registers.get_zero_flag());
-        */
+        assert!(cpu.registers.get_zero_flag());
     }
 }
