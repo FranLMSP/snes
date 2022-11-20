@@ -38,7 +38,7 @@ impl CPU {
                     true => alu::adc8bcd(target as u8, value, carry_flag),
                     false => alu::adc8bin(target as u8, value, carry_flag),
                 };
-                self.registers.a = (self.registers.a & 0xFF00) | (result as u16);
+                self.registers.set_low_a(result as u8);
                 self.registers.set_carry_flag(is_carry);
                 self.registers.set_negative_flag(is_negative);
                 self.registers.set_zero_flag(is_zero);
@@ -71,7 +71,7 @@ impl CPU {
                     true => alu::sbc8bcd(target as u8, value, carry_flag),
                     false => alu::sbc8bin(target as u8, value, carry_flag),
                 };
-                self.registers.a = (self.registers.a & 0xFF00) | (result as u16);
+                self.registers.set_low_a(result as u8);
                 self.registers.set_carry_flag(is_carry);
                 self.registers.set_negative_flag(is_negative);
                 self.registers.set_zero_flag(is_zero);

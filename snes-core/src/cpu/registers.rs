@@ -27,6 +27,10 @@ impl Registers {
         }
     }
 
+    pub fn set_low_a(&mut self, val: u8) {
+        self.a = (self.a & 0xFF00) | (val as u16);
+    }
+
     pub fn get_carry_flag(&self) -> bool {
         (self.p & 0b0000_0001) == 1
     }
@@ -116,6 +120,14 @@ impl Registers {
 #[cfg(test)]
 mod registers_tests {
     use super::*;
+
+    #[test]
+    fn test_set_low_a() {
+        let mut registers = Registers::new();
+        registers.a = 0xA1A1;
+        registers.set_low_a(0xFF);
+        assert_eq!(registers.a, 0xA1FF);
+    }
 
     #[test]
     fn test_get_pc_address() {
