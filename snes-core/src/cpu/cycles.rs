@@ -1,10 +1,11 @@
 use super::cpu::CPU;
-use crate::utils::addressing::{AddressingMode};
+use crate::utils::addressing::{AddressingMode, IndexRegister};
 
 
 impl CPU {
     pub fn increment_cycles_adc_sbc(&mut self, addressing_mode: AddressingMode) {
         type A = AddressingMode;
+        type I = IndexRegister;
         let (mut bytes, mut cycles) = match addressing_mode {
             A::Immediate => (2, 2),
             A::Absolute => (3, 4),
@@ -41,9 +42,16 @@ impl CPU {
 
         // condition 3: Add 1 cycle if adding index crosses a page boundary
         match addressing_mode {
-            A::AbsoluteIndexed(_) | A::DirectPageIndirectIndexed(_) => {
-                todo!("Check if index crosses a page boundary")
-            }
+            A::AbsoluteIndexed(index) | A::DirectPageIndirectIndexed(index) => {
+                let page = (self.registers.get_pc_address() - (bytes as u32)) & 0xFF;
+                let index = match index {
+                    I::X => self.registers.x,
+                    I::Y => self.registers.y,
+                };
+                if (page + index as u32) > 0xFF {
+                    cycles += 1
+                }
+            },
             _ => {},
         };
 
@@ -64,6 +72,8 @@ mod cpu_instructions_tests {
     #[test]
     fn test_increment_cycles_adc_sbc() {
         let mut cpu = CPU::new();
+
+        // 16-bit Memory/accumulator flag condition
         cpu.registers.pc = 0;
         cpu.cycles = 0;
         cpu.registers.set_decimal_mode_flag(false);
@@ -79,6 +89,7 @@ mod cpu_instructions_tests {
         assert_eq!(cpu.registers.pc, 3);
         assert_eq!(cpu.cycles, 3);
 
+        // Decimal flag condition
         cpu.registers.pc = 0;
         cpu.cycles = 0;
         cpu.registers.set_16bit_mode(true);
@@ -87,10 +98,12 @@ mod cpu_instructions_tests {
         assert_eq!(cpu.registers.pc, 3);
         assert_eq!(cpu.cycles, 4);
 
+        // Low byte of direct page register other than zero condition
         cpu.registers.pc = 0;
         cpu.cycles = 0;
         cpu.registers.set_16bit_mode(false);
         cpu.registers.set_decimal_mode_flag(false);
+        cpu.registers.d = 0x0000;
         cpu.increment_cycles_adc_sbc(AddressingMode::DirectPage);
         assert_eq!(cpu.registers.pc, 2);
         assert_eq!(cpu.cycles, 3);
@@ -103,5 +116,24 @@ mod cpu_instructions_tests {
         cpu.increment_cycles_adc_sbc(AddressingMode::DirectPage);
         assert_eq!(cpu.registers.pc, 2);
         assert_eq!(cpu.cycles, 4);
+
+        // Adding index crosses a page boundary condition
+        cpu.registers.pc = 0xFE;
+        cpu.registers.x = 0x0001;
+        cpu.cycles = 0;
+        cpu.registers.set_16bit_mode(false);
+        cpu.registers.set_decimal_mode_flag(false);
+        cpu.increment_cycles_adc_sbc(AddressingMode::AbsoluteIndexed(IndexRegister::X));
+        assert_eq!(cpu.registers.pc, 0xFE + 3);
+        assert_eq!(cpu.cycles, 4);
+
+        cpu.registers.pc = 0xFE;
+        cpu.registers.x = 0x0010;
+        cpu.cycles = 0;
+        cpu.registers.set_16bit_mode(false);
+        cpu.registers.set_decimal_mode_flag(false);
+        cpu.increment_cycles_adc_sbc(AddressingMode::AbsoluteIndexed(IndexRegister::X));
+        assert_eq!(cpu.registers.pc, 0xFE + 3);
+        assert_eq!(cpu.cycles, 5);
     }
 }
