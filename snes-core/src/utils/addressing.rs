@@ -112,6 +112,7 @@ pub enum AddressingMode {
 impl AddressingMode {
     pub fn effective_address(self, bus: &Bus, pc_addr: u32, direct_page_register: u16, stack_pointer: u16, x: u16, y: u16) -> u32 {
         use IndexRegister::X as X;
+        // TODO: maybe use impl Immediate {pub fn effective_address} to prevent this match statement?
         match self {
             Self::Immediate => immediate(pc_addr),
             Self::Absolute => absolute(bus, pc_addr),

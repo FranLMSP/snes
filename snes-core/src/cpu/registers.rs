@@ -115,6 +115,22 @@ impl Registers {
     pub fn get_pc_address(&self) -> u32 {
         ((self.pbr as u32) << 16) | (self.pc as u32)
     }
+
+    pub fn is_16bit_mode(&self) -> bool {
+        !self.get_memory_select_flag()
+    }
+
+    pub fn set_16bit_mode(&mut self, val: bool) {
+        self.set_memory_select_flag(!val);
+    }
+
+    pub fn increment_pc(&mut self, bytes: u16) {
+        self.pc = self.pc.wrapping_add(bytes);
+    }
+
+    pub fn direct_page_low(&self) -> u8 {
+        self.d as u8
+    }
 }
 
 #[cfg(test)]
@@ -122,11 +138,36 @@ mod registers_tests {
     use super::*;
 
     #[test]
+    fn test_get_16bit_mode() {
+        let mut registers = Registers::new();
+        registers.set_memory_select_flag(false);
+        assert!(registers.is_16bit_mode());
+        registers.set_memory_select_flag(true);
+        assert!(!registers.is_16bit_mode());
+    }
+
+    #[test]
+    fn test_set_16bit_mode() {
+        let mut registers = Registers::new();
+        registers.set_16bit_mode(true);
+        assert!(registers.is_16bit_mode());
+        registers.set_16bit_mode(false);
+        assert!(!registers.is_16bit_mode());
+    }
+
+    #[test]
     fn test_set_low_a() {
         let mut registers = Registers::new();
         registers.a = 0xA1A1;
         registers.set_low_a(0xFF);
         assert_eq!(registers.a, 0xA1FF);
+    }
+
+    #[test]
+    fn test_direct_page_log() {
+        let mut registers = Registers::new();
+        registers.d = 0xA1A1;
+        assert_eq!(registers.direct_page_low(), 0xA1);
     }
 
     #[test]
