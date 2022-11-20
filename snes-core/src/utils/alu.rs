@@ -102,14 +102,19 @@ pub fn dec16bin(target: u16, value: u16, carry: bool) -> (u16, bool, bool, bool)
 
 pub fn dec8bcd(target: u8, value: u8, carry: bool) -> (u8, bool, bool, bool) {
     let mut is_carry = carry;
-    let value = (!value).wrapping_add(1); // complement of value
-    let six_complement = (!6 as u8).wrapping_add(1);
-    let mut result = (target & 0xF) + (value & 0xF) + (is_carry as u8) + 1;
-    if result > 0xF {
-        result = result.wrapping_add(six_complement);
+    let target = target as u16;
+    let value = !(value as u16);
+    let mut result = (target & 0x0F) + (value & 0x0F) + (is_carry as u16);
+    if result <= 0x0F {
+        result = result.wrapping_sub(0x06);
     }
-    result = result.wrapping_add(target & 0xF0).wrapping_add(value & 0xF0).wrapping_add(1);
-    is_carry = result < 0xFF;
+    is_carry = result > 0x0F;
+    result = (target & 0xF0) + (value & 0xF0) + ((is_carry as u16) << 4) + (result & 0x0F);
+    if result <= 0xFF {
+        result = result.wrapping_sub(0x60);
+    }
+    is_carry = result > 0xFF;
+    let result = result as u8;
     let is_negative = (result >> 7) == 1;
     let is_zero = result == 0;
     (result, is_carry, is_negative, is_zero)
@@ -117,19 +122,30 @@ pub fn dec8bcd(target: u8, value: u8, carry: bool) -> (u8, bool, bool, bool) {
 
 pub fn dec16bcd(target: u16, value: u16, carry: bool) -> (u16, bool, bool, bool) {
     let mut is_carry = carry;
-    let mut result = (target & 0xF) + (value & 0xF) + (is_carry as u16);
-    if result > 9 {
-        result += 6;
+    let target = target as u32;
+    let value = !(value as u32);
+    let mut result = ((target & 0x0F) + (value & 0x0F) + (is_carry as u32)) as u32;
+    if result <= 0x0F {
+        result = result.wrapping_sub(0x06);
     }
-    result += (target & 0xF0) + (value & 0xF0);
-    if result > 0x9F {
-        result += 0x60;
+    is_carry = result > 0xF;
+    result = (target & 0xF0) + (value & 0xF0) + ((is_carry as u32) << 4) + (result & 0xF);
+    if result <= 0xFF {
+        result = result.wrapping_sub(0x60);
     }
-    result += (target & 0xF00) + (value & 0xF00);
-    if result > 0x9FF {
-        result += 0x600;
+    is_carry = result > 0xFF;
+    result = (target & 0xF00) + (value & 0xF00) + ((is_carry as u32) << 8) + (result & 0xFF);
+    if result <= 0xFFF {
+        result = result.wrapping_sub(0x600);
     }
-    is_carry = result > 0x9FFF;
+    is_carry = result > 0xFFF;
+    result = (target & 0xF000) + (value & 0xF000) + ((is_carry as u32) << 12) + (result & 0xFFF);
+    if result <= 0xFFFF {
+        result = result.wrapping_sub(0x6000);
+    }
+
+    is_carry = result > 0xFFFF;
+    let result = result as u16;
     let is_negative = (result >> 15) == 1;
     let is_zero = result == 0;
     (result, is_carry, is_negative, is_zero)
@@ -333,19 +349,31 @@ mod alu_tests {
 
     #[test]
     fn test_dec8bcd() {
-        let (result, carry, negative, zero) = dec8bcd(0b0100_0111, 0b0010_1000, false);
-        assert_eq!(result, 0b0001_1001);
-        assert_eq!(carry, false);
+        let (result, carry, negative, zero) = dec8bcd(0x49, 0x48, false);
+        assert_eq!(result, 0x00);
+        assert_eq!(carry, true);
         assert_eq!(negative, false);
+        assert_eq!(zero, true);
+
+        let (result, carry, negative, zero) = dec8bcd(0x49, 0x50, true);
+        assert_eq!(result, 0x99);
+        assert_eq!(carry, false);
+        assert_eq!(negative, true);
         assert_eq!(zero, false);
     }
 
     #[test]
     fn test_dec16bcd() {
-        let (result, carry, negative, zero) = dec16bcd(0b0100_0111, 0b0010_1000, false);
-        assert_eq!(result, 0b0001_1001);
-        assert_eq!(carry, false);
+        let (result, carry, negative, zero) = dec16bcd(0x4999, 0x4998, false);
+        assert_eq!(result, 0x0000);
+        assert_eq!(carry, true);
         assert_eq!(negative, false);
+        assert_eq!(zero, true);
+
+        let (result, carry, negative, zero) = dec16bcd(0x4999, 0x5000, true);
+        assert_eq!(result, 0x9999);
+        assert_eq!(carry, false);
+        assert_eq!(negative, true);
         assert_eq!(zero, false);
     }
 }
