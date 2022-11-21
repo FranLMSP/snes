@@ -1,5 +1,3 @@
-/// TODO: refactor functions to work with generic types (either u8 or 16) to reduce duplication
-
 use super::num_trait::SnesNum;
 
 pub fn adc_bin<T: SnesNum>(target: T, value: T, carry: bool) -> (T, bool, bool, bool) {
@@ -125,7 +123,8 @@ mod alu_tests {
     use super::*;
 
     #[test]
-    fn test_adc8bin() {
+    fn test_adc_bin() {
+        // 8 bits
         let (result, carry, negative, zero) = adc_bin(0_u8, 0_u8, false);
         assert_eq!(result, 0);
         assert_eq!(carry, false);
@@ -161,10 +160,8 @@ mod alu_tests {
         assert_eq!(carry, false);
         assert_eq!(negative, true);
         assert_eq!(zero, false);
-    }
 
-    #[test]
-    fn test_adc16bin() {
+        // 16 bits
         let (result, carry, negative, zero) = adc_bin(0_u16, 0_u16, false);
         assert_eq!(result, 0);
         assert_eq!(carry, false);
@@ -197,7 +194,8 @@ mod alu_tests {
     }
 
     #[test]
-    fn test_adc8bcd() {
+    fn test_adc_bcd() {
+        // 8 bits
         let (result, carry, negative, zero) = adc8bcd(5, 5, false);
         assert_eq!(result, 0b0001_0000);
         assert_eq!(carry, false);
@@ -233,10 +231,8 @@ mod alu_tests {
         assert_eq!(carry, false);
         assert_eq!(negative, false);
         assert_eq!(zero, false);
-    }
 
-    #[test]
-    fn test_adc16bcd() {
+        // 16 bits
         let (result, carry, negative, zero) = adc16bcd(5, 5, false);
         assert_eq!(result, 0b0001_0000);
         assert_eq!(carry, false);
@@ -281,7 +277,8 @@ mod alu_tests {
     }
 
     #[test]
-    fn test_dec8bin() {
+    fn test_dec_bin() {
+        // 8 bit
         let (result, carry, negative, zero) = sbc_bin(1_u8, 1_u8, false);
         assert_eq!(result, 0);
         assert_eq!(carry, false);
@@ -299,10 +296,8 @@ mod alu_tests {
         assert_eq!(carry, true);
         assert_eq!(negative, true);
         assert_eq!(zero, false);
-    }
-
-    #[test]
-    fn test_dec16bin() {
+        
+        // 16 bit
         let (result, carry, negative, zero) = sbc_bin(1_u16, 1_u16, false);
         assert_eq!(result, 0);
         assert_eq!(carry, false);
@@ -323,7 +318,8 @@ mod alu_tests {
     }
 
     #[test]
-    fn test_dec8bcd() {
+    fn test_dec_bcd() {
+        // 8 bit
         let (result, carry, negative, zero) = sbc8bcd(0x49, 0x48, false);
         assert_eq!(result, 0x00);
         assert_eq!(carry, true);
@@ -335,10 +331,8 @@ mod alu_tests {
         assert_eq!(carry, false);
         assert_eq!(negative, true);
         assert_eq!(zero, false);
-    }
 
-    #[test]
-    fn test_dec16bcd() {
+        // 16 bit
         let (result, carry, negative, zero) = sbc16bcd(0x4999, 0x4998, false);
         assert_eq!(result, 0x0000);
         assert_eq!(carry, true);
@@ -353,7 +347,8 @@ mod alu_tests {
     }
 
     #[test]
-    fn test_and8bit() {
+    fn test_and() {
+        // 8 bit
         let (result, is_negative, is_zero) = and(0b0101_0101_u8, 0b0101_0101_u8);
         assert_eq!(result, 0b0101_0101);
         assert_eq!(is_negative, false);
@@ -363,10 +358,8 @@ mod alu_tests {
         assert_eq!(result, 0x00);
         assert_eq!(is_negative, false);
         assert_eq!(is_zero, true);
-    }
 
-    #[test]
-    fn test_and16bit() {
+        // 16 bit
         let (result, is_negative, is_zero) = and(0b01010101_01010101_u16, 0b01010101_01010101_u16);
         assert_eq!(result, 0b01010101_01010101);
         assert_eq!(is_negative, false);
@@ -379,26 +372,27 @@ mod alu_tests {
     }
 
     #[test]
-    fn test_asl8bit() {
+    fn test_asl() {
+        // 8 bit
         let (result, is_negative, is_zero, is_carry) = asl(0b0101_0101_u8);
         assert_eq!(result, 0b1010_1010);
         assert_eq!(is_negative, true);
         assert_eq!(is_zero, false);
         assert_eq!(is_carry, false);
+
         let (result, is_negative, is_zero, is_carry) = asl(0b1000_0000_u8);
         assert_eq!(result, 0b0000_0000);
         assert_eq!(is_negative, false);
         assert_eq!(is_zero, true);
         assert_eq!(is_carry, true);
-    }
 
-    #[test]
-    fn test_asl16bit() {
+        // 16 bit
         let (result, is_negative, is_zero, is_carry) = asl(0b01000000_00000000_u16);
         assert_eq!(result, 0b10000000_00000000);
         assert_eq!(is_negative, true);
         assert_eq!(is_zero, false);
         assert_eq!(is_carry, false);
+
         let (result, is_negative, is_zero, is_carry) = asl(0b10000000_00000000_u16);
         assert_eq!(result, 0b00000000_00000000);
         assert_eq!(is_negative, false);
