@@ -70,7 +70,7 @@ impl CPU {
                 let value = self.get_8bit_from_address(bus, addressing_mode);
                 let (result, is_carry, is_negative, is_zero) = match is_decimal_mode {
                     true => alu::sbc8bcd(target as u8, value, carry_flag),
-                    false => alu::sbc8bin(target as u8, value, carry_flag),
+                    false => alu::sbc_bin(target as u8, value, carry_flag),
                 };
                 self.registers.set_low_a(result as u8);
                 self.registers.set_carry_flag(is_carry);
@@ -81,7 +81,7 @@ impl CPU {
                 let value = self.get_16bit_from_address(bus, addressing_mode);
                 let (result, is_carry, is_negative, is_zero) = match is_decimal_mode {
                     true => alu::sbc16bcd(target, value, carry_flag),
-                    false => alu::sbc16bin(target, value, carry_flag),
+                    false => alu::sbc_bin(target, value, carry_flag),
                 };
                 self.registers.a = result;
                 self.registers.set_carry_flag(is_carry);
