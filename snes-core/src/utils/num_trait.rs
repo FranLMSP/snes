@@ -4,6 +4,7 @@ pub trait SnesNum: Copy + Clone + Sized + Eq + PartialEq {
     fn add_snes(&self, v: Self, carry: bool) -> Self;
     fn sub_snes(&self, v: Self, carry: bool) -> Self;
     fn and(&self, v: Self) -> Self;
+    fn asl(&self) -> Self;
     fn is_negative(&self) -> bool;
     fn is_zero(&self) -> bool;
 }
@@ -41,6 +42,10 @@ macro_rules! define_impl {
 
             fn and(&self, v: $t) -> $t {
                 (* self) & v
+            }
+
+            fn asl(&self) -> $t {
+                (* self) << 1
             }
 
             fn is_negative(&self) -> bool {

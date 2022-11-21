@@ -124,13 +124,13 @@ impl CPU {
             }
         };
         if self.registers.is_16bit_mode() {
-            let (result, is_negative, is_zero, is_carry) = alu::asl16bit(target);
+            let (result, is_negative, is_zero, is_carry) = alu::asl(target);
             self.registers.a = result;
             self.registers.set_negative_flag(is_negative);
             self.registers.set_zero_flag(is_zero);
             self.registers.set_carry_flag(is_carry);
         } else {
-            let (result, is_negative, is_zero, is_carry) = alu::asl8bit(target as u8);
+            let (result, is_negative, is_zero, is_carry) = alu::asl(target as u8);
             self.registers.set_low_a(result);
             self.registers.set_negative_flag(is_negative);
             self.registers.set_zero_flag(is_zero);

@@ -112,19 +112,11 @@ pub fn and<T: SnesNum>(target: T, value: T) -> (T, bool, bool) {
     (result, is_negative, is_zero)
 }
 
-pub fn asl8bit(target: u8) -> (u8, bool, bool, bool) {
-    let result = target << 1;
-    let is_negative = (result >> 7) == 1;
-    let is_zero = result == 0;
-    let is_carry = (target >> 7) == 1;
-    (result, is_negative, is_zero, is_carry)
-}
-
-pub fn asl16bit(target: u16) -> (u16, bool, bool, bool) {
-    let result = target << 1;
-    let is_negative = (result >> 15) == 1;
-    let is_zero = result == 0;
-    let is_carry = (target >> 15) == 1;
+pub fn asl<T: SnesNum>(target: T) -> (T, bool, bool, bool) {
+    let result = target.asl();
+    let is_negative = result.is_negative();
+    let is_zero = result.is_zero();
+    let is_carry = target.is_negative();
     (result, is_negative, is_zero, is_carry)
 }
 
@@ -388,12 +380,12 @@ mod alu_tests {
 
     #[test]
     fn test_asl8bit() {
-        let (result, is_negative, is_zero, is_carry) = asl8bit(0b0101_0101);
+        let (result, is_negative, is_zero, is_carry) = asl(0b0101_0101_u8);
         assert_eq!(result, 0b1010_1010);
         assert_eq!(is_negative, true);
         assert_eq!(is_zero, false);
         assert_eq!(is_carry, false);
-        let (result, is_negative, is_zero, is_carry) = asl8bit(0b1000_0000);
+        let (result, is_negative, is_zero, is_carry) = asl(0b1000_0000_u8);
         assert_eq!(result, 0b0000_0000);
         assert_eq!(is_negative, false);
         assert_eq!(is_zero, true);
@@ -402,12 +394,12 @@ mod alu_tests {
 
     #[test]
     fn test_asl16bit() {
-        let (result, is_negative, is_zero, is_carry) = asl16bit(0b01000000_00000000);
+        let (result, is_negative, is_zero, is_carry) = asl(0b01000000_00000000_u16);
         assert_eq!(result, 0b10000000_00000000);
         assert_eq!(is_negative, true);
         assert_eq!(is_zero, false);
         assert_eq!(is_carry, false);
-        let (result, is_negative, is_zero, is_carry) = asl16bit(0b10000000_00000000);
+        let (result, is_negative, is_zero, is_carry) = asl(0b10000000_00000000_u16);
         assert_eq!(result, 0b00000000_00000000);
         assert_eq!(is_negative, false);
         assert_eq!(is_zero, true);
