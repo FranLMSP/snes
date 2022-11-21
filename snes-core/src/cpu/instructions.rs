@@ -113,6 +113,32 @@ impl CPU {
         self.increment_cycles_bitwise(addressing_mode);
     }
 
+    fn asl(&mut self, bus: &Bus, addressing_mode: AddressingMode) {
+        // if the M flag is set, perform 8 bit addition.
+        // Otherwise, 16 bit addition
+        let target = match addressing_mode {
+            AddressingMode::Accumulator => self.registers.a,
+            _ => match self.registers.is_16bit_mode() {
+                true => self.get_16bit_from_address(bus, addressing_mode),
+                false => self.get_8bit_from_address(bus, addressing_mode) as u16,
+            }
+        };
+        if self.registers.is_16bit_mode() {
+            let (result, is_negative, is_zero, is_carry) = alu::asl16bit(target);
+            self.registers.a = result;
+            self.registers.set_negative_flag(is_negative);
+            self.registers.set_zero_flag(is_zero);
+            self.registers.set_carry_flag(is_carry);
+        } else {
+            let (result, is_negative, is_zero, is_carry) = alu::asl8bit(target as u8);
+            self.registers.set_low_a(result);
+            self.registers.set_negative_flag(is_negative);
+            self.registers.set_zero_flag(is_zero);
+            self.registers.set_carry_flag(is_carry);
+        }
+        self.increment_cycles_shift(addressing_mode);
+    }
+
     pub fn execute_opcode(&mut self, opcode: u8, bus: &Bus) {
         type A = AddressingMode;
         type I = IndexRegister;
@@ -165,6 +191,12 @@ impl CPU {
             0x37 => self.and(bus, A::DirectPageIndirectLongIndexed(I::Y)),
             0x23 => self.and(bus, A::StackRelative),
             0x33 => self.and(bus, A::StackRelativeIndirectIndexed(I::Y)),
+            // ASL
+            0x0A => self.asl(bus, A::Accumulator),
+            0x0E => self.asl(bus, A::Absolute),
+            0x06 => self.asl(bus, A::DirectPage),
+            0x1E => self.asl(bus, A::AbsoluteIndexed(I::X)),
+            0x16 => self.asl(bus, A::DirectPageIndexed(I::X)),
             _ => println!("Invalid opcode: {:02X}", opcode),
         }
     }
@@ -223,5 +255,22 @@ mod cpu_instructions_tests {
         assert_eq!(cpu.cycles, 2);
         assert!(!cpu.registers.get_carry_flag());
         assert!(!cpu.registers.get_zero_flag());
+    }
+
+    #[test]
+    fn test_asl() {
+        let mut cpu = CPU::new();
+        let bus = Bus::new();
+        cpu.registers.a   = 0b01010000_00000000;
+        cpu.registers.pbr = 0x00;
+        cpu.registers.pc  = 0x0000;
+        cpu.registers.set_memory_select_flag(false);
+        cpu.asl(&bus, AddressingMode::Accumulator);
+        assert_eq!(cpu.registers.a, 0b10100000_00000000);
+        assert_eq!(cpu.registers.pc, 0x01);
+        assert_eq!(cpu.cycles, 4);
+        assert!(!cpu.registers.get_carry_flag());
+        assert!(!cpu.registers.get_zero_flag());
+        assert!(cpu.registers.get_negative_flag());
     }
 }

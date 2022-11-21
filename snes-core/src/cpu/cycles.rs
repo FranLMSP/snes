@@ -100,6 +100,23 @@ impl CPU {
             A::DirectPageIndirectLongIndexed(_) => (2, 6),
             A::StackRelative                    => (2, 4),
             A::StackRelativeIndirectIndexed(_)  => (2, 7),
+            _ => unreachable!(),
+        }
+    }
+
+    fn common_bytes_cycles_shift(addressing_mode: AddressingMode) -> (u16, usize) {
+        match addressing_mode {
+            A::Accumulator                      => (1, 2),
+            A::Absolute                         => (3, 6),
+            A::DirectPage                       => (2, 5),
+            // Note: in some documentations you will find that this addressing mode has
+            // 7 cycles for shift instructions, and then it says to substract
+            // 1 cycles if no page boundary is crossed.
+            // But to make it simpler, we are assigning 6 cycles here and then incrementing
+            // it by 1 later if a page boundary is crossed.
+            A::AbsoluteIndexed(_)               => (3, 6),
+            A::DirectPageIndexed(_)             => (2, 6),
+            _ => unreachable!(),
         }
     }
 
@@ -115,6 +132,19 @@ impl CPU {
         self.registers.increment_pc(bytes);
         self.cycles += cycles;
         self.common_conditions(addressing_mode, &BITWISE_CONDITIONS);
+    }
+
+    pub fn increment_cycles_shift(&mut self, addressing_mode: AddressingMode) {
+        let (bytes, cycles) = CPU::common_bytes_cycles_shift(addressing_mode);
+        self.registers.increment_pc(bytes);
+        self.cycles += cycles;
+        // Add 2 cycles if m = 1
+        self.common_conditions(addressing_mode, &[Condition::MemorySelectFlag]);
+        self.common_conditions(addressing_mode, &[
+            Condition::MemorySelectFlag,
+            Condition::DirectPageZero,
+            Condition::IndexCrossesPageBoundary,
+        ]);
     }
 }
 

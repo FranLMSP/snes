@@ -93,6 +93,7 @@ pub enum IndexRegister {
 
 #[derive(Copy, Clone)]
 pub enum AddressingMode {
+    Accumulator,
     Immediate,
     Absolute,
     AbsoluteLong,
@@ -114,6 +115,7 @@ impl AddressingMode {
         use IndexRegister::X as X;
         // TODO: maybe use impl Immediate {pub fn effective_address} to prevent this match statement?
         match self {
+            Self::Accumulator => pc_addr,
             Self::Immediate => immediate(pc_addr),
             Self::Absolute => absolute(bus, pc_addr),
             Self::AbsoluteLong => absolute_long(bus, pc_addr),

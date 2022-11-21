@@ -165,6 +165,22 @@ pub fn and16bit(target: u16, value: u16) -> (u16, bool, bool) {
     (result, is_negative, is_zero)
 }
 
+pub fn asl8bit(target: u8) -> (u8, bool, bool, bool) {
+    let result = target << 1;
+    let is_negative = (result >> 7) == 1;
+    let is_zero = result == 0;
+    let is_carry = (target >> 7) == 1;
+    (result, is_negative, is_zero, is_carry)
+}
+
+pub fn asl16bit(target: u16) -> (u16, bool, bool, bool) {
+    let result = target << 1;
+    let is_negative = (result >> 15) == 1;
+    let is_zero = result == 0;
+    let is_carry = (target >> 15) == 1;
+    (result, is_negative, is_zero, is_carry)
+}
+
 #[cfg(test)]
 mod alu_tests {
     use super::*;
@@ -405,5 +421,33 @@ mod alu_tests {
         assert_eq!(result, 0b01010101_01010101);
         assert_eq!(is_negative, false);
         assert_eq!(is_zero, false);
+    }
+
+    #[test]
+    fn test_asl8bit() {
+        let (result, is_negative, is_zero, is_carry) = asl8bit(0b0101_0101);
+        assert_eq!(result, 0b1010_1010);
+        assert_eq!(is_negative, true);
+        assert_eq!(is_zero, false);
+        assert_eq!(is_carry, false);
+        let (result, is_negative, is_zero, is_carry) = asl8bit(0b1000_0000);
+        assert_eq!(result, 0b0000_0000);
+        assert_eq!(is_negative, false);
+        assert_eq!(is_zero, true);
+        assert_eq!(is_carry, true);
+    }
+
+    #[test]
+    fn test_asl16bit() {
+        let (result, is_negative, is_zero, is_carry) = asl16bit(0b01000000_00000000);
+        assert_eq!(result, 0b10000000_00000000);
+        assert_eq!(is_negative, true);
+        assert_eq!(is_zero, false);
+        assert_eq!(is_carry, false);
+        let (result, is_negative, is_zero, is_carry) = asl16bit(0b10000000_00000000);
+        assert_eq!(result, 0b00000000_00000000);
+        assert_eq!(is_negative, false);
+        assert_eq!(is_zero, true);
+        assert_eq!(is_carry, true);
     }
 }
