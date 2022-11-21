@@ -139,6 +139,7 @@ impl CPU {
         self.registers.increment_pc(bytes);
         self.cycles += cycles;
         // Add 2 cycles if m = 1
+        // TODO: Consider that this may be adding one byte more
         self.common_conditions(addressing_mode, &[Condition::MemorySelectFlag]);
         self.common_conditions(addressing_mode, &[
             Condition::MemorySelectFlag,

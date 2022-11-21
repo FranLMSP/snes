@@ -1,34 +1,12 @@
 /// TODO: refactor functions to work with generic types (either u8 or 16) to reduce duplication
 
-pub fn adc8bin(target: u8, value: u8, carry: bool) -> (u8, bool, bool, bool) {
-    let is_carry = match target.checked_add(value) {
-        None => true,
-        Some(res) => match res.checked_add(carry as u8) {
-            None => true,
-            Some(_) => false,
-        },
-    };
-    let result = target
-        .wrapping_add(value)
-        .wrapping_add(carry as u8);
-    let is_negative = (result >> 7) == 1;
-    let is_zero = result == 0;
-    (result, is_carry, is_negative, is_zero)
-}
+use super::num_trait::SnesNum;
 
-pub fn adc16bin(target: u16, value: u16, carry: bool) -> (u16, bool, bool, bool) {
-    let is_carry = match target.checked_add(value) {
-        None => true,
-        Some(res) => match res.checked_add(carry as u16) {
-            None => true,
-            Some(_) => false,
-        },
-    };
-    let result = target
-        .wrapping_add(value)
-        .wrapping_add(carry as u16);
-    let is_negative = (result >> 15) == 1;
-    let is_zero = result == 0;
+pub fn adc_bin<T: SnesNum>(target: T, value: T, carry: bool) -> (T, bool, bool, bool) {
+    let is_carry = target.add_will_carry(value, carry);
+    let result = target.add_snes(value, carry);
+    let is_negative = result.is_negative();
+    let is_zero = result.is_zero();
     (result, is_carry, is_negative, is_zero)
 }
 
@@ -187,31 +165,37 @@ mod alu_tests {
 
     #[test]
     fn test_adc8bin() {
-        let (result, carry, negative, zero) = adc8bin(0, 0, false);
+        let (result, carry, negative, zero) = adc_bin(0_u8, 0_u8, false);
         assert_eq!(result, 0);
         assert_eq!(carry, false);
         assert_eq!(negative, false);
         assert_eq!(zero, true);
 
-        let (result, carry, negative, zero) = adc8bin(0, 50, false);
+        let (result, carry, negative, zero) = adc_bin(0_u8, 50_u8, false);
         assert_eq!(result, 50);
         assert_eq!(carry, false);
         assert_eq!(negative, false);
         assert_eq!(zero, false);
 
-        let (result, carry, negative, zero) = adc8bin(200, 155, false);
+        let (result, carry, negative, zero) = adc_bin(200_u8, 155_u8, false);
         assert_eq!(result, 99);
         assert_eq!(carry, true);
         assert_eq!(negative, false);
         assert_eq!(zero, false);
 
-        let (result, carry, negative, zero) = adc8bin(200, 155, true);
+        let (result, carry, negative, zero) = adc_bin(200_u8, 155_u8, true);
         assert_eq!(result, 100);
         assert_eq!(carry, true);
         assert_eq!(negative, false);
         assert_eq!(zero, false);
 
-        let (result, carry, negative, zero) = adc8bin(200, 54, true);
+        let (result, carry, negative, zero) = adc_bin(200_u8, 54_u8, true);
+        assert_eq!(result, 255);
+        assert_eq!(carry, false);
+        assert_eq!(negative, true);
+        assert_eq!(zero, false);
+
+        let (result, carry, negative, zero) = adc_bin(200_u8, 54_u8, true);
         assert_eq!(result, 255);
         assert_eq!(carry, false);
         assert_eq!(negative, true);
@@ -220,31 +204,31 @@ mod alu_tests {
 
     #[test]
     fn test_adc16bin() {
-        let (result, carry, negative, zero) = adc16bin(0, 0, false);
+        let (result, carry, negative, zero) = adc_bin(0_u16, 0_u16, false);
         assert_eq!(result, 0);
         assert_eq!(carry, false);
         assert_eq!(negative, false);
         assert_eq!(zero, true);
 
-        let (result, carry, negative, zero) = adc16bin(0, 50, false);
+        let (result, carry, negative, zero) = adc_bin(0_u16, 50_u16, false);
         assert_eq!(result, 50);
         assert_eq!(carry, false);
         assert_eq!(negative, false);
         assert_eq!(zero, false);
 
-        let (result, carry, negative, zero) = adc16bin(65530, 10, false);
+        let (result, carry, negative, zero) = adc_bin(65530_u16, 10_u16, false);
         assert_eq!(result, 4);
         assert_eq!(carry, true);
         assert_eq!(negative, false);
         assert_eq!(zero, false);
 
-        let (result, carry, negative, zero) = adc16bin(65530, 10, true);
+        let (result, carry, negative, zero) = adc_bin(65530_u16, 10_u16, true);
         assert_eq!(result, 5);
         assert_eq!(carry, true);
         assert_eq!(negative, false);
         assert_eq!(zero, false);
 
-        let (result, carry, negative, zero) = adc16bin(65530, 4, true);
+        let (result, carry, negative, zero) = adc_bin(65530_u16, 4_u16, true);
         assert_eq!(result, 65535);
         assert_eq!(carry, false);
         assert_eq!(negative, true);
