@@ -98,13 +98,13 @@ impl CPU {
         let target = self.registers.a;
         if self.registers.is_16bit_mode() {
             let value = self.get_16bit_from_address(bus, addressing_mode);
-            let (result, is_negative, is_zero) = alu::and16bit(target, value);
+            let (result, is_negative, is_zero) = alu::and(target, value);
             self.registers.a = result;
             self.registers.set_negative_flag(is_negative);
             self.registers.set_zero_flag(is_zero);
         } else {
             let value = self.get_8bit_from_address(bus, addressing_mode);
-            let (result, is_negative, is_zero) = alu::and8bit(target as u8, value);
+            let (result, is_negative, is_zero) = alu::and(target as u8, value);
             self.registers.set_low_a(result);
             self.registers.set_negative_flag(is_negative);
             self.registers.set_zero_flag(is_zero);

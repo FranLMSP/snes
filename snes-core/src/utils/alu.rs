@@ -105,17 +105,10 @@ pub fn sbc16bcd(target: u16, value: u16, carry: bool) -> (u16, bool, bool, bool)
     (result, is_carry, is_negative, is_zero)
 }
 
-pub fn and8bit(target: u8, value: u8) -> (u8, bool, bool) {
-    let result = target & value;
-    let is_negative = (result >> 7) == 1;
-    let is_zero = result == 0;
-    (result, is_negative, is_zero)
-}
-
-pub fn and16bit(target: u16, value: u16) -> (u16, bool, bool) {
-    let result = target & value;
-    let is_negative = (result >> 15) == 1;
-    let is_zero = result == 0;
+pub fn and<T: SnesNum>(target: T, value: T) -> (T, bool, bool) {
+    let result = target.and(value);
+    let is_negative = result.is_negative();
+    let is_zero = result.is_zero();
     (result, is_negative, is_zero)
 }
 
@@ -369,18 +362,28 @@ mod alu_tests {
 
     #[test]
     fn test_and8bit() {
-        let (result, is_negative, is_zero) = and8bit(0b0101_0101, 0b0101_0101);
+        let (result, is_negative, is_zero) = and(0b0101_0101_u8, 0b0101_0101_u8);
         assert_eq!(result, 0b0101_0101);
         assert_eq!(is_negative, false);
         assert_eq!(is_zero, false);
+
+        let (result, is_negative, is_zero) = and(0b0101_0101_u8, 0b1010_1010_u8);
+        assert_eq!(result, 0x00);
+        assert_eq!(is_negative, false);
+        assert_eq!(is_zero, true);
     }
 
     #[test]
     fn test_and16bit() {
-        let (result, is_negative, is_zero) = and16bit(0b01010101_01010101, 0b01010101_01010101);
+        let (result, is_negative, is_zero) = and(0b01010101_01010101_u16, 0b01010101_01010101_u16);
         assert_eq!(result, 0b01010101_01010101);
         assert_eq!(is_negative, false);
         assert_eq!(is_zero, false);
+
+        let (result, is_negative, is_zero) = and(0b01010101_01010101_u16, 0b10101010_10101010_u16);
+        assert_eq!(result, 0x0000);
+        assert_eq!(is_negative, false);
+        assert_eq!(is_zero, true);
     }
 
     #[test]

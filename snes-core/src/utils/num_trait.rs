@@ -3,6 +3,7 @@ pub trait SnesNum: Copy + Clone + Sized + Eq + PartialEq {
     fn sub_will_carry(&self, v: Self, carry: bool) -> bool;
     fn add_snes(&self, v: Self, carry: bool) -> Self;
     fn sub_snes(&self, v: Self, carry: bool) -> Self;
+    fn and(&self, v: Self) -> Self;
     fn is_negative(&self) -> bool;
     fn is_zero(&self) -> bool;
 }
@@ -37,6 +38,10 @@ macro_rules! define_impl {
 
             define_operation!($t, add_snes, wrapping_add);
             define_operation!($t, sub_snes, wrapping_sub);
+
+            fn and(&self, v: $t) -> $t {
+                (* self) & v
+            }
 
             fn is_negative(&self) -> bool {
                 (*self) & !(<$t>::MAX >> 1) != 0
