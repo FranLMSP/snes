@@ -18,6 +18,12 @@ const ALL_CONDITIONS: [Condition; 4] = [
     Condition::DecimalMode,
 ];
 
+const BITWISE_CONDITIONS: [Condition; 3] = [
+    Condition::MemorySelectFlag,
+    Condition::DirectPageZero,
+    Condition::IndexCrossesPageBoundary,
+];
+
 impl CPU {
     fn common_conditions(&mut self, addressing_mode: AddressingMode, conditions: &[Condition]) {
         let mut bytes = 0;
@@ -102,6 +108,13 @@ impl CPU {
         self.registers.increment_pc(bytes);
         self.cycles += cycles;
         self.common_conditions(addressing_mode, &ALL_CONDITIONS);
+    }
+
+    pub fn increment_cycles_bitwise(&mut self, addressing_mode: AddressingMode) {
+        let (bytes, cycles) = CPU::common_bytes_cycles_arithmetic(addressing_mode);
+        self.registers.increment_pc(bytes);
+        self.cycles += cycles;
+        self.common_conditions(addressing_mode, &BITWISE_CONDITIONS);
     }
 }
 

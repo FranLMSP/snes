@@ -151,6 +151,20 @@ pub fn sbc16bcd(target: u16, value: u16, carry: bool) -> (u16, bool, bool, bool)
     (result, is_carry, is_negative, is_zero)
 }
 
+pub fn and8bit(target: u8, value: u8) -> (u8, bool, bool) {
+    let result = target & value;
+    let is_negative = (result >> 7) == 1;
+    let is_zero = result == 0;
+    (result, is_negative, is_zero)
+}
+
+pub fn and16bit(target: u16, value: u16) -> (u16, bool, bool) {
+    let result = target & value;
+    let is_negative = (result >> 15) == 1;
+    let is_zero = result == 0;
+    (result, is_negative, is_zero)
+}
+
 #[cfg(test)]
 mod alu_tests {
     use super::*;
@@ -375,5 +389,21 @@ mod alu_tests {
         assert_eq!(carry, false);
         assert_eq!(negative, true);
         assert_eq!(zero, false);
+    }
+
+    #[test]
+    fn test_and8bit() {
+        let (result, is_negative, is_zero) = and8bit(0b0101_0101, 0b0101_0101);
+        assert_eq!(result, 0b0101_0101);
+        assert_eq!(is_negative, false);
+        assert_eq!(is_zero, false);
+    }
+
+    #[test]
+    fn test_and16bit() {
+        let (result, is_negative, is_zero) = and16bit(0b01010101_01010101, 0b01010101_01010101);
+        assert_eq!(result, 0b01010101_01010101);
+        assert_eq!(is_negative, false);
+        assert_eq!(is_zero, false);
     }
 }

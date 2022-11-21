@@ -92,6 +92,27 @@ impl CPU {
         self.increment_cycles_arithmetic(addressing_mode);
     }
 
+    fn and(&mut self, bus: &Bus, addressing_mode: AddressingMode) {
+        // if the M flag is set, perform 8 bit addition.
+        // Otherwise, 16 bit addition
+        let target = self.registers.a;
+        if self.registers.is_16bit_mode() {
+            let value = self.get_16bit_from_address(bus, addressing_mode);
+            let (result, is_negative, is_zero) = alu::and16bit(target, value);
+            self.registers.a = result;
+            self.registers.set_negative_flag(is_negative);
+            self.registers.set_zero_flag(is_zero);
+        } else {
+            let value = self.get_8bit_from_address(bus, addressing_mode);
+            let (result, is_negative, is_zero) = alu::and8bit(target as u8, value);
+            self.registers.set_low_a(result);
+            self.registers.set_negative_flag(is_negative);
+            self.registers.set_zero_flag(is_zero);
+
+        }
+        self.increment_cycles_bitwise(addressing_mode);
+    }
+
     pub fn execute_opcode(&mut self, opcode: u8, bus: &Bus) {
         type A = AddressingMode;
         type I = IndexRegister;
@@ -128,6 +149,22 @@ impl CPU {
             0xF7 => self.sbc(bus, A::DirectPageIndirectLongIndexed(I::Y)),
             0xE3 => self.sbc(bus, A::StackRelative),
             0xF3 => self.sbc(bus, A::StackRelativeIndirectIndexed(I::Y)),
+            // AND
+            0x29 => self.and(bus, A::Immediate),
+            0x2D => self.and(bus, A::Absolute),
+            0x2F => self.and(bus, A::AbsoluteLong),
+            0x25 => self.and(bus, A::DirectPage),
+            0x32 => self.and(bus, A::DirectPageIndirect),
+            0x27 => self.and(bus, A::DirectPageIndirectLong),
+            0x3D => self.and(bus, A::AbsoluteIndexed(I::X)),
+            0x3F => self.and(bus, A::AbsoluteLongIndexed(I::X)),
+            0x39 => self.and(bus, A::AbsoluteIndexed(I::Y)),
+            0x35 => self.and(bus, A::DirectPageIndexed(I::X)),
+            0x21 => self.and(bus, A::DirectPageIndexedIndirect(I::X)),
+            0x31 => self.and(bus, A::DirectPageIndirectIndexed(I::Y)),
+            0x37 => self.and(bus, A::DirectPageIndirectLongIndexed(I::Y)),
+            0x23 => self.and(bus, A::StackRelative),
+            0x33 => self.and(bus, A::StackRelativeIndirectIndexed(I::Y)),
             _ => println!("Invalid opcode: {:02X}", opcode),
         }
     }
@@ -168,5 +205,23 @@ mod cpu_instructions_tests {
         assert_eq!(cpu.cycles, 2);
         assert!(!cpu.registers.get_carry_flag());
         assert!(cpu.registers.get_zero_flag());
+    }
+
+    #[test]
+    fn test_and() {
+        let mut cpu = CPU::new();
+        let mut bus = Bus::new();
+        cpu.registers.a   = 0x0101;
+        cpu.registers.pbr = 0x00;
+        cpu.registers.pc  = 0x0000;
+        cpu.registers.set_memory_select_flag(true);
+        bus.write(0x000001, 0x01);
+        bus.write(0x000002, 0x01);
+        cpu.and(&bus, AddressingMode::Immediate);
+        assert_eq!(cpu.registers.a, 0x0101);
+        assert_eq!(cpu.registers.pc, 0x02);
+        assert_eq!(cpu.cycles, 2);
+        assert!(!cpu.registers.get_carry_flag());
+        assert!(!cpu.registers.get_zero_flag());
     }
 }
