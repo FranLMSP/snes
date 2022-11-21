@@ -55,6 +55,7 @@ impl CPU {
                 self.registers.set_zero_flag(is_zero);
             }
         };
+        self.increment_cycles_arithmetic(addressing_mode);
     }
 
     fn sbc(&mut self, bus: &Bus, addressing_mode: AddressingMode) {
@@ -88,6 +89,7 @@ impl CPU {
                 self.registers.set_zero_flag(is_zero);
             }
         };
+        self.increment_cycles_arithmetic(addressing_mode);
     }
 
     pub fn execute_opcode(&mut self, opcode: u8, bus: &Bus) {
@@ -146,6 +148,8 @@ mod cpu_instructions_tests {
         bus.write(0x000001, 0x40);
         cpu.adc(&bus, AddressingMode::Immediate);
         assert_eq!(cpu.registers.a, 0x40);
+        assert_eq!(cpu.registers.pc, 0x02);
+        assert_eq!(cpu.cycles, 2);
         assert!(!cpu.registers.get_carry_flag());
     }
 
@@ -160,6 +164,8 @@ mod cpu_instructions_tests {
         bus.write(0x000001, 1);
         cpu.sbc(&bus, AddressingMode::Immediate);
         assert_eq!(cpu.registers.a, 0);
+        assert_eq!(cpu.registers.pc, 0x02);
+        assert_eq!(cpu.cycles, 2);
         assert!(!cpu.registers.get_carry_flag());
         assert!(cpu.registers.get_zero_flag());
     }
