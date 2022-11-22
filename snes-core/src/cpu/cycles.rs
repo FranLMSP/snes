@@ -25,7 +25,7 @@ const BITWISE_CONDITIONS: [Condition; 3] = [
 ];
 
 impl CPU {
-    fn common_conditions(&mut self, addressing_mode: AddressingMode, conditions: &[Condition]) {
+    fn common_conditions(&mut self, addressing_mode: AddressingMode, conditions: &[Condition]) -> (u16, usize) {
         let mut bytes = 0;
         let mut cycles = 0;
 
@@ -80,8 +80,7 @@ impl CPU {
             };
         }
 
-        self.registers.increment_pc(bytes);
-        self.cycles += cycles;
+        (bytes, cycles)
     }
 
     fn common_bytes_cycles_arithmetic(addressing_mode: AddressingMode) -> (u16, usize) {
@@ -122,30 +121,30 @@ impl CPU {
 
     pub fn increment_cycles_arithmetic(&mut self, addressing_mode: AddressingMode) {
         let (bytes, cycles) = CPU::common_bytes_cycles_arithmetic(addressing_mode);
-        self.registers.increment_pc(bytes);
-        self.cycles += cycles;
-        self.common_conditions(addressing_mode, &ALL_CONDITIONS);
+        self.registers.increment_pc(bytes); self.cycles += cycles;
+        let (bytes, cycles) = self.common_conditions(addressing_mode, &ALL_CONDITIONS);
+        self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 
     pub fn increment_cycles_bitwise(&mut self, addressing_mode: AddressingMode) {
         let (bytes, cycles) = CPU::common_bytes_cycles_arithmetic(addressing_mode);
-        self.registers.increment_pc(bytes);
-        self.cycles += cycles;
-        self.common_conditions(addressing_mode, &BITWISE_CONDITIONS);
+        self.registers.increment_pc(bytes); self.cycles += cycles;
+        let (bytes, cycles) = self.common_conditions(addressing_mode, &BITWISE_CONDITIONS);
+        self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 
     pub fn increment_cycles_shift(&mut self, addressing_mode: AddressingMode) {
         let (bytes, cycles) = CPU::common_bytes_cycles_shift(addressing_mode);
-        self.registers.increment_pc(bytes);
-        self.cycles += cycles;
+        self.registers.increment_pc(bytes); self.cycles += cycles;
         // Add 2 cycles if m = 1
-        // TODO: Consider that this may be adding one byte more
-        self.common_conditions(addressing_mode, &[Condition::MemorySelectFlag]);
-        self.common_conditions(addressing_mode, &[
+        let (_, cycles) = self.common_conditions(addressing_mode, &[Condition::MemorySelectFlag]);
+        self.cycles += cycles;
+        let (bytes, cycles) = self.common_conditions(addressing_mode, &[
             Condition::MemorySelectFlag,
             Condition::DirectPageZero,
             Condition::IndexCrossesPageBoundary,
         ]);
+        self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 }
 
@@ -159,66 +158,59 @@ mod cpu_instructions_tests {
 
         // 16-bit Memory/accumulator flag condition
         cpu.registers.pc = 0;
-        cpu.cycles = 0;
         cpu.registers.set_decimal_mode_flag(false);
         cpu.registers.set_16bit_mode(false);
-        cpu.common_conditions(AddressingMode::Immediate, &ALL_CONDITIONS);
-        assert_eq!(cpu.registers.pc, 0);
-        assert_eq!(cpu.cycles, 0);
+        let (bytes, cycles) = cpu.common_conditions(AddressingMode::Immediate, &ALL_CONDITIONS);
+        assert_eq!(bytes, 0);
+        assert_eq!(cycles, 0);
 
         cpu.registers.pc = 0;
-        cpu.cycles = 0;
         cpu.registers.set_16bit_mode(true);
-        cpu.common_conditions(AddressingMode::Immediate, &ALL_CONDITIONS);
-        assert_eq!(cpu.registers.pc, 1);
-        assert_eq!(cpu.cycles, 1);
+        let (bytes, cycles) = cpu.common_conditions(AddressingMode::Immediate, &ALL_CONDITIONS);
+        assert_eq!(bytes, 1);
+        assert_eq!(cycles, 1);
 
         // Decimal flag condition
         cpu.registers.pc = 0;
-        cpu.cycles = 0;
         cpu.registers.set_16bit_mode(true);
         cpu.registers.set_decimal_mode_flag(true);
-        cpu.common_conditions(AddressingMode::Immediate, &ALL_CONDITIONS);
-        assert_eq!(cpu.registers.pc, 1);
-        assert_eq!(cpu.cycles, 2);
+        let (bytes, cycles) = cpu.common_conditions(AddressingMode::Immediate, &ALL_CONDITIONS);
+        assert_eq!(bytes, 1);
+        assert_eq!(cycles, 2);
 
         // Low byte of direct page register other than zero condition
         cpu.registers.pc = 0;
-        cpu.cycles = 0;
         cpu.registers.set_16bit_mode(false);
         cpu.registers.set_decimal_mode_flag(false);
         cpu.registers.d = 0x0000;
-        cpu.common_conditions(AddressingMode::DirectPage, &ALL_CONDITIONS);
-        assert_eq!(cpu.registers.pc, 0);
-        assert_eq!(cpu.cycles, 0);
+        let (bytes, cycles) = cpu.common_conditions(AddressingMode::DirectPage, &ALL_CONDITIONS);
+        assert_eq!(bytes, 0);
+        assert_eq!(cycles, 0);
 
         cpu.registers.pc = 0;
-        cpu.cycles = 0;
         cpu.registers.set_16bit_mode(false);
         cpu.registers.set_decimal_mode_flag(false);
         cpu.registers.d = 0x0001;
-        cpu.common_conditions(AddressingMode::DirectPage, &ALL_CONDITIONS);
-        assert_eq!(cpu.registers.pc, 0);
-        assert_eq!(cpu.cycles, 1);
+        let (bytes, cycles) = cpu.common_conditions(AddressingMode::DirectPage, &ALL_CONDITIONS);
+        assert_eq!(bytes, 0);
+        assert_eq!(cycles, 1);
 
         // Adding index crosses a page boundary condition
         cpu.registers.pc = 0xFE;
         cpu.registers.x = 0x0001;
-        cpu.cycles = 0;
         cpu.registers.set_16bit_mode(false);
         cpu.registers.set_decimal_mode_flag(false);
-        cpu.common_conditions(AddressingMode::AbsoluteIndexed(IndexRegister::X), &ALL_CONDITIONS);
-        assert_eq!(cpu.registers.pc, 0xFE);
-        assert_eq!(cpu.cycles, 0); // Doesn't cross boundary
+        let (bytes, cycles) = cpu.common_conditions(AddressingMode::AbsoluteIndexed(IndexRegister::X), &ALL_CONDITIONS);
+        assert_eq!(bytes, 0);
+        assert_eq!(cycles, 0); // Doesn't cross boundary
 
         cpu.registers.pc = 0xFE;
         cpu.registers.x = 0x0010;
-        cpu.cycles = 0;
         cpu.registers.set_16bit_mode(false);
         cpu.registers.set_decimal_mode_flag(false);
-        cpu.common_conditions(AddressingMode::AbsoluteIndexed(IndexRegister::X), &ALL_CONDITIONS);
-        assert_eq!(cpu.registers.pc, 0xFE);
-        assert_eq!(cpu.cycles, 1); // Crosses boundary
+        let (bytes, cycles) = cpu.common_conditions(AddressingMode::AbsoluteIndexed(IndexRegister::X), &ALL_CONDITIONS);
+        assert_eq!(bytes, 0);
+        assert_eq!(cycles, 1); // Crosses boundary
 
         // Test common and aritmetic together
         cpu.registers.pc = 0xF5;
