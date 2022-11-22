@@ -1,8 +1,9 @@
 pub trait SnesNum: Copy + Clone + Sized + Eq + PartialEq {
     fn add_will_carry(&self, v: Self, carry: bool) -> bool;
-    fn sub_will_carry(&self, v: Self, carry: bool) -> bool;
+    fn sbc_will_carry(&self, v: Self, carry: bool) -> bool;
+    fn is_overflow(&self, v: Self, r: Self) -> bool;
     fn add_snes(&self, v: Self, carry: bool) -> Self;
-    fn sub_snes(&self, v: Self, carry: bool) -> Self;
+    fn sbc_snes(&self, v: Self, carry: bool) -> Self;
     fn and(&self, v: Self) -> Self;
     fn asl(&self) -> Self;
     fn is_negative(&self) -> bool;
@@ -31,14 +32,27 @@ macro_rules! define_operation {
     }
 }
 
+macro_rules! define_is_overflow {
+    ($t:ty) => {
+        fn is_overflow(&self, v: $t, r: $t) -> bool {
+            let target = (*self).is_negative();
+            let value = v.is_negative();
+            let result = r.is_negative();
+            (target ^ result) && (target ^ value)
+        }
+    }
+}
+
 macro_rules! define_impl {
     ($t:ty) => {
         impl SnesNum for $t {
             define_will_carry!($t, add_will_carry, checked_add);
-            define_will_carry!($t, sub_will_carry, checked_sub);
+            define_will_carry!($t, sbc_will_carry, checked_sub);
 
             define_operation!($t, add_snes, wrapping_add);
-            define_operation!($t, sub_snes, wrapping_sub);
+            define_operation!($t, sbc_snes, wrapping_sub);
+
+            define_is_overflow!($t);
 
             fn and(&self, v: $t) -> $t {
                 (* self) & v
