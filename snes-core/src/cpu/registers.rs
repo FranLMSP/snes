@@ -1,3 +1,5 @@
+use crate::common::flags::Flags;
+
 pub struct Registers {
     pub sp: u16, // Stack pointer
     pub x: u16, // Index X
@@ -131,6 +133,23 @@ impl Registers {
     pub fn direct_page_low(&self) -> u8 {
         self.d as u8
     }
+
+    pub fn set_flags(&mut self, flags: &[Flags]) {
+        for flag in flags {
+            let flag = *flag;
+            match flag {
+                Flags::Negative(v) => self.set_negative_flag(v),
+                Flags::Overflow(v) => self.set_overflow_flag(v),
+                Flags::MemoryAccumulatorSelect(v) => self.set_memory_select_flag(v),
+                Flags::IndexRegisterSelect(v) => self.set_index_register_select_flag(v),
+                Flags::DecimalMode(v) => self.set_decimal_mode_flag(v),
+                Flags::IRQDisable(v) => self.set_irq_disable_flag(v),
+                Flags::Zero(v) => self.set_zero_flag(v),
+                Flags::Carry(v) => self.set_carry_flag(v),
+                Flags::HalfCarry(_) => {},
+            }
+        }
+    }
 }
 
 #[cfg(test)]
@@ -242,6 +261,29 @@ mod registers_tests {
         registers.set_overflow_flag(false);
         assert!(!registers.get_overflow_flag());
         assert_eq!(registers.p, 0b0000_0000);
+    }
+
+    #[test]
+    fn test_set_flags() {
+        let mut registers = Registers::new();
+
+        registers.p = 0x00;
+        registers .set_flags(&[
+            Flags::Carry(true),
+            Flags::Zero(true),
+        ]);
+        assert!(registers.get_carry_flag());
+        assert!(registers.get_zero_flag());
+        assert_eq!(registers.p, 0b0000_0011);
+
+        registers.p = 0xFF;
+        registers .set_flags(&[
+            Flags::Carry(false),
+            Flags::Zero(false),
+        ]);
+        assert!(!registers.get_carry_flag());
+        assert!(!registers.get_zero_flag());
+        assert_eq!(registers.p, 0b1111_1100);
     }
 }
 

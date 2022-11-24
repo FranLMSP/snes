@@ -3,6 +3,8 @@ use crate::bus::Bus;
 use crate::utils::addressing::{AddressingMode, IndexRegister};
 use crate::utils::alu;
 
+type F = crate::common::flags::Flags;
+
 impl CPU {
     fn get_8bit_from_address(&self, bus: &Bus, addressing_mode: AddressingMode) -> u8 {
         addressing_mode.value_8bit(
@@ -29,34 +31,31 @@ impl CPU {
         // Otherwise, 16 bit addition
         let carry_flag = self.registers.get_carry_flag();
         let is_decimal_mode = self.registers.get_decimal_mode_flag();
-        let is_8bit = self.registers.get_memory_select_flag();
+        let is_16bit = self.registers.is_16bit_mode();
         let target = self.registers.a;
-        match is_8bit {
-            true => {
-                let value = self.get_8bit_from_address(bus, addressing_mode);
-                let (result, is_carry, is_negative, is_zero, is_overflow) = match is_decimal_mode {
-                    true => alu::adc_bcd(target as u8, value, carry_flag),
-                    false => alu::adc_bin(target as u8, value, carry_flag),
-                };
-                self.registers.set_low_a(result as u8);
-                self.registers.set_carry_flag(is_carry);
-                self.registers.set_negative_flag(is_negative);
-                self.registers.set_zero_flag(is_zero);
-                self.registers.set_overflow_flag(is_overflow);
-            },
-            false => {
-                let value = self.get_16bit_from_address(bus, addressing_mode);
-                let (result, is_carry, is_negative, is_zero, is_overflow) = match is_decimal_mode {
-                    true => alu::adc_bcd(target, value, carry_flag),
-                    false => alu::adc_bin(target, value, carry_flag),
-                };
-                self.registers.a = result;
-                self.registers.set_carry_flag(is_carry);
-                self.registers.set_negative_flag(is_negative);
-                self.registers.set_zero_flag(is_zero);
-                self.registers.set_overflow_flag(is_overflow);
-            }
-        };
+        if is_16bit {
+            let value = self.get_16bit_from_address(bus, addressing_mode);
+            let (result, is_carry, is_negative, is_zero, is_overflow) = match is_decimal_mode {
+                true => alu::adc_bcd(target, value, carry_flag),
+                false => alu::adc_bin(target, value, carry_flag),
+            };
+            self.registers.a = result;
+            self.registers.set_flags(&[
+                F::Carry(is_carry), F::Negative(is_negative),
+                F::Zero(is_zero), F::Overflow(is_overflow),
+            ]);
+        } else {
+            let value = self.get_8bit_from_address(bus, addressing_mode);
+            let (result, is_carry, is_negative, is_zero, is_overflow) = match is_decimal_mode {
+                true => alu::adc_bcd(target as u8, value, carry_flag),
+                false => alu::adc_bin(target as u8, value, carry_flag),
+            };
+            self.registers.set_low_a(result as u8);
+            self.registers.set_flags(&[
+                F::Carry(is_carry), F::Negative(is_negative),
+                F::Zero(is_zero), F::Overflow(is_overflow),
+            ]);
+        }
         self.increment_cycles_arithmetic(addressing_mode);
     }
 
@@ -65,34 +64,31 @@ impl CPU {
         // Otherwise, 16 bit addition
         let carry_flag = self.registers.get_carry_flag();
         let is_decimal_mode = self.registers.get_decimal_mode_flag();
-        let is_8bit = self.registers.get_memory_select_flag();
+        let is_16bit = self.registers.is_16bit_mode();
         let target = self.registers.a;
-        match is_8bit {
-            true => {
-                let value = self.get_8bit_from_address(bus, addressing_mode);
-                let (result, is_carry, is_negative, is_zero, is_overflow) = match is_decimal_mode {
-                    true => alu::sbc_bcd(target as u8, value, carry_flag),
-                    false => alu::sbc_bin(target as u8, value, carry_flag),
-                };
-                self.registers.set_low_a(result as u8);
-                self.registers.set_carry_flag(is_carry);
-                self.registers.set_negative_flag(is_negative);
-                self.registers.set_zero_flag(is_zero);
-                self.registers.set_overflow_flag(is_overflow);
-            },
-            false => {
-                let value = self.get_16bit_from_address(bus, addressing_mode);
-                let (result, is_carry, is_negative, is_zero, is_overflow) = match is_decimal_mode {
-                    true => alu::sbc_bcd(target, value, carry_flag),
-                    false => alu::sbc_bin(target, value, carry_flag),
-                };
-                self.registers.a = result;
-                self.registers.set_carry_flag(is_carry);
-                self.registers.set_negative_flag(is_negative);
-                self.registers.set_zero_flag(is_zero);
-                self.registers.set_overflow_flag(is_overflow);
-            }
-        };
+        if is_16bit {
+            let value = self.get_16bit_from_address(bus, addressing_mode);
+            let (result, is_carry, is_negative, is_zero, is_overflow) = match is_decimal_mode {
+                true => alu::sbc_bcd(target, value, carry_flag),
+                false => alu::sbc_bin(target, value, carry_flag),
+            };
+            self.registers.a = result;
+            self.registers.set_flags(&[
+                F::Carry(is_carry), F::Negative(is_negative),
+                F::Zero(is_zero), F::Overflow(is_overflow),
+            ]);
+        } else {
+            let value = self.get_8bit_from_address(bus, addressing_mode);
+            let (result, is_carry, is_negative, is_zero, is_overflow) = match is_decimal_mode {
+                true => alu::sbc_bcd(target as u8, value, carry_flag),
+                false => alu::sbc_bin(target as u8, value, carry_flag),
+            };
+            self.registers.set_low_a(result as u8);
+            self.registers.set_flags(&[
+                F::Carry(is_carry), F::Negative(is_negative),
+                F::Zero(is_zero), F::Overflow(is_overflow),
+            ]);
+        }
         self.increment_cycles_arithmetic(addressing_mode);
     }
 
