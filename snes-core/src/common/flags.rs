@@ -1,6 +1,6 @@
 /// CPU Status flags for both the 65XX and SPC700 processors
 
-#[derive(Copy, Clone)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum Flags {
     Negative(bool),
     Overflow(bool),
