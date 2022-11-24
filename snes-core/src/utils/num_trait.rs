@@ -8,6 +8,10 @@ pub trait SnesNum: Copy + Clone + Sized + Eq + PartialEq {
     fn asl(&self) -> Self;
     fn is_negative(&self) -> bool;
     fn is_zero(&self) -> bool;
+    fn to_u32(&self) -> u32;
+    fn from_u32(v: u32) -> Self;
+    fn invert(&self) -> Self;
+    fn bytes(&self) -> usize;
 }
 
 macro_rules! define_will_carry {
@@ -44,7 +48,7 @@ macro_rules! define_is_overflow {
 }
 
 macro_rules! define_impl {
-    ($t:ty) => {
+    ($t:ty, $bytes:literal) => {
         impl SnesNum for $t {
             define_will_carry!($t, add_will_carry, checked_add);
             define_will_carry!($t, sbc_will_carry, checked_sub);
@@ -69,9 +73,25 @@ macro_rules! define_impl {
             fn is_zero(&self) -> bool {
                 (*self) == 0
             }
+
+            fn to_u32(&self) -> u32 {
+                (* self) as u32
+            }
+
+            fn from_u32(v: u32) -> $t {
+                v as $t
+            }
+
+            fn invert(&self) -> $t {
+                !(* self)
+            }
+
+            fn bytes(&self) -> usize {
+                $bytes
+            }
         }
     };
 }
 
-define_impl!(u8);
-define_impl!(u16);
+define_impl!(u8, 1);
+define_impl!(u16, 2);

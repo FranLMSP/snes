@@ -9,41 +9,39 @@ pub fn adc_bin<T: SnesNum>(target: T, value: T, carry: bool) -> (T, bool, bool, 
     (result, is_carry, is_negative, is_zero, is_overflow)
 }
 
-pub fn adc8bcd(target: u8, value: u8, carry: bool) -> (u8, bool, bool, bool, bool) {
+pub fn adc_bcd<T: SnesNum>(target: T, value: T, carry: bool) -> (T, bool, bool, bool, bool) {
+    let original_target = value;
+    let original_value = value;
+    let nibble_bytes = target.bytes() * 2;
     let mut is_carry = carry;
-    let mut result = (target & 0xF) + (value & 0xF) + (is_carry as u8);
-    if result > 9 {
-        result += 6;
-    }
-    result += (target & 0xF0) + (value & 0xF0);
-    if result > 0x9F {
-        result += 0x60;
-    }
-    is_carry = result > 0x9F;
-    let is_negative = (result >> 7) == 1;
-    let is_zero = result == 0;
-    let is_overflow = target.is_overflow(value, result);
-    (result, is_carry, is_negative, is_zero, is_overflow)
-}
+    let target = target.to_u32();
+    let value = value.to_u32();
+    let mut result = 0;
 
-pub fn adc16bcd(target: u16, value: u16, carry: bool) -> (u16, bool, bool, bool, bool) {
-    let mut is_carry = carry;
-    let mut result = (target & 0xF) + (value & 0xF) + (is_carry as u16);
-    if result > 9 {
-        result += 6;
+    let mut value_mask = 0x0F;
+    let mut result_mask = 0x00;
+    let mut carry_compare = 0x09;
+    let mut bcd_six_add = 0x06;
+    let mut carry_shift = 0;
+
+    for _ in 0..nibble_bytes {
+        result = (target & value_mask) + (value & value_mask) + ((is_carry as u32) << carry_shift) + (result & result_mask);
+        if result > carry_compare {
+            result = result.wrapping_add(bcd_six_add);
+        }
+        is_carry = result > carry_compare;
+        value_mask <<= 4;
+        bcd_six_add <<= 4;
+        carry_shift += 4;
+        result_mask = (result_mask << 4) | 0xF;
+        carry_compare = (carry_compare << 4) | 0xF;
     }
-    result += (target & 0xF0) + (value & 0xF0);
-    if result > 0x9F {
-        result += 0x60;
-    }
-    result += (target & 0xF00) + (value & 0xF00);
-    if result > 0x9FF {
-        result += 0x600;
-    }
-    is_carry = result > 0x9FFF;
-    let is_negative = (result >> 15) == 1;
-    let is_zero = result == 0;
-    (result, is_carry, is_negative, is_zero, false) // TODO: return overflow
+
+    let result = T::from_u32(result);
+    let is_negative = result.is_negative();
+    let is_zero = result.is_zero();
+    let is_overflow = original_target.is_overflow(original_value, result);
+    (result, is_carry, is_negative, is_zero, is_overflow)
 }
 
 pub fn sbc_bin<T: SnesNum>(target: T, value: T, carry: bool) -> (T, bool, bool, bool, bool) {
@@ -55,55 +53,39 @@ pub fn sbc_bin<T: SnesNum>(target: T, value: T, carry: bool) -> (T, bool, bool, 
     (result, is_carry, is_negative, is_zero, is_overflow)
 }
 
-pub fn sbc8bcd(target: u8, value: u8, carry: bool) -> (u8, bool, bool, bool, bool) {
+pub fn sbc_bcd<T: SnesNum>(target: T, value: T, carry: bool) -> (T, bool, bool, bool, bool) {
+    let original_target = value;
+    let original_value = value;
+    let nibble_bytes = target.bytes() * 2;
     let mut is_carry = carry;
-    let target = target as u16;
-    let value = !(value as u16);
-    let mut result = (target & 0x0F) + (value & 0x0F) + (is_carry as u16);
-    if result <= 0x0F {
-        result = result.wrapping_sub(0x06);
-    }
-    is_carry = result > 0x0F;
-    result = (target & 0xF0) + (value & 0xF0) + ((is_carry as u16) << 4) + (result & 0x0F);
-    if result <= 0xFF {
-        result = result.wrapping_sub(0x60);
-    }
-    is_carry = result > 0xFF;
-    let result = result as u8;
-    let is_negative = (result >> 7) == 1;
-    let is_zero = result == 0;
-    (result, is_carry, is_negative, is_zero, false) // TODO: return overflow
-}
+    let target = target.to_u32();
+    let value = value.invert().to_u32();
+    let mut result = 0;
 
-pub fn sbc16bcd(target: u16, value: u16, carry: bool) -> (u16, bool, bool, bool, bool) {
-    let mut is_carry = carry;
-    let target = target as u32;
-    let value = !(value as u32);
-    let mut result = ((target & 0x0F) + (value & 0x0F) + (is_carry as u32)) as u32;
-    if result <= 0x0F {
-        result = result.wrapping_sub(0x06);
-    }
-    is_carry = result > 0xF;
-    result = (target & 0xF0) + (value & 0xF0) + ((is_carry as u32) << 4) + (result & 0xF);
-    if result <= 0xFF {
-        result = result.wrapping_sub(0x60);
-    }
-    is_carry = result > 0xFF;
-    result = (target & 0xF00) + (value & 0xF00) + ((is_carry as u32) << 8) + (result & 0xFF);
-    if result <= 0xFFF {
-        result = result.wrapping_sub(0x600);
-    }
-    is_carry = result > 0xFFF;
-    result = (target & 0xF000) + (value & 0xF000) + ((is_carry as u32) << 12) + (result & 0xFFF);
-    if result <= 0xFFFF {
-        result = result.wrapping_sub(0x6000);
+    let mut value_mask = 0x0F;
+    let mut result_mask = 0x00;
+    let mut carry_compare = 0x0F;
+    let mut bcd_six_sub = 0x06;
+    let mut carry_shift = 0;
+
+    for _ in 0..nibble_bytes {
+        result = (target & value_mask) + (value & value_mask) + ((is_carry as u32) << carry_shift) + (result & result_mask);
+        if result <= carry_compare {
+            result = result.wrapping_sub(bcd_six_sub);
+        }
+        is_carry = result > carry_compare;
+        value_mask <<= 4;
+        bcd_six_sub <<= 4;
+        carry_shift += 4;
+        result_mask = (result_mask << 4) | 0xF;
+        carry_compare = (carry_compare << 4) | 0xF;
     }
 
-    is_carry = result > 0xFFFF;
-    let result = result as u16;
-    let is_negative = (result >> 15) == 1;
-    let is_zero = result == 0;
-    (result, is_carry, is_negative, is_zero, false) // TODO: return overflow
+    let result = T::from_u32(result);
+    let is_negative = result.is_negative();
+    let is_zero = result.is_zero();
+    let is_overflow = original_target.is_overflow(original_value, result);
+    (result, is_carry, is_negative, is_zero, is_overflow)
 }
 
 pub fn and<T: SnesNum>(target: T, value: T) -> (T, bool, bool) {
@@ -210,42 +192,42 @@ mod alu_tests {
     #[test]
     fn test_adc_bcd() {
         // 8 bits
-        let (result, carry, negative, zero, overflow) = adc8bcd(5, 5, false);
+        let (result, carry, negative, zero, overflow) = adc_bcd(5_u8, 5_u8, false);
         assert_eq!(result, 0b0001_0000);
         assert_eq!(carry, false);
         assert_eq!(negative, false);
         assert_eq!(zero, false);
         assert_eq!(overflow, false);
 
-        let (result, carry, negative, zero, overflow) = adc8bcd(7, 9, false);
+        let (result, carry, negative, zero, overflow) = adc_bcd(7_u8, 9_u8, false);
         assert_eq!(result, 0b0001_0110);
         assert_eq!(carry, false);
         assert_eq!(negative, false);
         assert_eq!(zero, false);
         assert_eq!(overflow, false);
 
-        let (result, carry, negative, zero, overflow) = adc8bcd(5, 4, true);
+        let (result, carry, negative, zero, overflow) = adc_bcd(5_u8, 4_u8, true);
         assert_eq!(result, 0b0001_0000);
         assert_eq!(carry, false);
         assert_eq!(negative, false);
         assert_eq!(zero, false);
         assert_eq!(overflow, false);
 
-        let (result, carry, negative, zero, overflow) = adc8bcd(7, 8, true);
+        let (result, carry, negative, zero, overflow) = adc_bcd(7_u8, 8_u8, true);
         assert_eq!(result, 0b0001_0110);
         assert_eq!(carry, false);
         assert_eq!(negative, false);
         assert_eq!(zero, false);
         assert_eq!(overflow, false);
 
-        let (result, carry, negative, zero, overflow) = adc8bcd(0, 0, false);
+        let (result, carry, negative, zero, overflow) = adc_bcd(0_u8, 0_u8, false);
         assert_eq!(result, 0);
         assert_eq!(carry, false);
         assert_eq!(negative, false);
         assert_eq!(zero, true);
         assert_eq!(overflow, false);
 
-        let (result, carry, negative, zero, overflow) = adc8bcd(0b0001_1001, 0b0010_1000, false);
+        let (result, carry, negative, zero, overflow) = adc_bcd(0b0001_1001_u8, 0b0010_1000_u8, false);
         assert_eq!(result, 0b0100_0111);
         assert_eq!(carry, false);
         assert_eq!(negative, false);
@@ -253,49 +235,49 @@ mod alu_tests {
         assert_eq!(overflow, false);
 
         // 16 bits
-        let (result, carry, negative, zero, overflow) = adc16bcd(5, 5, false);
+        let (result, carry, negative, zero, overflow) = adc_bcd(5_u16, 5_u16, false);
         assert_eq!(result, 0b0001_0000);
         assert_eq!(carry, false);
         assert_eq!(negative, false);
         assert_eq!(zero, false);
         assert_eq!(overflow, false);
 
-        let (result, carry, negative, zero, overflow) = adc16bcd(7, 9, false);
+        let (result, carry, negative, zero, overflow) = adc_bcd(7_u16, 9_u16, false);
         assert_eq!(result, 0b0001_0110);
         assert_eq!(carry, false);
         assert_eq!(negative, false);
         assert_eq!(zero, false);
         assert_eq!(overflow, false);
 
-        let (result, carry, negative, zero, overflow) = adc16bcd(5, 4, true);
+        let (result, carry, negative, zero, overflow) = adc_bcd(5_u16, 4_u16, true);
         assert_eq!(result, 0b0001_0000);
         assert_eq!(carry, false);
         assert_eq!(negative, false);
         assert_eq!(zero, false);
         assert_eq!(overflow, false);
 
-        let (result, carry, negative, zero, overflow) = adc16bcd(7, 8, true);
+        let (result, carry, negative, zero, overflow) = adc_bcd(7_u16, 8_u16, true);
         assert_eq!(result, 0b0001_0110);
         assert_eq!(carry, false);
         assert_eq!(negative, false);
         assert_eq!(zero, false);
         assert_eq!(overflow, false);
 
-        let (result, carry, negative, zero, overflow) = adc16bcd(0, 0, false);
+        let (result, carry, negative, zero, overflow) = adc_bcd(0_u16, 0_u16, false);
         assert_eq!(result, 0);
         assert_eq!(carry, false);
         assert_eq!(negative, false);
         assert_eq!(zero, true);
         assert_eq!(overflow, false);
 
-        let (result, carry, negative, zero, overflow) = adc16bcd(0x0500, 0x0500, false);
+        let (result, carry, negative, zero, overflow) = adc_bcd(0x0500_u16, 0x0500_u16, false);
         assert_eq!(result, 0b0001_0000_0000_0000);
         assert_eq!(carry, false);
         assert_eq!(negative, false);
         assert_eq!(zero, false);
         assert_eq!(overflow, false);
 
-        let (result, carry, negative, zero, overflow) = adc16bcd(0b0001_1001, 0b0010_1000, false);
+        let (result, carry, negative, zero, overflow) = adc_bcd(0b0001_1001_u16, 0b0010_1000_u16, false);
         assert_eq!(result, 0b0100_0111);
         assert_eq!(carry, false);
         assert_eq!(negative, false);
@@ -353,14 +335,14 @@ mod alu_tests {
     #[test]
     fn test_dec_bcd() {
         // 8 bit
-        let (result, carry, negative, zero, overflow) = sbc8bcd(0x49, 0x48, false);
+        let (result, carry, negative, zero, overflow) = sbc_bcd(0x49_u8, 0x48_u8, false);
         assert_eq!(result, 0x00);
         assert_eq!(carry, true);
         assert_eq!(negative, false);
         assert_eq!(zero, true);
         assert_eq!(overflow, false);
 
-        let (result, carry, negative, zero, overflow) = sbc8bcd(0x49, 0x50, true);
+        let (result, carry, negative, zero, overflow) = sbc_bcd(0x49_u8, 0x50_u8, true);
         assert_eq!(result, 0x99);
         assert_eq!(carry, false);
         assert_eq!(negative, true);
@@ -368,14 +350,14 @@ mod alu_tests {
         assert_eq!(overflow, false);
 
         // 16 bit
-        let (result, carry, negative, zero, overflow) = sbc16bcd(0x4999, 0x4998, false);
+        let (result, carry, negative, zero, overflow) = sbc_bcd(0x4999_u16, 0x4998_u16, false);
         assert_eq!(result, 0x0000);
         assert_eq!(carry, true);
         assert_eq!(negative, false);
         assert_eq!(zero, true);
         assert_eq!(overflow, false);
 
-        let (result, carry, negative, zero, overflow) = sbc16bcd(0x4999, 0x5000, true);
+        let (result, carry, negative, zero, overflow) = sbc_bcd(0x4999_u16, 0x5000_u16, true);
         assert_eq!(result, 0x9999);
         assert_eq!(carry, false);
         assert_eq!(negative, true);

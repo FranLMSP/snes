@@ -35,7 +35,7 @@ impl CPU {
             true => {
                 let value = self.get_8bit_from_address(bus, addressing_mode);
                 let (result, is_carry, is_negative, is_zero, is_overflow) = match is_decimal_mode {
-                    true => alu::adc8bcd(target as u8, value, carry_flag),
+                    true => alu::adc_bcd(target as u8, value, carry_flag),
                     false => alu::adc_bin(target as u8, value, carry_flag),
                 };
                 self.registers.set_low_a(result as u8);
@@ -47,7 +47,7 @@ impl CPU {
             false => {
                 let value = self.get_16bit_from_address(bus, addressing_mode);
                 let (result, is_carry, is_negative, is_zero, is_overflow) = match is_decimal_mode {
-                    true => alu::adc16bcd(target, value, carry_flag),
+                    true => alu::adc_bcd(target, value, carry_flag),
                     false => alu::adc_bin(target, value, carry_flag),
                 };
                 self.registers.a = result;
@@ -71,7 +71,7 @@ impl CPU {
             true => {
                 let value = self.get_8bit_from_address(bus, addressing_mode);
                 let (result, is_carry, is_negative, is_zero, is_overflow) = match is_decimal_mode {
-                    true => alu::sbc8bcd(target as u8, value, carry_flag),
+                    true => alu::sbc_bcd(target as u8, value, carry_flag),
                     false => alu::sbc_bin(target as u8, value, carry_flag),
                 };
                 self.registers.set_low_a(result as u8);
@@ -83,7 +83,7 @@ impl CPU {
             false => {
                 let value = self.get_16bit_from_address(bus, addressing_mode);
                 let (result, is_carry, is_negative, is_zero, is_overflow) = match is_decimal_mode {
-                    true => alu::sbc16bcd(target, value, carry_flag),
+                    true => alu::sbc_bcd(target, value, carry_flag),
                     false => alu::sbc_bin(target, value, carry_flag),
                 };
                 self.registers.a = result;
