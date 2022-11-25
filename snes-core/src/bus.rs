@@ -26,7 +26,7 @@ impl Bus {
         self.wram[(address & 0xFFFF) as usize] = value;
     }
 
-    pub fn map_address(address: u32) -> MemoryMap {
+    fn map_address(address: u32) -> MemoryMap {
         let (bank, sub_address) = {
             let bank = (address >> 16) as u8;
             let sub_address = address as u16;

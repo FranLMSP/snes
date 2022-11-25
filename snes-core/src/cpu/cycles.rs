@@ -119,6 +119,17 @@ impl CPU {
         }
     }
 
+    fn common_bytes_cycles_bit(addressing_mode: AddressingMode) -> (u16, usize) {
+        match addressing_mode {
+            A::Immediate                        => (2, 2),
+            A::Absolute                         => (3, 4),
+            A::DirectPage                       => (2, 3),
+            A::AbsoluteIndexed(_)               => (3, 4),
+            A::DirectPageIndexed(_)             => (2, 4),
+            _ => unreachable!(),
+        }
+    }
+
     pub fn increment_cycles_arithmetic(&mut self, addressing_mode: AddressingMode) {
         let (bytes, cycles) = CPU::common_bytes_cycles_arithmetic(addressing_mode);
         self.registers.increment_pc(bytes); self.cycles += cycles;
@@ -139,11 +150,14 @@ impl CPU {
         // Add 2 cycles if m = 1
         let (_, cycles) = self.common_conditions(addressing_mode, &[Condition::MemorySelectFlag]);
         self.cycles += cycles;
-        let (bytes, cycles) = self.common_conditions(addressing_mode, &[
-            Condition::MemorySelectFlag,
-            Condition::DirectPageZero,
-            Condition::IndexCrossesPageBoundary,
-        ]);
+        let (bytes, cycles) = self.common_conditions(addressing_mode, &BITWISE_CONDITIONS);
+        self.registers.increment_pc(bytes); self.cycles += cycles;
+    }
+
+    pub fn increment_cycles_bit(&mut self, addressing_mode: AddressingMode) {
+        let (bytes, cycles) = CPU::common_bytes_cycles_bit(addressing_mode);
+        self.registers.increment_pc(bytes); self.cycles += cycles;
+        let (bytes, cycles) = self.common_conditions(addressing_mode, &BITWISE_CONDITIONS);
         self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 }

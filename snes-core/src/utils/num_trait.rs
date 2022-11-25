@@ -8,6 +8,7 @@ pub trait SnesNum: Copy + Clone + Sized + Eq + PartialEq {
     fn asl(&self) -> Self;
     fn is_negative(&self) -> bool;
     fn is_zero(&self) -> bool;
+    fn next_to_highest_bit(&self) -> bool;
     fn to_u32(&self) -> u32;
     fn from_u32(v: u32) -> Self;
     fn invert(&self) -> Self;
@@ -72,6 +73,10 @@ macro_rules! define_impl {
 
             fn is_zero(&self) -> bool {
                 (*self) == 0
+            }
+
+            fn next_to_highest_bit(&self) -> bool {
+                ((*self) << 1) & !(<$t>::MAX >> 1) != 0
             }
 
             fn to_u32(&self) -> u32 {

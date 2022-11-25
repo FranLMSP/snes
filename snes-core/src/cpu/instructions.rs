@@ -2,6 +2,7 @@ use super::cpu::CPU;
 use crate::bus::Bus;
 use crate::utils::addressing::{AddressingMode, IndexRegister};
 use crate::utils::alu;
+use crate::utils::num_trait::SnesNum;
 
 impl CPU {
     fn get_8bit_from_address(&self, bus: &Bus, addressing_mode: AddressingMode) -> u8 {
@@ -119,6 +120,30 @@ impl CPU {
         self.increment_cycles_shift(addressing_mode);
     }
 
+    fn do_bit<T: SnesNum>(&mut self, accumulator: T, value: T, addressing_mode: AddressingMode) {
+        let (result, _) = alu::and(accumulator, value);
+        // Immediate addressing affects only the zero flag
+        match addressing_mode {
+            AddressingMode::Immediate => self.registers.set_zero_flag(result.is_zero()),
+            _ => {
+                self.registers.set_zero_flag(result.is_zero());
+                self.registers.set_negative_flag(value.is_negative());
+                self.registers.set_overflow_flag(value.next_to_highest_bit());
+            }
+        };
+    }
+
+    fn bit(&mut self, bus: &Bus, addressing_mode: AddressingMode) {
+        if self.registers.is_16bit_mode() {
+            let value = self.get_16bit_from_address(bus, addressing_mode);
+            self.do_bit(self.registers.a, value, addressing_mode);
+        } else {
+            let value = self.get_8bit_from_address(bus, addressing_mode);
+            self.do_bit(self.registers.a as u8, value, addressing_mode);
+        }
+        self.increment_cycles_bit(addressing_mode);
+    }
+
     pub fn execute_opcode(&mut self, opcode: u8, bus: &Bus) {
         type A = AddressingMode;
         type I = IndexRegister;
@@ -177,6 +202,12 @@ impl CPU {
             0x06 => self.asl(bus, A::DirectPage),
             0x1E => self.asl(bus, A::AbsoluteIndexed(I::X)),
             0x16 => self.asl(bus, A::DirectPageIndexed(I::X)),
+            // BIT
+            0x89 => self.bit(bus, A::Immediate),
+            0x2C => self.bit(bus, A::Absolute),
+            0x24 => self.bit(bus, A::DirectPage),
+            0x3C => self.bit(bus, A::AbsoluteIndexed(I::X)),
+            0x34 => self.bit(bus, A::DirectPageIndexed(I::X)),
             _ => println!("Invalid opcode: {:02X}", opcode),
         }
     }
@@ -252,5 +283,46 @@ mod cpu_instructions_tests {
         assert!(!cpu.registers.get_carry_flag());
         assert!(!cpu.registers.get_zero_flag());
         assert!(cpu.registers.get_negative_flag());
+    }
+
+    #[test]
+    fn test_bit() {
+        let mut cpu = CPU::new();
+        let mut bus = Bus::new();
+        cpu.registers.a   = 0b1111_0000;
+        cpu.registers.pbr = 0x00;
+        cpu.registers.pc  = 0x0000;
+        cpu.registers.p   = 0x00;
+        bus.write(0x000001, 0b0000_1111);
+        cpu.registers.set_16bit_mode(false);
+        cpu.bit(&bus, AddressingMode::Immediate);
+        // Check that it only affects the zero flag on immediate mode
+        assert_eq!(cpu.registers.a, 0b1111_0000); // Check that A is not altered
+        assert_eq!(cpu.registers.p, 0b0010_0010); // Only zero flag was altered (bit 6 is memory select mode)
+        assert_eq!(cpu.registers.pc, 0x02);
+        assert_eq!(cpu.cycles, 2);
+        assert!(cpu.registers.get_zero_flag());
+
+        cpu.registers.a   = 0b00110000_00000000;
+        cpu.registers.pbr = 0x00;
+        cpu.registers.pc  = 0x0000;
+        cpu.registers.p   = 0x00;
+        cpu.cycles        = 0;
+        // Write absolute address
+        bus.write(0x000001, 0x04);
+        bus.write(0x000002, 0x00);
+        // Write effective value of address
+        bus.write(0x000004, 0x00);
+        bus.write(0x000005, 0b1100_0000);
+        cpu.registers.set_16bit_mode(true);
+        cpu.bit(&bus, AddressingMode::Absolute);
+        // Check that it only affects the zero flag on immediate mode
+        assert_eq!(cpu.registers.a, 0b00110000_00000000); // Check that A is not altered
+        assert_eq!(cpu.registers.p, 0b1100_0010);
+        assert_eq!(cpu.registers.pc, 0x03);
+        assert_eq!(cpu.cycles, 5);
+        assert!(cpu.registers.get_zero_flag());
+        assert!(cpu.registers.get_negative_flag());
+        assert!(cpu.registers.get_overflow_flag());
     }
 }
