@@ -144,6 +144,26 @@ impl CPU {
         self.increment_cycles_bit(addressing_mode);
     }
 
+    pub fn clc(&mut self) {
+        self.registers.set_carry_flag(false);
+        self.increment_cycles_clear();
+    }
+
+    pub fn cld(&mut self) {
+        self.registers.set_decimal_mode_flag(false);
+        self.increment_cycles_clear();
+    }
+
+    pub fn cli(&mut self) {
+        self.registers.set_irq_disable_flag(false);
+        self.increment_cycles_clear();
+    }
+
+    pub fn clv(&mut self) {
+        self.registers.set_overflow_flag(false);
+        self.increment_cycles_clear();
+    }
+
     pub fn execute_opcode(&mut self, opcode: u8, bus: &Bus) {
         type A = AddressingMode;
         type I = IndexRegister;
@@ -208,6 +228,14 @@ impl CPU {
             0x24 => self.bit(bus, A::DirectPage),
             0x3C => self.bit(bus, A::AbsoluteIndexed(I::X)),
             0x34 => self.bit(bus, A::DirectPageIndexed(I::X)),
+            // CLC
+            0x18 => self.clc(),
+            // CLD
+            0xD8 => self.cld(),
+            // CLI
+            0x58 => self.cli(),
+            // CLV
+            0xB8 => self.clv(),
             _ => println!("Invalid opcode: {:02X}", opcode),
         }
     }
@@ -324,5 +352,49 @@ mod cpu_instructions_tests {
         assert!(cpu.registers.get_zero_flag());
         assert!(cpu.registers.get_negative_flag());
         assert!(cpu.registers.get_overflow_flag());
+    }
+
+    #[test]
+    fn test_clc() {
+        let mut cpu = CPU::new();
+        cpu.registers.set_carry_flag(true);
+        cpu.registers.pc  = 0x0000;
+        cpu.clc();
+        assert!(!cpu.registers.get_carry_flag());
+        assert_eq!(cpu.registers.pc, 1);
+        assert_eq!(cpu.cycles, 2);
+    }
+
+    #[test]
+    fn test_cld() {
+        let mut cpu = CPU::new();
+        cpu.registers.set_decimal_mode_flag(true);
+        cpu.registers.pc  = 0x0000;
+        cpu.cld();
+        assert!(!cpu.registers.get_decimal_mode_flag());
+        assert_eq!(cpu.registers.pc, 1);
+        assert_eq!(cpu.cycles, 2);
+    }
+
+    #[test]
+    fn test_cli() {
+        let mut cpu = CPU::new();
+        cpu.registers.set_irq_disable_flag(true);
+        cpu.registers.pc  = 0x0000;
+        cpu.cli();
+        assert!(!cpu.registers.get_irq_disable_flag());
+        assert_eq!(cpu.registers.pc, 1);
+        assert_eq!(cpu.cycles, 2);
+    }
+
+    #[test]
+    fn test_clv() {
+        let mut cpu = CPU::new();
+        cpu.registers.set_overflow_flag(true);
+        cpu.registers.pc  = 0x0000;
+        cpu.clv();
+        assert!(!cpu.registers.get_overflow_flag());
+        assert_eq!(cpu.registers.pc, 1);
+        assert_eq!(cpu.cycles, 2);
     }
 }

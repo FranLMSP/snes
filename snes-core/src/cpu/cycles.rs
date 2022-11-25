@@ -160,6 +160,10 @@ impl CPU {
         let (bytes, cycles) = self.common_conditions(addressing_mode, &BITWISE_CONDITIONS);
         self.registers.increment_pc(bytes); self.cycles += cycles;
     }
+
+    pub fn increment_cycles_clear(&mut self) {
+        self.registers.increment_pc(1); self.cycles += 2;
+    }
 }
 
 #[cfg(test)]
