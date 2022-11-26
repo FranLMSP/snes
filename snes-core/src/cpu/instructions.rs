@@ -334,6 +334,8 @@ impl CPU {
             0x10 => self.bpl(bus),
             // BRA
             0x80 => self.bra(bus),
+            // BRK
+            0x00 => unimplemented!("BRK instruction not implemented yet"),
             // BRL
             0x82 => self.brl(bus),
             // BVC
