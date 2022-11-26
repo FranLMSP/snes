@@ -3,6 +3,7 @@ use crate::bus::Bus;
 use crate::utils::addressing::{AddressingMode, IndexRegister};
 use crate::utils::alu;
 use crate::utils::num_trait::SnesNum;
+use crate::common::flags::Flags;
 
 impl CPU {
     fn get_8bit_from_address(&self, bus: &Bus, addressing_mode: AddressingMode) -> u8 {
@@ -75,6 +76,40 @@ impl CPU {
             };
             self.registers.set_low_a(result as u8);
             self.registers.set_flags(&affected_flags);
+        }
+        self.increment_cycles_arithmetic(addressing_mode);
+    }
+
+    fn cmp(&mut self, bus: &Bus, addressing_mode: AddressingMode) {
+        // if the M flag is set, perform 8 bit addition.
+        // Otherwise, 16 bit addition
+        let carry_flag = self.registers.get_carry_flag();
+        let is_decimal_mode = self.registers.get_decimal_mode_flag();
+        let is_16bit = self.registers.is_16bit_mode();
+        let target = self.registers.a;
+        let affected_flags = match is_16bit {
+            true => {
+                let value = self.get_16bit_from_address(bus, addressing_mode);
+                let (_, flags) = match is_decimal_mode {
+                    true => alu::sbc_bcd(target, value, carry_flag),
+                    false => alu::sbc_bin(target, value, carry_flag),
+                };
+                flags.to_vec()
+            },
+            false => {
+                let value = self.get_8bit_from_address(bus, addressing_mode);
+                let (_, flags) = match is_decimal_mode {
+                    true => alu::sbc_bcd(target as u8, value, carry_flag),
+                    false => alu::sbc_bin(target as u8, value, carry_flag),
+                };
+                flags.to_vec()
+            }
+        };
+        for flag in affected_flags {
+            match flag {
+                Flags::Overflow(_) => {},
+                _ => self.registers.set_flags(&[flag]),
+            }
         }
         self.increment_cycles_arithmetic(addressing_mode);
     }
@@ -356,6 +391,22 @@ impl CPU {
             0x58 => self.cli(),
             // CLV
             0xB8 => self.clv(),
+            // CMP
+            0xC9 => self.cmp(bus, A::Immediate),
+            0xCD => self.cmp(bus, A::Absolute),
+            0xCF => self.cmp(bus, A::AbsoluteLong),
+            0xC5 => self.cmp(bus, A::DirectPage),
+            0xD2 => self.cmp(bus, A::DirectPageIndirect),
+            0xC7 => self.cmp(bus, A::DirectPageIndirectLong),
+            0xDD => self.cmp(bus, A::AbsoluteIndexed(I::X)),
+            0xDF => self.cmp(bus, A::AbsoluteLongIndexed(I::X)),
+            0xD9 => self.cmp(bus, A::AbsoluteIndexed(I::Y)),
+            0xD5 => self.cmp(bus, A::DirectPageIndexed(I::X)),
+            0xC1 => self.cmp(bus, A::DirectPageIndexedIndirect(I::X)),
+            0xD1 => self.cmp(bus, A::DirectPageIndirectIndexed(I::Y)),
+            0xD7 => self.cmp(bus, A::DirectPageIndirectLongIndexed(I::Y)),
+            0xC3 => self.cmp(bus, A::StackRelative),
+            0xD3 => self.cmp(bus, A::StackRelativeIndirectIndexed(I::Y)),
             _ => println!("Invalid opcode: {:02X}", opcode),
         }
     }
@@ -808,5 +859,39 @@ mod cpu_instructions_tests {
         cpu.bvs(&bus);
         assert_eq!(cpu.registers.pc, 0xFF);
         assert_eq!(cpu.cycles, 4);
+    }
+
+    #[test]
+    fn test_cmp() {
+        // CMP is basically an SBC instruction but it doesn't
+        // store the result nor it affects the overflow flag
+        let mut cpu = CPU::new();
+        let mut bus = Bus::new();
+        cpu.registers.a   = 0x0001;
+        cpu.registers.pbr = 0x00;
+        cpu.registers.pc  = 0x0000;
+        cpu.registers.set_memory_select_flag(true);
+        bus.write(0x000001, 1);
+        cpu.cmp(&bus, AddressingMode::Immediate);
+        assert_eq!(cpu.registers.a, 0x0001); // check A is not affected
+        assert_eq!(cpu.registers.pc, 0x02);
+        assert_eq!(cpu.cycles, 2);
+        assert!(!cpu.registers.get_carry_flag());
+        assert!(cpu.registers.get_zero_flag());
+
+        // check overflow flag is not affected
+        cpu.registers.a   = 0x0050;
+        cpu.registers.pbr = 0x00;
+        cpu.registers.pc  = 0x0000;
+        cpu.registers.set_16bit_mode(false);
+        cpu.registers.set_overflow_flag(false);
+        bus.write(0x000001, 0xB0);
+        cpu.cmp(&bus, AddressingMode::Immediate);
+        assert_eq!(cpu.registers.a, 0x0050); // check A is not affected
+        assert_eq!(cpu.registers.pc, 0x02);
+        assert_eq!(cpu.cycles, 4);
+        assert!(cpu.registers.get_carry_flag());
+        assert!(!cpu.registers.get_zero_flag());
+        assert!(!cpu.registers.get_overflow_flag());
     }
 }

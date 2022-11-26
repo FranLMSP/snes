@@ -233,6 +233,11 @@ mod alu_tests {
         let (result, affected_flags) = sbc_bin(0_u8, 1_u8, true);
         assert_eq!(result, 0b11111110);
         assert_eq!(affected_flags, [Negative(true), Overflow(false), Zero(false), Carry(true)]);
+
+        // overflow
+        let (result, affected_flags) = sbc_bin(0x50_u8, 0xB0_u8, false);
+        assert_eq!(result, 0xA0);
+        assert_eq!(affected_flags, [Negative(true), Overflow(true), Zero(false), Carry(true)]);
         
         // 16 bit
         let (result, affected_flags) = sbc_bin(1_u16, 1_u16, false);
