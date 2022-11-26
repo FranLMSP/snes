@@ -130,6 +130,10 @@ impl Registers {
         self.pc = self.pc.wrapping_add(bytes);
     }
 
+    pub fn decrement_pc(&mut self, bytes: u16) {
+        self.pc = self.pc.wrapping_sub(bytes);
+    }
+
     pub fn direct_page_low(&self) -> u8 {
         self.d as u8
     }

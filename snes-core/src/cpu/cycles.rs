@@ -164,6 +164,21 @@ impl CPU {
     pub fn increment_cycles_clear(&mut self) {
         self.registers.increment_pc(1); self.cycles += 2;
     }
+
+    pub fn increment_cycles_branch(&mut self) {
+        self.registers.increment_pc(2); self.cycles += 2;
+    }
+
+    pub fn increment_cycles_branch_taken(&mut self, page_boundary_crossed: bool) {
+        self.cycles += 1;
+        if page_boundary_crossed {
+            self.cycles += 1;
+        }
+    }
+
+    pub fn increment_cycles_branch_long(&mut self) {
+        self.registers.increment_pc(3); self.cycles += 4;
+    }
 }
 
 #[cfg(test)]
