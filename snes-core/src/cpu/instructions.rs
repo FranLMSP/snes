@@ -131,7 +131,7 @@ impl CPU {
             let result = self.do_dec(value).to_u32() as u8;
             self.set_8bit_to_address(bus, addressing_mode, result);
         }
-        self.increment_cycles_dec(addressing_mode);
+        self.increment_cycles_inc_dec(addressing_mode);
     }
 
     fn dex(&mut self) {
@@ -141,7 +141,7 @@ impl CPU {
             let result = self.do_dec(self.registers.x).to_u32() as u8;
             self.registers.set_low_x(result);
         }
-        self.increment_cycles_dec_index();
+        self.increment_cycles_inc_dec_index();
     }
 
     fn dey(&mut self) {
@@ -151,7 +151,51 @@ impl CPU {
             let result = self.do_dec(self.registers.y).to_u32() as u8;
             self.registers.set_low_y(result);
         }
-        self.increment_cycles_dec_index();
+        self.increment_cycles_inc_dec_index();
+    }
+
+    fn do_inc<T: SnesNum>(&mut self, target: T) -> T {
+        let (result, affected_flags) = alu::adc_bin(target, T::from_u32(1), false);
+        for flag in affected_flags {
+            match flag {
+                Flags::Negative(_) | Flags::Zero(_) => self.registers.set_flags(&[flag]),
+                _ => {},
+            }
+        }
+        result
+    }
+
+    fn inc(&mut self, bus: &mut Bus, addressing_mode: AddressingMode) {
+        if self.registers.is_16bit_mode() {
+            let value = self.get_16bit_from_address(bus, addressing_mode);
+            let result = self.do_inc(value).to_u32() as u16;
+            self.set_16bit_to_address(bus, addressing_mode, result);
+        } else {
+            let value = self.get_8bit_from_address(bus, addressing_mode);
+            let result = self.do_inc(value).to_u32() as u8;
+            self.set_8bit_to_address(bus, addressing_mode, result);
+        }
+        self.increment_cycles_inc_dec(addressing_mode);
+    }
+
+    fn inx(&mut self) {
+        if self.registers.is_16bit_index() {
+            self.registers.x = self.do_inc(self.registers.x);
+        } else {
+            let result = self.do_inc(self.registers.x).to_u32() as u8;
+            self.registers.set_low_x(result);
+        }
+        self.increment_cycles_inc_dec_index();
+    }
+
+    fn iny(&mut self) {
+        if self.registers.is_16bit_index() {
+            self.registers.y = self.do_inc(self.registers.y);
+        } else {
+            let result = self.do_inc(self.registers.y).to_u32() as u8;
+            self.registers.set_low_y(result);
+        }
+        self.increment_cycles_inc_dec_index();
     }
 
     fn do_comp<T: SnesNum>(&mut self, target: T, value: T) {
@@ -543,6 +587,16 @@ impl CPU {
             0x57 => self.eor(bus, A::DirectPageIndirectLongIndexed(I::Y)),
             0x43 => self.eor(bus, A::StackRelative),
             0x53 => self.eor(bus, A::StackRelativeIndirectIndexed(I::Y)),
+            // INC
+            0x1A => self.inc(bus, A::Accumulator),
+            0xEE => self.inc(bus, A::Absolute),
+            0xE6 => self.inc(bus, A::DirectPage),
+            0xFE => self.inc(bus, A::AbsoluteIndexed(I::X)),
+            0xF6 => self.inc(bus, A::DirectPageIndexed(I::X)),
+            // INX
+            0xE8 => self.inx(),
+            // INY
+            0xC8 => self.iny(),
             _ => println!("Invalid opcode: {:02X}", opcode),
         }
     }
@@ -1163,5 +1217,49 @@ mod cpu_instructions_tests {
         assert_eq!(cpu.cycles, 2);
         assert!(!cpu.registers.get_negative_flag());
         assert!(cpu.registers.get_zero_flag());
+    }
+
+    #[test]
+    fn test_inc() {
+        let mut cpu = CPU::new();
+        let mut bus = Bus::new();
+        cpu.registers.a   = 0x0001;
+        cpu.registers.pbr = 0x00;
+        cpu.registers.pc  = 0x0000;
+        cpu.registers.set_memory_select_flag(true);
+        cpu.inc(&mut bus, AddressingMode::Accumulator);
+        assert_eq!(cpu.registers.a, 2);
+        assert_eq!(cpu.registers.pc, 0x01);
+        assert_eq!(cpu.cycles, 2);
+        assert!(!cpu.registers.get_negative_flag());
+        assert!(!cpu.registers.get_zero_flag());
+    }
+
+    #[test]
+    fn test_inx() {
+        let mut cpu = CPU::new();
+        cpu.registers.x   = 0x0001;
+        cpu.registers.pbr = 0x00;
+        cpu.registers.pc  = 0x0000;
+        cpu.inx();
+        assert_eq!(cpu.registers.x, 2);
+        assert_eq!(cpu.registers.pc, 0x01);
+        assert_eq!(cpu.cycles, 2);
+        assert!(!cpu.registers.get_negative_flag());
+        assert!(!cpu.registers.get_zero_flag());
+    }
+
+    #[test]
+    fn test_iny() {
+        let mut cpu = CPU::new();
+        cpu.registers.y   = 0x0001;
+        cpu.registers.pbr = 0x00;
+        cpu.registers.pc  = 0x0000;
+        cpu.iny();
+        assert_eq!(cpu.registers.y, 2);
+        assert_eq!(cpu.registers.pc, 0x01);
+        assert_eq!(cpu.cycles, 2);
+        assert!(!cpu.registers.get_negative_flag());
+        assert!(!cpu.registers.get_zero_flag());
     }
 }

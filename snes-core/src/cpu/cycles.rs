@@ -199,11 +199,11 @@ impl CPU {
         self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 
-    pub fn increment_cycles_dec(&mut self, addressing_mode: AddressingMode) {
+    pub fn increment_cycles_inc_dec(&mut self, addressing_mode: AddressingMode) {
         self.increment_cycles_shift(addressing_mode);
     }
 
-    pub fn increment_cycles_dec_index(&mut self) {
+    pub fn increment_cycles_inc_dec_index(&mut self) {
         self.registers.increment_pc(1); self.cycles += 2;
     }
 }
