@@ -8,6 +8,7 @@ pub trait SnesNum: Copy + Clone + Sized + Eq + PartialEq {
     fn asl(&self) -> Self;
     fn lsr(&self) -> Self;
     fn xor(&self, v: Self) -> Self;
+    fn ora(&self, v: Self) -> Self;
     fn is_negative(&self) -> bool;
     fn is_zero(&self) -> bool;
     fn next_to_highest_bit(&self) -> bool;
@@ -75,6 +76,10 @@ macro_rules! define_impl {
 
             fn xor(&self, v: $t) -> $t {
                 (* self) ^ v
+            }
+
+            fn ora(&self, v: $t) -> $t {
+                (* self) | v
             }
 
             fn is_negative(&self) -> bool {

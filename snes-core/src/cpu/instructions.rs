@@ -263,6 +263,22 @@ impl CPU {
         self.increment_cycles_bitwise(addressing_mode);
     }
 
+    fn ora(&mut self, bus: &Bus, addressing_mode: AddressingMode) {
+        let target = self.registers.a;
+        if self.registers.is_16bit_mode() {
+            let value = self.get_16bit_from_address(bus, addressing_mode);
+            let (result, affected_flags) = alu::ora(target, value);
+            self.registers.a = result;
+            self.registers.set_flags(&affected_flags);
+        } else {
+            let value = self.get_8bit_from_address(bus, addressing_mode);
+            let (result, affected_flags) = alu::ora(target as u8, value);
+            self.registers.set_low_a(result);
+            self.registers.set_flags(&affected_flags);
+        }
+        self.increment_cycles_bitwise(addressing_mode);
+    }
+
     fn eor(&mut self, bus: &Bus, addressing_mode: AddressingMode) {
         let target = self.registers.a;
         if self.registers.is_16bit_mode() {
@@ -629,6 +645,22 @@ impl CPU {
             0x56 => self.lsr(bus, A::DirectPageIndexed(I::X)),
             // NOP
             0xEA => self.nop(),
+            // ORA
+            0x09 => self.ora(bus, A::Immediate),
+            0x0D => self.ora(bus, A::Absolute),
+            0x0F => self.ora(bus, A::AbsoluteLong),
+            0x05 => self.ora(bus, A::DirectPage),
+            0x12 => self.ora(bus, A::DirectPageIndirect),
+            0x07 => self.ora(bus, A::DirectPageIndirectLong),
+            0x1D => self.ora(bus, A::AbsoluteIndexed(I::X)),
+            0x1F => self.ora(bus, A::AbsoluteLongIndexed(I::X)),
+            0x19 => self.ora(bus, A::AbsoluteIndexed(I::Y)),
+            0x15 => self.ora(bus, A::DirectPageIndexed(I::X)),
+            0x01 => self.ora(bus, A::DirectPageIndexedIndirect(I::X)),
+            0x11 => self.ora(bus, A::DirectPageIndirectIndexed(I::Y)),
+            0x17 => self.ora(bus, A::DirectPageIndirectLongIndexed(I::Y)),
+            0x03 => self.ora(bus, A::StackRelative),
+            0x13 => self.ora(bus, A::StackRelativeIndirectIndexed(I::Y)),
             _ => println!("Invalid opcode: {:02X}", opcode),
         }
     }
@@ -704,6 +736,23 @@ mod cpu_instructions_tests {
         assert_eq!(cpu.cycles, 2);
         assert!(!cpu.registers.get_carry_flag());
         assert!(!cpu.registers.get_zero_flag());
+    }
+
+    #[test]
+    fn test_ora() {
+        let mut cpu = CPU::new();
+        let mut bus = Bus::new();
+        cpu.registers.a   = 0x0F;
+        cpu.registers.pbr = 0x00;
+        cpu.registers.pc  = 0x0000;
+        cpu.registers.set_memory_select_flag(true);
+        bus.write(0x000001, 0xF0);
+        cpu.ora(&bus, AddressingMode::Immediate);
+        assert_eq!(cpu.registers.a, 0xFF);
+        assert_eq!(cpu.registers.pc, 0x02);
+        assert_eq!(cpu.cycles, 2);
+        assert!(!cpu.registers.get_zero_flag());
+        assert!(cpu.registers.get_negative_flag());
     }
 
     #[test]

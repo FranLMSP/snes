@@ -114,12 +114,20 @@ pub fn lsr<T: SnesNum>(target: T) -> (T, [Flags; 3]) {
     (result, [
         Negative(false),
         Zero(result.is_zero()),
-        Carry(result.to_u32() & 1 == 1), // High bit becomes carry
+        Carry(target.to_u32() & 1 == 1), // Low bit becomes carry
     ])
 }
 
 pub fn eor<T: SnesNum>(target: T, value: T) -> (T, [Flags; 2]) {
     let result = target.xor(value);
+    (result, [
+        Negative(result.is_negative()),
+        Zero(result.is_zero()),
+    ])
+}
+
+pub fn ora<T: SnesNum>(target: T, value: T) -> (T, [Flags; 2]) {
+    let result = target.ora(value);
     (result, [
         Negative(result.is_negative()),
         Zero(result.is_zero()),
@@ -335,6 +343,23 @@ mod alu_tests {
     }
 
     #[test]
+    fn test_lsr() {
+        // 8 bit
+        let (result, affected_flags) = lsr(0b0101_0101_u8);
+        assert_eq!(result, 0b0010_1010);
+        assert_eq!(affected_flags, [Negative(false), Zero(false), Carry(true)]);
+
+        let (result, affected_flags) = lsr(0x01_u8);
+        assert_eq!(result, 0);
+        assert_eq!(affected_flags, [Negative(false), Zero(true), Carry(true)]);
+
+        // 16 bit
+        let (result, affected_flags) = lsr(0b10000000_00000000_u16);
+        assert_eq!(result, 0b01000000_00000000);
+        assert_eq!(affected_flags, [Negative(false), Zero(false), Carry(false)]);
+    }
+
+    #[test]
     fn test_xor() {
         // 8 bit
         let (result, affected_flags) = eor(0b0101_0101_u8, 0b0101_0101_u8);
@@ -353,5 +378,26 @@ mod alu_tests {
         let (result, affected_flags) = eor(0b10000000_00000000_u16, 0b00000000_00000000_u16);
         assert_eq!(result, 0b10000000_00000000);
         assert_eq!(affected_flags, [Negative(true), Zero(false)]);
+    }
+
+    #[test]
+    fn test_ora() {
+        // 8 bit
+        let (result, affected_flags) = ora(0b0101_0101_u8, 0b1010_1010_u8);
+        assert_eq!(result, 0xFF);
+        assert_eq!(affected_flags, [Negative(true), Zero(false)]);
+
+        let (result, affected_flags) = ora(0b1000_0000_u8, 0b0000_0000_u8);
+        assert_eq!(result, 0b1000_0000);
+        assert_eq!(affected_flags, [Negative(true), Zero(false)]);
+
+        // 16 bit
+        let (result, affected_flags) = ora(0b01010101_00000000_u16, 0b01010101_00000000_u16);
+        assert_eq!(result, 0b01010101_00000000_u16);
+        assert_eq!(affected_flags, [Negative(false), Zero(false)]);
+
+        let (result, affected_flags) = ora(0b00000000_00000000_u16, 0b00000000_00000000_u16);
+        assert_eq!(result, 0);
+        assert_eq!(affected_flags, [Negative(false), Zero(true)]);
     }
 }
