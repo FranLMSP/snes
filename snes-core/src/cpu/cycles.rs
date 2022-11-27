@@ -6,21 +6,27 @@ type I = IndexRegister;
 
 enum Condition {
     MemorySelectFlag,
-    DirectPageZero,
+    DirectPageIsZero,
     IndexCrossesPageBoundary,
     DecimalMode,
+    IndexIs16Bit,
 }
 
 const ALL_CONDITIONS: [Condition; 4] = [
     Condition::MemorySelectFlag,
-    Condition::DirectPageZero,
+    Condition::DirectPageIsZero,
     Condition::IndexCrossesPageBoundary,
     Condition::DecimalMode,
 ];
 
 const BITWISE_CONDITIONS: [Condition; 3] = [
     Condition::MemorySelectFlag,
-    Condition::DirectPageZero,
+    Condition::DirectPageIsZero,
+    Condition::IndexCrossesPageBoundary,
+];
+
+const COMP_INDEX_CONDITIONS: [Condition; 2] = [
+    Condition::IndexIs16Bit,
     Condition::IndexCrossesPageBoundary,
 ];
 
@@ -42,7 +48,7 @@ impl CPU {
                     }
                 },
                 // Add 1 cycle if low byte of Direct Page register is other than zero (DL< >0)
-                Condition::DirectPageZero => {
+                Condition::DirectPageIsZero => {
                     match addressing_mode {
                         A::DirectPage | A::DirectPageIndirect | A::DirectPageIndirectLong |
                         A::DirectPageIndexed(_) | A::DirectPageIndexedIndirect(_) |
@@ -75,6 +81,12 @@ impl CPU {
                 Condition::DecimalMode => {
                     if self.registers.get_decimal_mode_flag() {
                         cycles += 1;
+                    }
+                },
+                // Add 1 byte if <index> = 0 (16-bit index registers)
+                Condition::IndexIs16Bit => {
+                    if self.registers.is_16bit_index() {
+                        bytes += 1; cycles += 1;
                     }
                 },
             };
@@ -178,6 +190,13 @@ impl CPU {
 
     pub fn increment_cycles_branch_long(&mut self) {
         self.registers.increment_pc(3); self.cycles += 4;
+    }
+
+    pub fn increment_cycles_comp_index(&mut self, addressing_mode: AddressingMode) {
+        let (bytes, cycles) = CPU::common_bytes_cycles_arithmetic(addressing_mode);
+        self.registers.increment_pc(bytes); self.cycles += cycles;
+        let (bytes, cycles) = self.common_conditions(addressing_mode, &COMP_INDEX_CONDITIONS);
+        self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 }
 

@@ -27,8 +27,6 @@ impl CPU {
     }
 
     fn adc(&mut self, bus: &Bus, addressing_mode: AddressingMode) {
-        // if the M flag is set, perform 8 bit addition.
-        // Otherwise, 16 bit addition
         let carry_flag = self.registers.get_carry_flag();
         let is_decimal_mode = self.registers.get_decimal_mode_flag();
         let is_16bit = self.registers.is_16bit_mode();
@@ -54,8 +52,6 @@ impl CPU {
     }
 
     fn sbc(&mut self, bus: &Bus, addressing_mode: AddressingMode) {
-        // if the M flag is set, perform 8 bit addition.
-        // Otherwise, 16 bit addition
         let carry_flag = self.registers.get_carry_flag();
         let is_decimal_mode = self.registers.get_decimal_mode_flag();
         let is_16bit = self.registers.is_16bit_mode();
@@ -80,30 +76,12 @@ impl CPU {
         self.increment_cycles_arithmetic(addressing_mode);
     }
 
-    fn cmp(&mut self, bus: &Bus, addressing_mode: AddressingMode) {
-        // if the M flag is set, perform 8 bit addition.
-        // Otherwise, 16 bit addition
+    fn do_comp<T: SnesNum>(&mut self, target: T, value: T) {
         let carry_flag = self.registers.get_carry_flag();
         let is_decimal_mode = self.registers.get_decimal_mode_flag();
-        let is_16bit = self.registers.is_16bit_mode();
-        let target = self.registers.a;
-        let affected_flags = match is_16bit {
-            true => {
-                let value = self.get_16bit_from_address(bus, addressing_mode);
-                let (_, flags) = match is_decimal_mode {
-                    true => alu::sbc_bcd(target, value, carry_flag),
-                    false => alu::sbc_bin(target, value, carry_flag),
-                };
-                flags.to_vec()
-            },
-            false => {
-                let value = self.get_8bit_from_address(bus, addressing_mode);
-                let (_, flags) = match is_decimal_mode {
-                    true => alu::sbc_bcd(target as u8, value, carry_flag),
-                    false => alu::sbc_bin(target as u8, value, carry_flag),
-                };
-                flags.to_vec()
-            }
+        let (_, affected_flags) = match is_decimal_mode {
+            true => alu::sbc_bcd(target, value, carry_flag),
+            false => alu::sbc_bin(target, value, carry_flag),
         };
         for flag in affected_flags {
             match flag {
@@ -111,12 +89,48 @@ impl CPU {
                 _ => self.registers.set_flags(&[flag]),
             }
         }
+    }
+
+    fn cmp(&mut self, bus: &Bus, addressing_mode: AddressingMode) {
+        let is_16bit = self.registers.is_16bit_mode();
+        let target = self.registers.a;
+        if is_16bit {
+            let value = self.get_16bit_from_address(bus, addressing_mode);
+            self.do_comp(target, value);
+        } else {
+            let value = self.get_8bit_from_address(bus, addressing_mode);
+            self.do_comp(target as u8, value);
+        }
         self.increment_cycles_arithmetic(addressing_mode);
     }
 
+    fn cpx(&mut self, bus: &Bus, addressing_mode: AddressingMode) {
+        let is_16bit = self.registers.is_16bit_index();
+        let target = self.registers.x;
+        if is_16bit {
+            let value = self.get_16bit_from_address(bus, addressing_mode);
+            self.do_comp(target, value);
+        } else {
+            let value = self.get_8bit_from_address(bus, addressing_mode);
+            self.do_comp(target as u8, value);
+        }
+        self.increment_cycles_comp_index(addressing_mode);
+    }
+
+    fn cpy(&mut self, bus: &Bus, addressing_mode: AddressingMode) {
+        let is_16bit = self.registers.is_16bit_index();
+        let target = self.registers.y;
+        if is_16bit {
+            let value = self.get_16bit_from_address(bus, addressing_mode);
+            self.do_comp(target, value);
+        } else {
+            let value = self.get_8bit_from_address(bus, addressing_mode);
+            self.do_comp(target as u8, value);
+        }
+        self.increment_cycles_comp_index(addressing_mode);
+    }
+
     fn and(&mut self, bus: &Bus, addressing_mode: AddressingMode) {
-        // if the M flag is set, perform 8 bit addition.
-        // Otherwise, 16 bit addition
         let target = self.registers.a;
         if self.registers.is_16bit_mode() {
             let value = self.get_16bit_from_address(bus, addressing_mode);
@@ -134,8 +148,6 @@ impl CPU {
     }
 
     fn asl(&mut self, bus: &Bus, addressing_mode: AddressingMode) {
-        // if the M flag is set, perform 8 bit addition.
-        // Otherwise, 16 bit addition
         let target = match addressing_mode {
             AddressingMode::Accumulator => self.registers.a,
             _ => match self.registers.is_16bit_mode() {
@@ -407,6 +419,16 @@ impl CPU {
             0xD7 => self.cmp(bus, A::DirectPageIndirectLongIndexed(I::Y)),
             0xC3 => self.cmp(bus, A::StackRelative),
             0xD3 => self.cmp(bus, A::StackRelativeIndirectIndexed(I::Y)),
+            // COP
+            0x02 => unimplemented!("COP instruction not implemented yet"),
+            // CPX
+            0xE0 => self.cpx(bus, A::Immediate),
+            0xEC => self.cpx(bus, A::Absolute),
+            0xE4 => self.cpx(bus, A::DirectPage),
+            // CPY
+            0xC0 => self.cpy(bus, A::Immediate),
+            0xCC => self.cpy(bus, A::Absolute),
+            0xC4 => self.cpy(bus, A::DirectPage),
             _ => println!("Invalid opcode: {:02X}", opcode),
         }
     }
@@ -880,6 +902,7 @@ mod cpu_instructions_tests {
         assert!(cpu.registers.get_zero_flag());
 
         // check overflow flag is not affected
+        cpu.cycles = 0;
         cpu.registers.a   = 0x0050;
         cpu.registers.pbr = 0x00;
         cpu.registers.pc  = 0x0000;
@@ -889,7 +912,79 @@ mod cpu_instructions_tests {
         cpu.cmp(&bus, AddressingMode::Immediate);
         assert_eq!(cpu.registers.a, 0x0050); // check A is not affected
         assert_eq!(cpu.registers.pc, 0x02);
-        assert_eq!(cpu.cycles, 4);
+        assert_eq!(cpu.cycles, 2);
+        assert!(cpu.registers.get_carry_flag());
+        assert!(!cpu.registers.get_zero_flag());
+        assert!(!cpu.registers.get_overflow_flag());
+    }
+
+    #[test]
+    fn test_cpx() {
+        // CMP is basically an SBC instruction but it doesn't
+        // store the result nor it affects the overflow flag
+        let mut cpu = CPU::new();
+        let mut bus = Bus::new();
+        cpu.registers.x   = 0x01;
+        cpu.registers.pbr = 0x00;
+        cpu.registers.pc  = 0x0000;
+        cpu.registers.set_16bit_index(false);
+        bus.write(0x000001, 1);
+        cpu.cpx(&bus, AddressingMode::Immediate);
+        assert_eq!(cpu.registers.x, 0x01); // check A is not affected
+        assert_eq!(cpu.registers.pc, 0x02);
+        assert_eq!(cpu.cycles, 2);
+        assert!(!cpu.registers.get_carry_flag());
+        assert!(cpu.registers.get_zero_flag());
+
+        // check overflow flag is not affected
+        cpu.cycles = 0;
+        cpu.registers.x   = 0x50;
+        cpu.registers.pbr = 0x00;
+        cpu.registers.pc  = 0x0000;
+        cpu.registers.set_16bit_index(true);
+        cpu.registers.set_overflow_flag(false);
+        bus.write(0x000002, 0xB0);
+        bus.write(0x000001, 0x00);
+        cpu.cpx(&bus, AddressingMode::Immediate);
+        assert_eq!(cpu.registers.x, 0x50); // check X is not affected
+        assert_eq!(cpu.registers.pc, 0x03);
+        assert_eq!(cpu.cycles, 3);
+        assert!(cpu.registers.get_carry_flag());
+        assert!(!cpu.registers.get_zero_flag());
+        assert!(!cpu.registers.get_overflow_flag());
+    }
+
+    #[test]
+    fn test_cpy() {
+        // CMP is basically an SBC instruction but it doesn't
+        // store the result nor it affects the overflow flag
+        let mut cpu = CPU::new();
+        let mut bus = Bus::new();
+        cpu.registers.y   = 0x01;
+        cpu.registers.pbr = 0x00;
+        cpu.registers.pc  = 0x0000;
+        cpu.registers.set_16bit_index(false);
+        bus.write(0x000001, 1);
+        cpu.cpy(&bus, AddressingMode::Immediate);
+        assert_eq!(cpu.registers.y, 0x01); // check A is not affected
+        assert_eq!(cpu.registers.pc, 0x02);
+        assert_eq!(cpu.cycles, 2);
+        assert!(!cpu.registers.get_carry_flag());
+        assert!(cpu.registers.get_zero_flag());
+
+        // check overflow flag is not affected
+        cpu.cycles = 0;
+        cpu.registers.y   = 0x50;
+        cpu.registers.pbr = 0x00;
+        cpu.registers.pc  = 0x0000;
+        cpu.registers.set_16bit_index(true);
+        cpu.registers.set_overflow_flag(false);
+        bus.write(0x000002, 0xB0);
+        bus.write(0x000001, 0x00);
+        cpu.cpy(&bus, AddressingMode::Immediate);
+        assert_eq!(cpu.registers.y, 0x50); // check X is not affected
+        assert_eq!(cpu.registers.pc, 0x03);
+        assert_eq!(cpu.cycles, 3);
         assert!(cpu.registers.get_carry_flag());
         assert!(!cpu.registers.get_zero_flag());
         assert!(!cpu.registers.get_overflow_flag());

@@ -118,6 +118,14 @@ impl Registers {
         ((self.pbr as u32) << 16) | (self.pc as u32)
     }
 
+    pub fn set_16bit_index(&mut self, val: bool) {
+        self.set_index_register_select_flag(!val);
+    }
+
+    pub fn is_16bit_index(&self) -> bool {
+        !self.get_index_register_select_flag()
+    }
+
     pub fn is_16bit_mode(&self) -> bool {
         !self.get_memory_select_flag()
     }
@@ -161,7 +169,7 @@ mod registers_tests {
     use super::*;
 
     #[test]
-    fn test_get_16bit_mode() {
+    fn test_is_16bit_mode() {
         let mut registers = Registers::new();
         registers.set_memory_select_flag(false);
         assert!(registers.is_16bit_mode());
@@ -176,6 +184,24 @@ mod registers_tests {
         assert!(registers.is_16bit_mode());
         registers.set_16bit_mode(false);
         assert!(!registers.is_16bit_mode());
+    }
+
+    #[test]
+    fn test_is_16bit_index() {
+        let mut registers = Registers::new();
+        registers.set_index_register_select_flag(false);
+        assert!(registers.is_16bit_index());
+        registers.set_index_register_select_flag(true);
+        assert!(!registers.is_16bit_index());
+    }
+
+    #[test]
+    fn test_set_16bit_index() {
+        let mut registers = Registers::new();
+        registers.set_16bit_index(true);
+        assert!(registers.is_16bit_index());
+        registers.set_16bit_index(false);
+        assert!(!registers.is_16bit_index());
     }
 
     #[test]
