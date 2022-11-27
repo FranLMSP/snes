@@ -267,6 +267,19 @@ impl CPU {
         let (bytes, cycles) = self.common_conditions(addressing_mode, &LD_INDEX_CONDITIONS);
         self.registers.increment_pc(bytes); self.cycles += cycles;
     }
+
+    pub fn increment_cycles_pea(&mut self) {
+        self.registers.increment_pc(3); self.cycles += 5;
+    }
+
+    pub fn increment_cycles_pei(&mut self) {
+        self.registers.increment_pc(2); self.cycles += 6;
+        let (bytes, cycles) = self.common_conditions(
+            AddressingMode::DirectPageIndirect,
+            &[Condition::DirectPageIsZero],
+        );
+        self.registers.increment_pc(bytes); self.cycles += cycles;
+    }
 }
 
 #[cfg(test)]

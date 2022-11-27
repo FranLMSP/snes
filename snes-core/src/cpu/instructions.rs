@@ -369,7 +369,7 @@ impl CPU {
         self.increment_cycles_bit(addressing_mode);
     }
 
-    pub fn do_branch(&mut self, bus: &Bus) -> bool {
+    fn do_branch(&mut self, bus: &Bus) -> bool {
         let nearlabel = bus.read(self.registers.get_pc_address());
         let is_negative = (nearlabel >> 7) != 0;
         let old_pc = self.registers.get_pc_address();
@@ -384,7 +384,7 @@ impl CPU {
         return page_boundary_crossed
     }
 
-    pub fn bcc(&mut self, bus: &Bus) {
+    fn bcc(&mut self, bus: &Bus) {
         self.increment_cycles_branch();
         if !self.registers.get_carry_flag() {
             let page_boundary_crossed = self.do_branch(bus);
@@ -392,7 +392,7 @@ impl CPU {
         }
     }
 
-    pub fn bcs(&mut self, bus: &Bus) {
+    fn bcs(&mut self, bus: &Bus) {
         self.increment_cycles_branch();
         if self.registers.get_carry_flag() {
             let page_boundary_crossed = self.do_branch(bus);
@@ -400,7 +400,7 @@ impl CPU {
         }
     }
 
-    pub fn beq(&mut self, bus: &Bus) {
+    fn beq(&mut self, bus: &Bus) {
         self.increment_cycles_branch();
         if self.registers.get_zero_flag() {
             let page_boundary_crossed = self.do_branch(bus);
@@ -408,7 +408,7 @@ impl CPU {
         }
     }
 
-    pub fn bne(&mut self, bus: &Bus) {
+    fn bne(&mut self, bus: &Bus) {
         self.increment_cycles_branch();
         if !self.registers.get_zero_flag() {
             let page_boundary_crossed = self.do_branch(bus);
@@ -416,7 +416,7 @@ impl CPU {
         }
     }
 
-    pub fn bmi(&mut self, bus: &Bus) {
+    fn bmi(&mut self, bus: &Bus) {
         self.increment_cycles_branch();
         if self.registers.get_negative_flag() {
             let page_boundary_crossed = self.do_branch(bus);
@@ -424,7 +424,7 @@ impl CPU {
         }
     }
 
-    pub fn bpl(&mut self, bus: &Bus) {
+    fn bpl(&mut self, bus: &Bus) {
         self.increment_cycles_branch();
         if !self.registers.get_negative_flag() {
             let page_boundary_crossed = self.do_branch(bus);
@@ -432,13 +432,13 @@ impl CPU {
         }
     }
 
-    pub fn bra(&mut self, bus: &Bus) {
+    fn bra(&mut self, bus: &Bus) {
         self.increment_cycles_branch();
         let page_boundary_crossed = self.do_branch(bus);
         self.increment_cycles_branch_taken(page_boundary_crossed);
     }
 
-    pub fn brl(&mut self, bus: &Bus) {
+    fn brl(&mut self, bus: &Bus) {
         let label = bus.read(self.registers.get_pc_address()) as u16 |
             ((bus.read(self.registers.get_pc_address() + 1) as u16) << 8);
         let is_negative = (label >> 15) != 0;
@@ -451,7 +451,7 @@ impl CPU {
         self.increment_cycles_branch_long();
     }
 
-    pub fn bvc(&mut self, bus: &Bus) {
+    fn bvc(&mut self, bus: &Bus) {
         self.increment_cycles_branch();
         if !self.registers.get_overflow_flag() {
             let page_boundary_crossed = self.do_branch(bus);
@@ -459,7 +459,7 @@ impl CPU {
         }
     }
 
-    pub fn bvs(&mut self, bus: &Bus) {
+    fn bvs(&mut self, bus: &Bus) {
         self.increment_cycles_branch();
         if self.registers.get_overflow_flag() {
             let page_boundary_crossed = self.do_branch(bus);
@@ -467,31 +467,31 @@ impl CPU {
         }
     }
 
-    pub fn clc(&mut self) {
+    fn clc(&mut self) {
         self.registers.set_carry_flag(false);
         self.increment_cycles_clear();
     }
 
-    pub fn cld(&mut self) {
+    fn cld(&mut self) {
         self.registers.set_decimal_mode_flag(false);
         self.increment_cycles_clear();
     }
 
-    pub fn cli(&mut self) {
+    fn cli(&mut self) {
         self.registers.set_irq_disable_flag(false);
         self.increment_cycles_clear();
     }
 
-    pub fn clv(&mut self) {
+    fn clv(&mut self) {
         self.registers.set_overflow_flag(false);
         self.increment_cycles_clear();
     }
 
-    pub fn nop(&mut self) {
+    fn nop(&mut self) {
         self.increment_cycles_nop();
     }
 
-    pub fn jmp(&mut self, bus: &Bus, addressing_mode: AddressingMode) {
+    fn jmp(&mut self, bus: &Bus, addressing_mode: AddressingMode) {
         let effective_address = self.get_effective_address(bus, addressing_mode);
         let is_long = match addressing_mode {
             AddressingMode::AbsoluteLong |
@@ -505,7 +505,7 @@ impl CPU {
         self.increment_cycles_jmp(addressing_mode);
     }
 
-    pub fn do_push(&mut self, bus: &mut Bus, bytes: &[u8]) {
+    fn do_push(&mut self, bus: &mut Bus, bytes: &[u8]) {
         for byte in bytes {
             let address = self.registers.sp as u32;
             bus.write(address, *byte);
@@ -513,7 +513,19 @@ impl CPU {
         }
     }
 
-    pub fn jsr(&mut self, bus: &mut Bus, addressing_mode: AddressingMode) {
+    fn pea(&mut self, bus: &mut Bus) {
+        let address = self.get_effective_address(bus, AddressingMode::Absolute);
+        self.do_push(bus, &[(address >> 8) as u8, address as u8]);
+        self.increment_cycles_pea();
+    }
+
+    fn pei(&mut self, bus: &mut Bus) {
+        let address = self.get_effective_address(bus, AddressingMode::DirectPageIndirect);
+        self.do_push(bus, &[(address >> 8) as u8, address as u8]);
+        self.increment_cycles_pei();
+    }
+
+    fn jsr(&mut self, bus: &mut Bus, addressing_mode: AddressingMode) {
         let effective_address = self.get_effective_address(bus, addressing_mode);
         let is_long = match addressing_mode {
             AddressingMode::AbsoluteLong |
@@ -816,6 +828,10 @@ impl CPU {
             0x17 => self.ora(bus, A::DirectPageIndirectLongIndexed(I::Y)),
             0x03 => self.ora(bus, A::StackRelative),
             0x13 => self.ora(bus, A::StackRelativeIndirectIndexed(I::Y)),
+            // PEA
+            0xF4 => self.pea(bus),
+            // PEI
+            0xD4 => self.pei(bus),
             _ => println!("Invalid opcode: {:02X}", opcode),
         }
     }
@@ -1629,5 +1645,20 @@ mod cpu_instructions_tests {
         assert_eq!(cpu.cycles, 2);
         assert!(cpu.registers.get_negative_flag());
         assert!(!cpu.registers.get_zero_flag());
+    }
+
+    #[test]
+    fn test_push_instructions() {
+        let mut cpu = CPU::new();
+        let mut bus = Bus::new();
+        cpu.registers.pc  = 0x0000;
+        cpu.registers.sp  = 0x1FC;
+        bus.write(0x000002, 0xAA);
+        bus.write(0x000001, 0xBB);
+        cpu.pea(&mut bus);
+        assert_eq!(bus.read(0x1FC), 0xAA);
+        assert_eq!(bus.read(0x1FB), 0xBB);
+        assert_eq!(cpu.registers.pc, 0x0003);
+        assert_eq!(cpu.cycles, 5);
     }
 }
