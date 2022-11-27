@@ -25,6 +25,18 @@ const BITWISE_CONDITIONS: [Condition; 3] = [
     Condition::IndexCrossesPageBoundary,
 ];
 
+const LDA_CONDITIONS: [Condition; 3] = [
+    Condition::MemorySelectFlag,
+    Condition::DirectPageIsZero,
+    Condition::IndexCrossesPageBoundary,
+];
+
+const LD_INDEX_CONDITIONS: [Condition; 3] = [
+    Condition::IndexIs16Bit,
+    Condition::DirectPageIsZero,
+    Condition::IndexCrossesPageBoundary,
+];
+
 const COMP_INDEX_CONDITIONS: [Condition; 2] = [
     Condition::IndexIs16Bit,
     Condition::IndexCrossesPageBoundary,
@@ -239,6 +251,20 @@ impl CPU {
         // are performing a JMP anyway.
         // However, we have to keep in mind PBR if we happen to increment PC at 0xFFFF
         // self.registers.increment_pc(bytes); // TODO: consider above comment
+        self.registers.increment_pc(bytes); self.cycles += cycles;
+    }
+
+    pub fn increment_cycles_lda(&mut self, addressing_mode: AddressingMode) {
+        let (bytes, cycles) = CPU::common_bytes_cycles_arithmetic(addressing_mode);
+        self.registers.increment_pc(bytes); self.cycles += cycles;
+        let (bytes, cycles) = self.common_conditions(addressing_mode, &LDA_CONDITIONS);
+        self.registers.increment_pc(bytes); self.cycles += cycles;
+    }
+
+    pub fn increment_cycles_ld_index(&mut self, addressing_mode: AddressingMode) {
+        let (bytes, cycles) = CPU::common_bytes_cycles_arithmetic(addressing_mode);
+        self.registers.increment_pc(bytes); self.cycles += cycles;
+        let (bytes, cycles) = self.common_conditions(addressing_mode, &LD_INDEX_CONDITIONS);
         self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 }

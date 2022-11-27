@@ -558,7 +558,40 @@ impl CPU {
             self.registers.set_low_a(value);
             self.do_bit(self.registers.a as u8, value, addressing_mode);
         }
-        self.increment_cycles_bit(addressing_mode);
+        self.increment_cycles_lda(addressing_mode);
+    }
+
+    fn do_ld_index(&mut self, bus: &Bus, index: IndexRegister, addressing_mode: AddressingMode) {
+        if self.registers.is_16bit_index() {
+            let value = self.get_16bit_from_address(bus, addressing_mode);
+            match index {
+                IndexRegister::X => self.registers.x = value,
+                IndexRegister::Y => self.registers.y = value,
+            }
+            self.registers.set_flags(&[
+                Flags::Negative(value >> 7 == 1),
+                Flags::Zero(value == 0),
+            ]);
+        } else {
+            let value = self.get_8bit_from_address(bus, addressing_mode);
+            match index {
+                IndexRegister::X => self.registers.set_low_x(value),
+                IndexRegister::Y => self.registers.set_low_y(value),
+            }
+            self.registers.set_flags(&[
+                Flags::Negative(value >> 7 == 1),
+                Flags::Zero(value == 0),
+            ]);
+        }
+        self.increment_cycles_ld_index(addressing_mode);
+    }
+
+    fn ldx(&mut self, bus: &Bus, addressing_mode: AddressingMode) {
+        self.do_ld_index(bus, IndexRegister::X, addressing_mode);
+    }
+
+    fn ldy(&mut self, bus: &Bus, addressing_mode: AddressingMode) {
+        self.do_ld_index(bus, IndexRegister::Y, addressing_mode);
     }
 
     pub fn execute_opcode(&mut self, opcode: u8, bus: &mut Bus) {
@@ -767,6 +800,18 @@ impl CPU {
             0xB7 => self.lda(bus, A::DirectPageIndirectLongIndexed(I::Y)),
             0xA3 => self.lda(bus, A::StackRelative),
             0xB3 => self.lda(bus, A::StackRelativeIndirectIndexed(I::Y)),
+            // LDX
+            0xA2 => self.ldx(bus, A::Immediate),
+            0xAE => self.ldx(bus, A::Absolute),
+            0xA6 => self.ldx(bus, A::DirectPage),
+            0xBE => self.ldx(bus, A::AbsoluteIndexed(I::Y)),
+            0xB6 => self.ldx(bus, A::DirectPageIndexed(I::Y)),
+            // LDY
+            0xA0 => self.ldy(bus, A::Immediate),
+            0xAC => self.ldy(bus, A::Absolute),
+            0xA4 => self.ldy(bus, A::DirectPage),
+            0xB4 => self.ldy(bus, A::AbsoluteIndexed(I::Y)),
+            0xBC => self.ldy(bus, A::DirectPageIndexed(I::Y)),
             _ => println!("Invalid opcode: {:02X}", opcode),
         }
     }
@@ -1539,6 +1584,44 @@ mod cpu_instructions_tests {
         cpu.lda(&bus, AddressingMode::Immediate);
         assert_eq!(cpu.registers.pc, 0x0002);
         assert_eq!(cpu.registers.a, 0x00FF);
+        assert_eq!(cpu.cycles, 2);
+        assert!(cpu.registers.get_negative_flag());
+        assert!(!cpu.registers.get_zero_flag());
+    }
+
+    #[test]
+    fn test_ldx() {
+        let mut cpu = CPU::new();
+        let mut bus = Bus::new();
+        cpu.registers.x  = 0x0000;
+        cpu.registers.pc  = 0x0000;
+        cpu.registers.pbr  = 0x00;
+        cpu.registers.set_negative_flag(false);
+        cpu.registers.set_zero_flag(true);
+        cpu.registers.set_16bit_index(false);
+        bus.write(0x0001, 0xFF);
+        cpu.ldx(&bus, AddressingMode::Immediate);
+        assert_eq!(cpu.registers.pc, 0x0002);
+        assert_eq!(cpu.registers.x, 0x00FF);
+        assert_eq!(cpu.cycles, 2);
+        assert!(cpu.registers.get_negative_flag());
+        assert!(!cpu.registers.get_zero_flag());
+    }
+
+    #[test]
+    fn test_ldy() {
+        let mut cpu = CPU::new();
+        let mut bus = Bus::new();
+        cpu.registers.y  = 0x0000;
+        cpu.registers.pc  = 0x0000;
+        cpu.registers.pbr  = 0x00;
+        cpu.registers.set_negative_flag(false);
+        cpu.registers.set_zero_flag(true);
+        cpu.registers.set_16bit_index(false);
+        bus.write(0x0001, 0xFF);
+        cpu.ldy(&bus, AddressingMode::Immediate);
+        assert_eq!(cpu.registers.pc, 0x0002);
+        assert_eq!(cpu.registers.y, 0x00FF);
         assert_eq!(cpu.cycles, 2);
         assert!(cpu.registers.get_negative_flag());
         assert!(!cpu.registers.get_zero_flag());
