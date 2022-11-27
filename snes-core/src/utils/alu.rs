@@ -109,7 +109,7 @@ pub fn asl<T: SnesNum>(target: T) -> (T, [Flags; 3]) {
     ])
 }
 
-pub fn xor<T: SnesNum>(target: T, value: T) -> (T, [Flags; 2]) {
+pub fn eor<T: SnesNum>(target: T, value: T) -> (T, [Flags; 2]) {
     let result = target.xor(value);
     (result, [
         Negative(result.is_negative()),
@@ -328,20 +328,20 @@ mod alu_tests {
     #[test]
     fn test_xor() {
         // 8 bit
-        let (result, affected_flags) = xor(0b0101_0101_u8, 0b0101_0101_u8);
+        let (result, affected_flags) = eor(0b0101_0101_u8, 0b0101_0101_u8);
         assert_eq!(result, 0);
         assert_eq!(affected_flags, [Negative(false), Zero(true)]);
 
-        let (result, affected_flags) = xor(0b1000_0000_u8, 0b0000_0000_u8);
+        let (result, affected_flags) = eor(0b1000_0000_u8, 0b0000_0000_u8);
         assert_eq!(result, 0b1000_0000);
         assert_eq!(affected_flags, [Negative(true), Zero(false)]);
 
         // 16 bit
-        let (result, affected_flags) = xor(0b01010101_00000000_u16, 0b01010101_00000000_u16);
+        let (result, affected_flags) = eor(0b01010101_00000000_u16, 0b01010101_00000000_u16);
         assert_eq!(result, 0);
         assert_eq!(affected_flags, [Negative(false), Zero(true)]);
 
-        let (result, affected_flags) = xor(0b10000000_00000000_u16, 0b00000000_00000000_u16);
+        let (result, affected_flags) = eor(0b10000000_00000000_u16, 0b00000000_00000000_u16);
         assert_eq!(result, 0b10000000_00000000);
         assert_eq!(affected_flags, [Negative(true), Zero(false)]);
     }
