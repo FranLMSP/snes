@@ -109,6 +109,15 @@ pub fn asl<T: SnesNum>(target: T) -> (T, [Flags; 3]) {
     ])
 }
 
+pub fn lsr<T: SnesNum>(target: T) -> (T, [Flags; 3]) {
+    let result = target.lsr();
+    (result, [
+        Negative(false),
+        Zero(result.is_zero()),
+        Carry(result.to_u32() & 1 == 1), // High bit becomes carry
+    ])
+}
+
 pub fn eor<T: SnesNum>(target: T, value: T) -> (T, [Flags; 2]) {
     let result = target.xor(value);
     (result, [

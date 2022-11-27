@@ -299,6 +299,26 @@ impl CPU {
         self.increment_cycles_shift(addressing_mode);
     }
 
+    fn lsr(&mut self, bus: &mut Bus, addressing_mode: AddressingMode) {
+        let target = match addressing_mode {
+            AddressingMode::Accumulator => self.registers.a,
+            _ => match self.registers.is_16bit_mode() {
+                true => self.get_16bit_from_address(bus, addressing_mode),
+                false => self.get_8bit_from_address(bus, addressing_mode) as u16,
+            }
+        };
+        if self.registers.is_16bit_mode() {
+            let (result, affected_flags) = alu::lsr(target);
+            self.set_16bit_to_address(bus, addressing_mode, result);
+            self.registers.set_flags(&affected_flags);
+        } else {
+            let (result, affected_flags) = alu::lsr(target as u8);
+            self.set_8bit_to_address(bus, addressing_mode, result);
+            self.registers.set_flags(&affected_flags);
+        }
+        self.increment_cycles_shift(addressing_mode);
+    }
+
     fn do_bit<T: SnesNum>(&mut self, accumulator: T, value: T, addressing_mode: AddressingMode) {
         let (result, _) = alu::and(accumulator, value);
         // Immediate addressing affects only the zero flag
@@ -597,6 +617,12 @@ impl CPU {
             0xE8 => self.inx(),
             // INY
             0xC8 => self.iny(),
+            // LSR
+            0x4A => self.lsr(bus, A::Accumulator),
+            0x4E => self.lsr(bus, A::Absolute),
+            0x46 => self.lsr(bus, A::DirectPage),
+            0x5E => self.lsr(bus, A::AbsoluteIndexed(I::X)),
+            0x56 => self.lsr(bus, A::DirectPageIndexed(I::X)),
             _ => println!("Invalid opcode: {:02X}", opcode),
         }
     }
@@ -689,6 +715,25 @@ mod cpu_instructions_tests {
         assert!(!cpu.registers.get_carry_flag());
         assert!(!cpu.registers.get_zero_flag());
         assert!(cpu.registers.get_negative_flag());
+    }
+
+    #[test]
+    fn test_lsr() {
+        let mut cpu = CPU::new();
+        let mut bus = Bus::new();
+        cpu.registers.a   = 0b00000000_00000011;
+        cpu.registers.pbr = 0x00;
+        cpu.registers.pc  = 0x0000;
+        cpu.registers.set_memory_select_flag(false);
+        cpu.registers.set_negative_flag(true);
+        cpu.registers.set_carry_flag(false);
+        cpu.lsr(&mut bus, AddressingMode::Accumulator);
+        assert_eq!(cpu.registers.a, 0b00000000_00000001);
+        assert_eq!(cpu.registers.pc, 0x01);
+        assert_eq!(cpu.cycles, 4);
+        assert!(cpu.registers.get_carry_flag());
+        assert!(!cpu.registers.get_zero_flag());
+        assert!(!cpu.registers.get_negative_flag());
     }
 
     #[test]
@@ -1261,5 +1306,14 @@ mod cpu_instructions_tests {
         assert_eq!(cpu.cycles, 2);
         assert!(!cpu.registers.get_negative_flag());
         assert!(!cpu.registers.get_zero_flag());
+    }
+
+    #[test]
+    fn test_nop() {
+        let mut cpu = CPU::new();
+        cpu.registers.pc  = 0x0000;
+        cpu.nop();
+        assert_eq!(cpu.registers.pc, 0x01);
+        assert_eq!(cpu.cycles, 2);
     }
 }

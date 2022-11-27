@@ -6,6 +6,7 @@ pub trait SnesNum: Copy + Clone + Sized + Eq + PartialEq {
     fn sbc_snes(&self, v: Self, carry: bool) -> Self;
     fn and(&self, v: Self) -> Self;
     fn asl(&self) -> Self;
+    fn lsr(&self) -> Self;
     fn xor(&self, v: Self) -> Self;
     fn is_negative(&self) -> bool;
     fn is_zero(&self) -> bool;
@@ -66,6 +67,10 @@ macro_rules! define_impl {
 
             fn asl(&self) -> $t {
                 (* self) << 1
+            }
+
+            fn lsr(&self) -> $t {
+                (* self) >> 1
             }
 
             fn xor(&self, v: $t) -> $t {
