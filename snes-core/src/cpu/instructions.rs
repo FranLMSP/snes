@@ -6,6 +6,16 @@ use crate::utils::num_trait::SnesNum;
 use crate::common::flags::Flags;
 
 impl CPU {
+    fn get_effective_address(&self, bus: &Bus, addressing_mode: AddressingMode) -> u32 {
+        addressing_mode.effective_address(
+            bus,
+            self.registers.get_pc_address(),
+            self.registers.d,
+            self.registers.sp,
+            self.registers.x, self.registers.y
+        )
+    }
+
     fn get_8bit_from_address(&self, bus: &Bus, addressing_mode: AddressingMode) -> u8 {
         match addressing_mode {
             AddressingMode::Accumulator => self.registers.a as u8,
@@ -481,6 +491,20 @@ impl CPU {
         self.increment_cycles_nop();
     }
 
+    pub fn jmp(&mut self, bus: &Bus, addressing_mode: AddressingMode) {
+        let effective_address = self.get_effective_address(bus, addressing_mode);
+        let is_long = match addressing_mode {
+            AddressingMode::AbsoluteLong |
+            AddressingMode::AbsoluteIndirectLong => true,
+            _  => false,
+        };
+        self.registers.pc = effective_address as u16;
+        if is_long {
+            self.registers.pbr = (effective_address >> 16) as u8;
+        }
+        self.increment_cycles_jmp(addressing_mode);
+    }
+
     pub fn execute_opcode(&mut self, opcode: u8, bus: &mut Bus) {
         type A = AddressingMode;
         type I = IndexRegister;
@@ -637,6 +661,12 @@ impl CPU {
             0xE8 => self.inx(),
             // INY
             0xC8 => self.iny(),
+            // JMP
+            0x4C => self.jmp(bus, A::Absolute),
+            0x6C => self.jmp(bus, A::AbsoluteIndirect),
+            0x7C => self.jmp(bus, A::AbsoluteIndexedIndirect(I::X)),
+            0x5C => self.jmp(bus, A::AbsoluteLong),
+            0xDC => self.jmp(bus, A::AbsoluteIndirectLong),
             // LSR
             0x4A => self.lsr(bus, A::Accumulator),
             0x4E => self.lsr(bus, A::Absolute),
@@ -1370,5 +1400,30 @@ mod cpu_instructions_tests {
         cpu.nop();
         assert_eq!(cpu.registers.pc, 0x01);
         assert_eq!(cpu.cycles, 2);
+    }
+
+    #[test]
+    fn test_jmp() {
+        let mut cpu = CPU::new();
+        let mut bus = Bus::new();
+        cpu.registers.pc  = 0x0000;
+        bus.write(0x000002, 0xAA);
+        bus.write(0x000001, 0xBB);
+        cpu.jmp(&bus, AddressingMode::Absolute);
+        assert_eq!(cpu.registers.pc, 0xAABB);
+        assert_eq!(cpu.cycles, 3);
+
+        // Test a long address
+        let mut cpu = CPU::new();
+        let mut bus = Bus::new();
+        cpu.registers.pc  = 0x0000;
+        cpu.registers.pbr  = 0x00;
+        bus.write(0x000003, 0xAA);
+        bus.write(0x000002, 0xBB);
+        bus.write(0x000001, 0xCC);
+        cpu.jmp(&bus, AddressingMode::AbsoluteLong);
+        assert_eq!(cpu.registers.pbr, 0xAA);
+        assert_eq!(cpu.registers.pc, 0xBBCC);
+        assert_eq!(cpu.cycles, 4);
     }
 }

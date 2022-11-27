@@ -210,6 +210,22 @@ impl CPU {
     pub fn increment_cycles_nop(&mut self) {
         self.registers.increment_pc(1); self.cycles += 2;
     }
+
+    pub fn increment_cycles_jmp(&mut self, addressing_mode: AddressingMode) {
+        let (_, cycles) = match addressing_mode {
+            A::Absolute                         => (3, 3),
+            A::AbsoluteIndirect                 => (3, 5),
+            A::AbsoluteIndexedIndirect(_)       => (3, 6),
+            A::AbsoluteLong                     => (4, 4),
+            A::AbsoluteIndirectLong             => (3, 6),
+            _ => unreachable!(),
+        };
+        // Incrementing PC here is kind of irrelevant since we
+        // are performing a JMP anyway.
+        // However, we have to keep in mind PBR if we happen to increment PC at 0xFFFF
+        // self.registers.increment_pc(bytes); // TODO: consider above comment
+        self.cycles += cycles;
+    }
 }
 
 #[cfg(test)]
