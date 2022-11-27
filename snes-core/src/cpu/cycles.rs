@@ -226,6 +226,21 @@ impl CPU {
         // self.registers.increment_pc(bytes); // TODO: consider above comment
         self.cycles += cycles;
     }
+
+    /// Note: the bytes should be incremented *before* pushing onto the stack
+    pub fn increment_cycles_jsr(&mut self, addressing_mode: AddressingMode) {
+        let (bytes, cycles) = match addressing_mode {
+            A::Absolute                         => (3, 6),
+            A::AbsoluteIndexedIndirect(_)       => (3, 8),
+            A::AbsoluteLong                     => (4, 8),
+            _ => unreachable!(),
+        };
+        // Incrementing PC here is kind of irrelevant since we
+        // are performing a JMP anyway.
+        // However, we have to keep in mind PBR if we happen to increment PC at 0xFFFF
+        // self.registers.increment_pc(bytes); // TODO: consider above comment
+        self.registers.increment_pc(bytes); self.cycles += cycles;
+    }
 }
 
 #[cfg(test)]

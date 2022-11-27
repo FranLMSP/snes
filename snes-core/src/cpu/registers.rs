@@ -150,6 +150,14 @@ impl Registers {
         self.pc = self.pc.wrapping_sub(bytes);
     }
 
+    pub fn increment_sp(&mut self, bytes: u16) {
+        self.sp = self.sp.wrapping_add(bytes);
+    }
+
+    pub fn decrement_sp(&mut self, bytes: u16) {
+        self.sp = self.sp.wrapping_sub(bytes);
+    }
+
     pub fn direct_page_low(&self) -> u8 {
         self.d as u8
     }

@@ -505,6 +505,42 @@ impl CPU {
         self.increment_cycles_jmp(addressing_mode);
     }
 
+    pub fn do_push(&mut self, bus: &mut Bus, bytes: &[u8]) {
+        for byte in bytes {
+            let address = self.registers.sp as u32;
+            bus.write(address, *byte);
+            self.registers.decrement_sp(1);
+        }
+    }
+
+    pub fn jsr(&mut self, bus: &mut Bus, addressing_mode: AddressingMode) {
+        let effective_address = self.get_effective_address(bus, addressing_mode);
+        let is_long = match addressing_mode {
+            AddressingMode::AbsoluteLong |
+            AddressingMode::AbsoluteIndirectLong => true,
+            _  => false,
+        };
+        // We need to push the *next* instruction onto the stack
+        self.increment_cycles_jsr(addressing_mode);
+        let value = self.registers.get_pc_address();
+        if is_long {
+            self.do_push(bus, &[
+                (value >> 16) as u8,
+                (value >> 8) as u8,
+                value as u8,
+            ]);
+        } else {
+            self.do_push(bus, &[
+                (value >> 8) as u8,
+                value as u8,
+            ]);
+        }
+        self.registers.pc = effective_address as u16;
+        if is_long {
+            self.registers.pbr = (effective_address >> 16) as u8;
+        }
+    }
+
     pub fn execute_opcode(&mut self, opcode: u8, bus: &mut Bus) {
         type A = AddressingMode;
         type I = IndexRegister;
@@ -691,6 +727,10 @@ impl CPU {
             0x17 => self.ora(bus, A::DirectPageIndirectLongIndexed(I::Y)),
             0x03 => self.ora(bus, A::StackRelative),
             0x13 => self.ora(bus, A::StackRelativeIndirectIndexed(I::Y)),
+            // JSR
+            0x20 => self.jsr(bus, A::Absolute),
+            0xFC => self.jsr(bus, A::AbsoluteIndexedIndirect(I::X)),
+            0x22 => self.jsr(bus, A::AbsoluteLong), // same as JSL
             _ => println!("Invalid opcode: {:02X}", opcode),
         }
     }
@@ -1425,5 +1465,27 @@ mod cpu_instructions_tests {
         assert_eq!(cpu.registers.pbr, 0xAA);
         assert_eq!(cpu.registers.pc, 0xBBCC);
         assert_eq!(cpu.cycles, 4);
+    }
+
+    #[test]
+    fn test_jsr() {
+        // Test a long address
+        let mut cpu = CPU::new();
+        let mut bus = Bus::new();
+        cpu.registers.pc  = 0x1234;
+        cpu.registers.pbr  = 0x00;
+        cpu.registers.sp  = 0x1FC;
+        bus.write(cpu.registers.get_pc_address() + 3, 0xAA);
+        bus.write(cpu.registers.get_pc_address() + 2, 0xBB);
+        bus.write(cpu.registers.get_pc_address() + 1, 0xCC);
+        // write next instruction
+        cpu.jsr(&mut bus, AddressingMode::AbsoluteLong);
+        assert_eq!(bus.read(0x1FC), 0x00);
+        assert_eq!(bus.read(0x1FB), 0x12);
+        assert_eq!(bus.read(0x1FA), 0x38); // we should store the NEXT instruction
+        assert_eq!(cpu.registers.pbr, 0xAA);
+        assert_eq!(cpu.registers.pc, 0xBBCC);
+        assert_eq!(cpu.registers.sp, 0x1F9);
+        assert_eq!(cpu.cycles, 8);
     }
 }
