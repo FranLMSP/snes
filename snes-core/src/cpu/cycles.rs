@@ -206,6 +206,10 @@ impl CPU {
     pub fn increment_cycles_inc_dec_index(&mut self) {
         self.registers.increment_pc(1); self.cycles += 2;
     }
+
+    pub fn increment_cycles_nop(&mut self) {
+        self.registers.increment_pc(1); self.cycles += 2;
+    }
 }
 
 #[cfg(test)]

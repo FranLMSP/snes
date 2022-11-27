@@ -461,6 +461,10 @@ impl CPU {
         self.increment_cycles_clear();
     }
 
+    pub fn nop(&mut self) {
+        self.increment_cycles_nop();
+    }
+
     pub fn execute_opcode(&mut self, opcode: u8, bus: &mut Bus) {
         type A = AddressingMode;
         type I = IndexRegister;
@@ -623,6 +627,8 @@ impl CPU {
             0x46 => self.lsr(bus, A::DirectPage),
             0x5E => self.lsr(bus, A::AbsoluteIndexed(I::X)),
             0x56 => self.lsr(bus, A::DirectPageIndexed(I::X)),
+            // NOP
+            0xEA => self.nop(),
             _ => println!("Invalid opcode: {:02X}", opcode),
         }
     }
