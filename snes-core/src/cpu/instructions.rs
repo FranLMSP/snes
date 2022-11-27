@@ -7,23 +7,57 @@ use crate::common::flags::Flags;
 
 impl CPU {
     fn get_8bit_from_address(&self, bus: &Bus, addressing_mode: AddressingMode) -> u8 {
-        addressing_mode.value_8bit(
-            bus,
-            self.registers.get_pc_address(),
-            self.registers.d,
-            self.registers.sp,
-            self.registers.x, self.registers.y
-        )
+        match addressing_mode {
+            AddressingMode::Accumulator => self.registers.a as u8,
+            _ => addressing_mode.value_8bit(
+                bus,
+                self.registers.get_pc_address(),
+                self.registers.d,
+                self.registers.sp,
+                self.registers.x, self.registers.y
+            )
+        }
     }
 
     fn get_16bit_from_address(&self, bus: &Bus, addressing_mode: AddressingMode) -> u16 {
-        addressing_mode.value_16bit(
-            bus,
-            self.registers.get_pc_address(),
-            self.registers.d,
-            self.registers.sp,
-            self.registers.x, self.registers.y
-        )
+        match addressing_mode {
+            AddressingMode::Accumulator => self.registers.a,
+            _ => addressing_mode.value_16bit(
+                bus,
+                self.registers.get_pc_address(),
+                self.registers.d,
+                self.registers.sp,
+                self.registers.x, self.registers.y
+            )
+        }
+    }
+
+    fn set_8bit_to_address(&mut self, bus: &mut Bus, addressing_mode: AddressingMode, value: u8) {
+        match addressing_mode {
+            AddressingMode::Accumulator => self.registers.set_low_a(value),
+            _ => addressing_mode.store_8bit(
+                bus,
+                self.registers.get_pc_address(),
+                self.registers.d,
+                self.registers.sp,
+                self.registers.x, self.registers.y,
+                value,
+            ),
+        };
+    }
+
+    fn set_16bit_to_address(&mut self, bus: &mut Bus, addressing_mode: AddressingMode, value: u16) {
+        match addressing_mode {
+            AddressingMode::Accumulator => self.registers.a = value,
+            _ => addressing_mode.store_16bit(
+                bus,
+                self.registers.get_pc_address(),
+                self.registers.d,
+                self.registers.sp,
+                self.registers.x, self.registers.y,
+                value,
+            ),
+        };
     }
 
     fn adc(&mut self, bus: &Bus, addressing_mode: AddressingMode) {
@@ -74,6 +108,50 @@ impl CPU {
             self.registers.set_flags(&affected_flags);
         }
         self.increment_cycles_arithmetic(addressing_mode);
+    }
+
+    fn do_dec<T: SnesNum>(&mut self, target: T) -> T {
+        let (result, affected_flags) = alu::sbc_bin(target, T::from_u32(1), false);
+        for flag in affected_flags {
+            match flag {
+                Flags::Negative(_) | Flags::Zero(_) => self.registers.set_flags(&[flag]),
+                _ => {},
+            }
+        }
+        result
+    }
+
+    fn dec(&mut self, bus: &mut Bus, addressing_mode: AddressingMode) {
+        if self.registers.is_16bit_mode() {
+            let value = self.get_16bit_from_address(bus, addressing_mode);
+            let result = self.do_dec(value).to_u32() as u16;
+            self.set_16bit_to_address(bus, addressing_mode, result);
+        } else {
+            let value = self.get_8bit_from_address(bus, addressing_mode);
+            let result = self.do_dec(value).to_u32() as u8;
+            self.set_8bit_to_address(bus, addressing_mode, result);
+        }
+        self.increment_cycles_dec(addressing_mode);
+    }
+
+    fn dex(&mut self) {
+        if self.registers.is_16bit_index() {
+            self.registers.x = self.do_dec(self.registers.x);
+        } else {
+            let result = self.do_dec(self.registers.x).to_u32() as u8;
+            self.registers.set_low_x(result);
+        }
+        self.increment_cycles_dec_index();
+    }
+
+    fn dey(&mut self) {
+        if self.registers.is_16bit_index() {
+            self.registers.y = self.do_dec(self.registers.y);
+        } else {
+            let result = self.do_dec(self.registers.y).to_u32() as u8;
+            self.registers.set_low_y(result);
+        }
+        self.increment_cycles_dec_index();
     }
 
     fn do_comp<T: SnesNum>(&mut self, target: T, value: T) {
@@ -142,7 +220,7 @@ impl CPU {
         self.increment_cycles_bitwise(addressing_mode);
     }
 
-    fn asl(&mut self, bus: &Bus, addressing_mode: AddressingMode) {
+    fn asl(&mut self, bus: &mut Bus, addressing_mode: AddressingMode) {
         let target = match addressing_mode {
             AddressingMode::Accumulator => self.registers.a,
             _ => match self.registers.is_16bit_mode() {
@@ -152,11 +230,11 @@ impl CPU {
         };
         if self.registers.is_16bit_mode() {
             let (result, affected_flags) = alu::asl(target);
-            self.registers.a = result;
+            self.set_16bit_to_address(bus, addressing_mode, result);
             self.registers.set_flags(&affected_flags);
         } else {
             let (result, affected_flags) = alu::asl(target as u8);
-            self.registers.set_low_a(result);
+            self.set_8bit_to_address(bus, addressing_mode, result);
             self.registers.set_flags(&affected_flags);
         }
         self.increment_cycles_shift(addressing_mode);
@@ -304,7 +382,7 @@ impl CPU {
         self.increment_cycles_clear();
     }
 
-    pub fn execute_opcode(&mut self, opcode: u8, bus: &Bus) {
+    pub fn execute_opcode(&mut self, opcode: u8, bus: &mut Bus) {
         type A = AddressingMode;
         type I = IndexRegister;
         match opcode {
@@ -424,6 +502,16 @@ impl CPU {
             0xC0 => self.cpy(bus, A::Immediate),
             0xCC => self.cpy(bus, A::Absolute),
             0xC4 => self.cpy(bus, A::DirectPage),
+            // DEC
+            0x3A => self.dec(bus, A::Accumulator),
+            0xCE => self.dec(bus, A::Absolute),
+            0xC6 => self.dec(bus, A::DirectPage),
+            0xDE => self.dec(bus, A::AbsoluteIndexed(I::X)),
+            0xD6 => self.dec(bus, A::DirectPageIndexed(I::X)),
+            // DEX
+            0xCA => self.dex(),
+            // DEY
+            0x88 => self.dey(),
             _ => println!("Invalid opcode: {:02X}", opcode),
         }
     }
@@ -487,12 +575,12 @@ mod cpu_instructions_tests {
     #[test]
     fn test_asl() {
         let mut cpu = CPU::new();
-        let bus = Bus::new();
+        let mut bus = Bus::new();
         cpu.registers.a   = 0b01010000_00000000;
         cpu.registers.pbr = 0x00;
         cpu.registers.pc  = 0x0000;
         cpu.registers.set_memory_select_flag(false);
-        cpu.asl(&bus, AddressingMode::Accumulator);
+        cpu.asl(&mut bus, AddressingMode::Accumulator);
         assert_eq!(cpu.registers.a, 0b10100000_00000000);
         assert_eq!(cpu.registers.pc, 0x01);
         assert_eq!(cpu.cycles, 4);
@@ -983,5 +1071,49 @@ mod cpu_instructions_tests {
         assert!(cpu.registers.get_carry_flag());
         assert!(!cpu.registers.get_zero_flag());
         assert!(!cpu.registers.get_overflow_flag());
+    }
+
+    #[test]
+    fn test_dec() {
+        let mut cpu = CPU::new();
+        let mut bus = Bus::new();
+        cpu.registers.a   = 0x0001;
+        cpu.registers.pbr = 0x00;
+        cpu.registers.pc  = 0x0000;
+        cpu.registers.set_memory_select_flag(true);
+        cpu.dec(&mut bus, AddressingMode::Accumulator);
+        assert_eq!(cpu.registers.a, 0);
+        assert_eq!(cpu.registers.pc, 0x01);
+        assert_eq!(cpu.cycles, 2);
+        assert!(!cpu.registers.get_negative_flag());
+        assert!(cpu.registers.get_zero_flag());
+    }
+
+    #[test]
+    fn test_dex() {
+        let mut cpu = CPU::new();
+        cpu.registers.x   = 0x0001;
+        cpu.registers.pbr = 0x00;
+        cpu.registers.pc  = 0x0000;
+        cpu.dex();
+        assert_eq!(cpu.registers.x, 0);
+        assert_eq!(cpu.registers.pc, 0x01);
+        assert_eq!(cpu.cycles, 2);
+        assert!(!cpu.registers.get_negative_flag());
+        assert!(cpu.registers.get_zero_flag());
+    }
+
+    #[test]
+    fn test_dey() {
+        let mut cpu = CPU::new();
+        cpu.registers.y   = 0x0001;
+        cpu.registers.pbr = 0x00;
+        cpu.registers.pc  = 0x0000;
+        cpu.dey();
+        assert_eq!(cpu.registers.y, 0);
+        assert_eq!(cpu.registers.pc, 0x01);
+        assert_eq!(cpu.cycles, 2);
+        assert!(!cpu.registers.get_negative_flag());
+        assert!(cpu.registers.get_zero_flag());
     }
 }

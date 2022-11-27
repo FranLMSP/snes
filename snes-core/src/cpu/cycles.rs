@@ -198,6 +198,14 @@ impl CPU {
         let (bytes, cycles) = self.common_conditions(addressing_mode, &COMP_INDEX_CONDITIONS);
         self.registers.increment_pc(bytes); self.cycles += cycles;
     }
+
+    pub fn increment_cycles_dec(&mut self, addressing_mode: AddressingMode) {
+        self.increment_cycles_shift(addressing_mode);
+    }
+
+    pub fn increment_cycles_dec_index(&mut self) {
+        self.registers.increment_pc(1); self.cycles += 2;
+    }
 }
 
 #[cfg(test)]

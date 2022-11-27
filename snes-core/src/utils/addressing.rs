@@ -142,6 +142,17 @@ impl AddressingMode {
         let address = self.effective_address(bus, pc_addr, direct_page_register, stack_pointer, x, y);
         return (bus.read(address) as u16) | ((bus.read(address + 1) as u16) << 8);
     }
+
+    pub fn store_8bit(self, bus: &mut Bus, pc_addr: u32, direct_page_register: u16, stack_pointer: u16, x: u16, y: u16, value: u8) {
+        let address = self.effective_address(bus, pc_addr, direct_page_register, stack_pointer, x, y);
+        bus.write(address, value);
+    }
+
+    pub fn store_16bit(self, bus: &mut Bus, pc_addr: u32, direct_page_register: u16, stack_pointer: u16, x: u16, y: u16, value: u16) {
+        let address = self.effective_address(bus, pc_addr, direct_page_register, stack_pointer, x, y);
+        bus.write(address, value as u8);
+        bus.write(address + 1, (value >> 8) as u8);
+    }
 }
 
 #[cfg(test)]
