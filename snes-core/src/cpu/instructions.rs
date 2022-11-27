@@ -541,6 +541,26 @@ impl CPU {
         }
     }
 
+    fn lda(&mut self, bus: &Bus, addressing_mode: AddressingMode) {
+        if self.registers.is_16bit_mode() {
+            let value = self.get_16bit_from_address(bus, addressing_mode);
+            self.registers.a = value;
+            self.registers.set_flags(&[
+                Flags::Negative(value >> 15 == 1),
+                Flags::Zero(value == 0),
+            ]);
+        } else {
+            let value = self.get_8bit_from_address(bus, addressing_mode);
+            self.registers.set_flags(&[
+                Flags::Negative(value >> 7 == 1),
+                Flags::Zero(value == 0),
+            ]);
+            self.registers.set_low_a(value);
+            self.do_bit(self.registers.a as u8, value, addressing_mode);
+        }
+        self.increment_cycles_bit(addressing_mode);
+    }
+
     pub fn execute_opcode(&mut self, opcode: u8, bus: &mut Bus) {
         type A = AddressingMode;
         type I = IndexRegister;
@@ -731,6 +751,22 @@ impl CPU {
             0x20 => self.jsr(bus, A::Absolute),
             0xFC => self.jsr(bus, A::AbsoluteIndexedIndirect(I::X)),
             0x22 => self.jsr(bus, A::AbsoluteLong), // same as JSL
+            // LDA
+            0xA9 => self.lda(bus, A::Immediate),
+            0xAD => self.lda(bus, A::Absolute),
+            0xAF => self.lda(bus, A::AbsoluteLong),
+            0xA5 => self.lda(bus, A::DirectPage),
+            0xB2 => self.lda(bus, A::DirectPageIndirect),
+            0xA7 => self.lda(bus, A::DirectPageIndirectLong),
+            0xBD => self.lda(bus, A::AbsoluteIndexed(I::X)),
+            0xBF => self.lda(bus, A::AbsoluteLongIndexed(I::X)),
+            0xB9 => self.lda(bus, A::AbsoluteIndexed(I::Y)),
+            0xB5 => self.lda(bus, A::DirectPageIndexed(I::X)),
+            0xA1 => self.lda(bus, A::DirectPageIndexedIndirect(I::X)),
+            0xB1 => self.lda(bus, A::DirectPageIndirectIndexed(I::Y)),
+            0xB7 => self.lda(bus, A::DirectPageIndirectLongIndexed(I::Y)),
+            0xA3 => self.lda(bus, A::StackRelative),
+            0xB3 => self.lda(bus, A::StackRelativeIndirectIndexed(I::Y)),
             _ => println!("Invalid opcode: {:02X}", opcode),
         }
     }
@@ -1487,5 +1523,24 @@ mod cpu_instructions_tests {
         assert_eq!(cpu.registers.pc, 0xBBCC);
         assert_eq!(cpu.registers.sp, 0x1F9);
         assert_eq!(cpu.cycles, 8);
+    }
+
+    #[test]
+    fn test_lda() {
+        let mut cpu = CPU::new();
+        let mut bus = Bus::new();
+        cpu.registers.a  = 0x0000;
+        cpu.registers.pc  = 0x0000;
+        cpu.registers.pbr  = 0x00;
+        cpu.registers.set_negative_flag(false);
+        cpu.registers.set_zero_flag(true);
+        cpu.registers.set_16bit_mode(false);
+        bus.write(0x0001, 0xFF);
+        cpu.lda(&bus, AddressingMode::Immediate);
+        assert_eq!(cpu.registers.pc, 0x0002);
+        assert_eq!(cpu.registers.a, 0x00FF);
+        assert_eq!(cpu.cycles, 2);
+        assert!(cpu.registers.get_negative_flag());
+        assert!(!cpu.registers.get_zero_flag());
     }
 }
