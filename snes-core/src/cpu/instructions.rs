@@ -77,12 +77,7 @@ impl CPU {
     }
 
     fn do_comp<T: SnesNum>(&mut self, target: T, value: T) {
-        let carry_flag = self.registers.get_carry_flag();
-        let is_decimal_mode = self.registers.get_decimal_mode_flag();
-        let (_, affected_flags) = match is_decimal_mode {
-            true => alu::sbc_bcd(target, value, carry_flag),
-            false => alu::sbc_bin(target, value, carry_flag),
-        };
+        let (_, affected_flags) = alu::sbc_bin(target, value, false);
         for flag in affected_flags {
             match flag {
                 Flags::Overflow(_) => {},
