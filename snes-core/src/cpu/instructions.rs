@@ -536,6 +536,16 @@ impl CPU {
         self.do_push(bus, &[(address >> 8) as u8, address as u8]);
     }
 
+    fn pha(&mut self, bus: &mut Bus) {
+        let value = self.registers.a;
+        if self.registers.is_16bit_mode() {
+            self.do_push(bus, &[(value >> 8) as u8, value as u8]);
+        } else {
+            self.do_push(bus, &[value as u8]);
+        }
+        self.increment_cycles_pha();
+    }
+
     fn jsr(&mut self, bus: &mut Bus, addressing_mode: AddressingMode) {
         let effective_address = self.get_effective_address(bus, addressing_mode);
         let is_long = match addressing_mode {
@@ -845,6 +855,8 @@ impl CPU {
             0xD4 => self.pei(bus),
             // PER
             0x62 => self.per(bus),
+            // PHA
+            0x48 => self.pha(bus),
             _ => println!("Invalid opcode: {:02X}", opcode),
         }
     }
@@ -1705,5 +1717,20 @@ mod cpu_instructions_tests {
         assert_eq!(bus.read(0x1FB), 0x04);
         assert_eq!(cpu.registers.pc, 0x0003);
         assert_eq!(cpu.cycles, 6);
+    }
+
+    #[test]
+    fn test_pha() {
+        let mut cpu = CPU::new();
+        let mut bus = Bus::new();
+        cpu.registers.pc  = 0x0000;
+        cpu.registers.sp  = 0x1FC;
+        cpu.registers.a   = 0x1234;
+        cpu.registers.set_16bit_mode(false);
+        cpu.pha(&mut bus);
+        assert_eq!(bus.read(0x1FC), 0x34);
+        assert_eq!(cpu.registers.sp, 0x1FB);
+        assert_eq!(cpu.registers.pc, 0x0001);
+        assert_eq!(cpu.cycles, 3);
     }
 }

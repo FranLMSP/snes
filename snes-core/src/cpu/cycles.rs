@@ -284,6 +284,13 @@ impl CPU {
     pub fn increment_cycles_per(&mut self) {
         self.registers.increment_pc(3); self.cycles += 6;
     }
+
+    pub fn increment_cycles_pha(&mut self) {
+        self.registers.increment_pc(1); self.cycles += 3;
+        if self.registers.is_16bit_mode() {
+            self.cycles += 1;
+        }
+    }
 }
 
 #[cfg(test)]
