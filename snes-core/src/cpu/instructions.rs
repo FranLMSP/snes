@@ -1648,7 +1648,7 @@ mod cpu_instructions_tests {
     }
 
     #[test]
-    fn test_push_instructions() {
+    fn test_pea() {
         let mut cpu = CPU::new();
         let mut bus = Bus::new();
         cpu.registers.pc  = 0x0000;
@@ -1660,5 +1660,22 @@ mod cpu_instructions_tests {
         assert_eq!(bus.read(0x1FB), 0xBB);
         assert_eq!(cpu.registers.pc, 0x0003);
         assert_eq!(cpu.cycles, 5);
+    }
+
+    #[test]
+    fn test_pei() {
+        let mut cpu = CPU::new();
+        let mut bus = Bus::new();
+        cpu.registers.pc  = 0x0000;
+        cpu.registers.sp  = 0x1FC;
+        cpu.registers.d = 0x00;
+        bus.write(0x000001, 0x02); // Direct page address
+        bus.write(0x000002, 0xAA);
+        bus.write(0x000003, 0xBB);
+        cpu.pei(&mut bus);
+        assert_eq!(bus.read(0x1FC), 0xAA);
+        assert_eq!(bus.read(0x1FB), 0xBB);
+        assert_eq!(cpu.registers.pc, 0x0002);
+        assert_eq!(cpu.cycles, 6);
     }
 }
