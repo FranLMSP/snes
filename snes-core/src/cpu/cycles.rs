@@ -280,6 +280,10 @@ impl CPU {
         );
         self.registers.increment_pc(bytes); self.cycles += cycles;
     }
+
+    pub fn increment_cycles_per(&mut self) {
+        self.registers.increment_pc(3); self.cycles += 6;
+    }
 }
 
 #[cfg(test)]

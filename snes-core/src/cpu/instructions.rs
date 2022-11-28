@@ -525,6 +525,17 @@ impl CPU {
         self.increment_cycles_pei();
     }
 
+    fn per(&mut self, bus: &mut Bus) {
+        let label = self.get_effective_address(bus, AddressingMode::Absolute) as u16;
+        let is_negative = (label>> 15) == 1;
+        self.increment_cycles_per();
+        let address = match is_negative {
+            true => self.registers.pc.wrapping_sub(!label + 1),
+            false=> self.registers.pc.wrapping_add(label),
+        };
+        self.do_push(bus, &[(address >> 8) as u8, address as u8]);
+    }
+
     fn jsr(&mut self, bus: &mut Bus, addressing_mode: AddressingMode) {
         let effective_address = self.get_effective_address(bus, addressing_mode);
         let is_long = match addressing_mode {
@@ -832,6 +843,8 @@ impl CPU {
             0xF4 => self.pea(bus),
             // PEI
             0xD4 => self.pei(bus),
+            // PER
+            0x62 => self.per(bus),
             _ => println!("Invalid opcode: {:02X}", opcode),
         }
     }
@@ -1676,6 +1689,21 @@ mod cpu_instructions_tests {
         assert_eq!(bus.read(0x1FC), 0xAA);
         assert_eq!(bus.read(0x1FB), 0xBB);
         assert_eq!(cpu.registers.pc, 0x0002);
+        assert_eq!(cpu.cycles, 6);
+    }
+
+    #[test]
+    fn test_per() {
+        let mut cpu = CPU::new();
+        let mut bus = Bus::new();
+        cpu.registers.pc  = 0x0000;
+        cpu.registers.sp  = 0x1FC;
+        bus.write(0x000002, 0x00);
+        bus.write(0x000001, 0x01);
+        cpu.per(&mut bus);
+        assert_eq!(bus.read(0x1FC), 0x00);
+        assert_eq!(bus.read(0x1FB), 0x04);
+        assert_eq!(cpu.registers.pc, 0x0003);
         assert_eq!(cpu.cycles, 6);
     }
 }
