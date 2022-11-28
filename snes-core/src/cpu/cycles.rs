@@ -291,6 +291,10 @@ impl CPU {
             self.cycles += 1;
         }
     }
+
+    pub fn increment_cycles_phb(&mut self) {
+        self.registers.increment_pc(1); self.cycles += 3;
+    }
 }
 
 #[cfg(test)]

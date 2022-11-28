@@ -546,6 +546,11 @@ impl CPU {
         self.increment_cycles_pha();
     }
 
+    fn phb(&mut self, bus: &mut Bus) {
+        self.do_push(bus, &[self.registers.dbr]);
+        self.increment_cycles_phb();
+    }
+
     fn jsr(&mut self, bus: &mut Bus, addressing_mode: AddressingMode) {
         let effective_address = self.get_effective_address(bus, addressing_mode);
         let is_long = match addressing_mode {
@@ -857,6 +862,8 @@ impl CPU {
             0x62 => self.per(bus),
             // PHA
             0x48 => self.pha(bus),
+            // PHB
+            0x8B => self.phb(bus),
             _ => println!("Invalid opcode: {:02X}", opcode),
         }
     }
@@ -1729,6 +1736,20 @@ mod cpu_instructions_tests {
         cpu.registers.set_16bit_mode(false);
         cpu.pha(&mut bus);
         assert_eq!(bus.read(0x1FC), 0x34);
+        assert_eq!(cpu.registers.sp, 0x1FB);
+        assert_eq!(cpu.registers.pc, 0x0001);
+        assert_eq!(cpu.cycles, 3);
+    }
+
+    #[test]
+    fn test_phb() {
+        let mut cpu = CPU::new();
+        let mut bus = Bus::new();
+        cpu.registers.pc  = 0x0000;
+        cpu.registers.sp  = 0x1FC;
+        cpu.registers.dbr   = 0x12;
+        cpu.phb(&mut bus);
+        assert_eq!(bus.read(0x1FC), 0x12);
         assert_eq!(cpu.registers.sp, 0x1FB);
         assert_eq!(cpu.registers.pc, 0x0001);
         assert_eq!(cpu.cycles, 3);
