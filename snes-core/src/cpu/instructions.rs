@@ -551,6 +551,42 @@ impl CPU {
         self.increment_cycles_phb();
     }
 
+    fn phd(&mut self, bus: &mut Bus) {
+        let value = self.registers.d;
+        self.do_push(bus, &[(value >> 8) as u8, value as u8]);
+        self.increment_cycles_phd();
+    }
+
+    fn phk(&mut self, bus: &mut Bus) {
+        self.do_push(bus, &[self.registers.pbr]);
+        self.increment_cycles_phk();
+    }
+
+    fn php(&mut self, bus: &mut Bus) {
+        self.do_push(bus, &[self.registers.p]);
+        self.increment_cycles_php();
+    }
+
+    fn phx(&mut self, bus: &mut Bus) {
+        let value = self.registers.x;
+        if self.registers.is_16bit_index() {
+            self.do_push(bus, &[(value >> 8) as u8, value as u8]);
+        } else {
+            self.do_push(bus, &[value as u8]);
+        }
+        self.increment_cycles_push_index();
+    }
+
+    fn phy(&mut self, bus: &mut Bus) {
+        let value = self.registers.y;
+        if self.registers.is_16bit_index() {
+            self.do_push(bus, &[(value >> 8) as u8, value as u8]);
+        } else {
+            self.do_push(bus, &[value as u8]);
+        }
+        self.increment_cycles_push_index();
+    }
+
     fn jsr(&mut self, bus: &mut Bus, addressing_mode: AddressingMode) {
         let effective_address = self.get_effective_address(bus, addressing_mode);
         let is_long = match addressing_mode {
@@ -864,6 +900,16 @@ impl CPU {
             0x48 => self.pha(bus),
             // PHB
             0x8B => self.phb(bus),
+            // PHD
+            0x0B => self.phd(bus),
+            // PHK
+            0x4B => self.phk(bus),
+            // PHP
+            0x08 => self.php(bus),
+            // PHX
+            0xDA => self.phx(bus),
+            // PHY
+            0x5A => self.phy(bus),
             _ => println!("Invalid opcode: {:02X}", opcode),
         }
     }
@@ -1753,5 +1799,79 @@ mod cpu_instructions_tests {
         assert_eq!(cpu.registers.sp, 0x1FB);
         assert_eq!(cpu.registers.pc, 0x0001);
         assert_eq!(cpu.cycles, 3);
+    }
+
+    #[test]
+    fn test_phd() {
+        let mut cpu = CPU::new();
+        let mut bus = Bus::new();
+        cpu.registers.pc  = 0x0000;
+        cpu.registers.sp  = 0x1FC;
+        cpu.registers.d = 0x1234;
+        cpu.phd(&mut bus);
+        assert_eq!(bus.read(0x1FC), 0x12);
+        assert_eq!(bus.read(0x1FB), 0x34);
+        assert_eq!(cpu.registers.sp, 0x1FA);
+        assert_eq!(cpu.registers.pc, 0x0001);
+        assert_eq!(cpu.cycles, 4);
+    }
+
+    #[test]
+    fn test_phk() {
+        let mut cpu = CPU::new();
+        let mut bus = Bus::new();
+        cpu.registers.pc  = 0x0000;
+        cpu.registers.pbr  = 0x00;
+        cpu.registers.sp  = 0x1FC;
+        bus.write(0x1FC, 0xFF);
+        cpu.phk(&mut bus);
+        assert_eq!(bus.read(0x1FC), 0x00);
+        assert_eq!(cpu.registers.sp, 0x1FB);
+        assert_eq!(cpu.registers.pc, 0x0001);
+        assert_eq!(cpu.cycles, 3);
+    }
+
+    #[test]
+    fn test_php() {
+        let mut cpu = CPU::new();
+        let mut bus = Bus::new();
+        cpu.registers.pc  = 0x0000;
+        cpu.registers.p  = 0x12;
+        cpu.registers.sp  = 0x1FC;
+        cpu.php(&mut bus);
+        assert_eq!(bus.read(0x1FC), 0x12);
+        assert_eq!(cpu.registers.sp, 0x1FB);
+        assert_eq!(cpu.registers.pc, 0x0001);
+        assert_eq!(cpu.cycles, 3);
+    }
+
+    #[test]
+    fn test_phx() {
+        let mut cpu = CPU::new();
+        let mut bus = Bus::new();
+        cpu.registers.pc  = 0x0000;
+        cpu.registers.x  = 0x1234;
+        cpu.registers.sp  = 0x1FC;
+        cpu.phx(&mut bus);
+        assert_eq!(bus.read(0x1FC), 0x12);
+        assert_eq!(bus.read(0x1FB), 0x34);
+        assert_eq!(cpu.registers.sp, 0x1FA);
+        assert_eq!(cpu.registers.pc, 0x0001);
+        assert_eq!(cpu.cycles, 4);
+    }
+
+    #[test]
+    fn test_phy() {
+        let mut cpu = CPU::new();
+        let mut bus = Bus::new();
+        cpu.registers.pc  = 0x0000;
+        cpu.registers.y  = 0x1234;
+        cpu.registers.sp  = 0x1FC;
+        cpu.phy(&mut bus);
+        assert_eq!(bus.read(0x1FC), 0x12);
+        assert_eq!(bus.read(0x1FB), 0x34);
+        assert_eq!(cpu.registers.sp, 0x1FA);
+        assert_eq!(cpu.registers.pc, 0x0001);
+        assert_eq!(cpu.cycles, 4);
     }
 }
