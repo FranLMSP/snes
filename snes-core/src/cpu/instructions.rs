@@ -668,6 +668,37 @@ impl CPU {
         self.do_ld_index(bus, IndexRegister::Y, addressing_mode);
     }
 
+    fn do_pull(&mut self, bus: &Bus, count: usize) -> Vec<u8> {
+        let mut bytes = vec![];
+        let mut is_zero = true;
+        for _ in 0..count {
+            self.registers.increment_sp(1);
+            let byte = bus.read(self.registers.sp as u32);
+            if byte != 0 {
+                is_zero = false;
+            }
+            bytes.push(byte);
+        }
+        self.registers.set_zero_flag(is_zero);
+        if bytes.len() > 0 {
+            // Low byte is pulled first, so we need to check
+            // for the last byte that we pull
+            self.registers.set_negative_flag((bytes[bytes.len() - 1] >> 7) == 1);
+        }
+        bytes
+    }
+
+    fn pla(&mut self, bus: &Bus) {
+        if self.registers.is_16bit_mode() {
+            let bytes = self.do_pull(bus, 2);
+            self.registers.a = (bytes[0] as u16) | ((bytes[1] as u16) << 8);
+        } else {
+            let bytes = self.do_pull(bus, 1);
+            self.registers.set_low_a(bytes[0]);
+        }
+        self.increment_cycles_pla();
+    }
+
     pub fn execute_opcode(&mut self, opcode: u8, bus: &mut Bus) {
         type A = AddressingMode;
         type I = IndexRegister;
@@ -910,6 +941,8 @@ impl CPU {
             0xDA => self.phx(bus),
             // PHY
             0x5A => self.phy(bus),
+            // PLA
+            0x68 => self.pla(bus),
             _ => println!("Invalid opcode: {:02X}", opcode),
         }
     }
@@ -1873,5 +1906,25 @@ mod cpu_instructions_tests {
         assert_eq!(cpu.registers.sp, 0x1FA);
         assert_eq!(cpu.registers.pc, 0x0001);
         assert_eq!(cpu.cycles, 4);
+    }
+
+    #[test]
+    fn test_pla() {
+        let mut cpu = CPU::new();
+        let mut bus = Bus::new();
+        cpu.registers.pc  = 0x0000;
+        cpu.registers.y  = 0x1234;
+        cpu.registers.set_negative_flag(true);
+        cpu.registers.set_zero_flag(true);
+        bus.write(0x1FB, 0x34);
+        bus.write(0x1FC, 0x12);
+        cpu.registers.sp  = 0x1FA;
+        cpu.pla(&mut bus);
+        assert_eq!(cpu.registers.a, 0x1234);
+        assert_eq!(cpu.registers.sp, 0x1FC);
+        assert_eq!(cpu.registers.pc, 0x0001);
+        assert_eq!(cpu.registers.get_negative_flag(), false);
+        assert_eq!(cpu.registers.get_zero_flag(), false);
+        assert_eq!(cpu.cycles, 5);
     }
 }

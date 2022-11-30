@@ -314,6 +314,13 @@ impl CPU {
             self.cycles += 1;
         }
     }
+
+    pub fn increment_cycles_pla(&mut self) {
+        self.registers.increment_pc(1); self.cycles += 4;
+        if self.registers.is_16bit_mode() {
+            self.cycles += 1;
+        }
+    }
 }
 
 #[cfg(test)]
