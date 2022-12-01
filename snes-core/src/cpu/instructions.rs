@@ -743,6 +743,46 @@ impl CPU {
         self.increment_cycles_rep();
     }
 
+    fn rol(&mut self, bus: &mut Bus, addressing_mode: AddressingMode) {
+        let target = match addressing_mode {
+            AddressingMode::Accumulator => self.registers.a,
+            _ => match self.registers.is_16bit_mode() {
+                true => self.get_16bit_from_address(bus, addressing_mode),
+                false => self.get_8bit_from_address(bus, addressing_mode) as u16,
+            }
+        };
+        if self.registers.is_16bit_mode() {
+            let (result, affected_flags) = alu::rol(target, self.registers.get_carry_flag());
+            self.set_16bit_to_address(bus, addressing_mode, result);
+            self.registers.set_flags(&affected_flags);
+        } else {
+            let (result, affected_flags) = alu::rol(target as u8, self.registers.get_carry_flag());
+            self.set_8bit_to_address(bus, addressing_mode, result);
+            self.registers.set_flags(&affected_flags);
+        }
+        self.increment_cycles_shift(addressing_mode);
+    }
+
+    fn ror(&mut self, bus: &mut Bus, addressing_mode: AddressingMode) {
+        let target = match addressing_mode {
+            AddressingMode::Accumulator => self.registers.a,
+            _ => match self.registers.is_16bit_mode() {
+                true => self.get_16bit_from_address(bus, addressing_mode),
+                false => self.get_8bit_from_address(bus, addressing_mode) as u16,
+            }
+        };
+        if self.registers.is_16bit_mode() {
+            let (result, affected_flags) = alu::ror(target, self.registers.get_carry_flag());
+            self.set_16bit_to_address(bus, addressing_mode, result);
+            self.registers.set_flags(&affected_flags);
+        } else {
+            let (result, affected_flags) = alu::ror(target as u8, self.registers.get_carry_flag());
+            self.set_8bit_to_address(bus, addressing_mode, result);
+            self.registers.set_flags(&affected_flags);
+        }
+        self.increment_cycles_shift(addressing_mode);
+    }
+
     pub fn execute_opcode(&mut self, opcode: u8, bus: &mut Bus) {
         type A = AddressingMode;
         type I = IndexRegister;
@@ -999,6 +1039,18 @@ impl CPU {
             0x7A => self.ply(bus),
             // REP
             0xC2 => self.rep(bus),
+            // ROL
+            0x2A => self.rol(bus, AddressingMode::Accumulator),
+            0x2E => self.rol(bus, AddressingMode::Immediate),
+            0x26 => self.rol(bus, AddressingMode::DirectPage),
+            0x3E => self.rol(bus, AddressingMode::AbsoluteIndexed(I::X)),
+            0x36 => self.rol(bus, AddressingMode::DirectPageIndexed(I::X)),
+            // ROR
+            0x6A => self.ror(bus, AddressingMode::Accumulator),
+            0x6E => self.ror(bus, AddressingMode::Immediate),
+            0x66 => self.ror(bus, AddressingMode::DirectPage),
+            0x7E => self.ror(bus, AddressingMode::AbsoluteIndexed(I::X)),
+            0x76 => self.ror(bus, AddressingMode::DirectPageIndexed(I::X)),
             _ => println!("Invalid opcode: {:02X}", opcode),
         }
     }
@@ -2092,5 +2144,36 @@ mod cpu_instructions_tests {
         assert_eq!(cpu.registers.p, 0xFF);
         assert_eq!(cpu.registers.pc, 0x0002);
         assert_eq!(cpu.cycles, 3);
+    }
+
+    #[test]
+    fn test_rol() {
+        let mut cpu = CPU::new();
+        let mut bus = Bus::new();
+        cpu.registers.set_16bit_mode(false);
+        cpu.registers.a  = 0b0100_0000;
+        cpu.registers.pc  = 0x0000;
+        cpu.rol(&mut bus, AddressingMode::Accumulator);
+        assert_eq!(cpu.registers.get_negative_flag(), true);
+        assert_eq!(cpu.registers.get_zero_flag(), false);
+        assert_eq!(cpu.registers.a, 0b1000_0000);
+        assert_eq!(cpu.registers.pc, 0x0001);
+        assert_eq!(cpu.cycles, 2);
+    }
+
+    #[test]
+    fn test_ror() {
+        let mut cpu = CPU::new();
+        let mut bus = Bus::new();
+        cpu.registers.set_16bit_mode(false);
+        cpu.registers.set_carry_flag(true);
+        cpu.registers.a  = 0x00;
+        cpu.registers.pc  = 0x0000;
+        cpu.ror(&mut bus, AddressingMode::Accumulator);
+        assert_eq!(cpu.registers.get_carry_flag(), false);
+        assert_eq!(cpu.registers.get_zero_flag(), false);
+        assert_eq!(cpu.registers.a, 0b1000_0000);
+        assert_eq!(cpu.registers.pc, 0x0001);
+        assert_eq!(cpu.cycles, 2);
     }
 }

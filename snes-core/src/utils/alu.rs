@@ -134,6 +134,24 @@ pub fn ora<T: SnesNum>(target: T, value: T) -> (T, [Flags; 2]) {
     ])
 }
 
+pub fn rol<T: SnesNum>(target: T, carry: bool) -> (T, [Flags; 3]) {
+    let result = target.rol(carry);
+    (result, [
+        Negative(result.is_negative()),
+        Zero(result.is_zero()),
+        Carry(target.is_negative()),
+    ])
+}
+
+pub fn ror<T: SnesNum>(target: T, carry: bool) -> (T, [Flags; 3]) {
+    let result = target.ror(carry);
+    (result, [
+        Negative(result.is_negative()),
+        Zero(result.is_zero()),
+        Carry(target.lowest_bit()),
+    ])
+}
+
 
 #[cfg(test)]
 mod alu_tests {
@@ -399,5 +417,27 @@ mod alu_tests {
         let (result, affected_flags) = ora(0b00000000_00000000_u16, 0b00000000_00000000_u16);
         assert_eq!(result, 0);
         assert_eq!(affected_flags, [Negative(false), Zero(true)]);
+    }
+
+    #[test]
+    fn test_rol() {
+        let (result, affected_flags) = rol(0b1000_0000_u8, false);
+        assert_eq!(result, 0);
+        assert_eq!(affected_flags, [Negative(false), Zero(true), Carry(true)]);
+
+        let (result, affected_flags) = rol(0b0100_0000_u8, true);
+        assert_eq!(result, 0b10000001);
+        assert_eq!(affected_flags, [Negative(true), Zero(false), Carry(false)]);
+    }
+
+    #[test]
+    fn test_ror() {
+        let (result, affected_flags) = ror(0b0000_0001_u8, false);
+        assert_eq!(result, 0);
+        assert_eq!(affected_flags, [Negative(false), Zero(true), Carry(true)]);
+
+        let (result, affected_flags) = ror(0b0000_0000_u8, true);
+        assert_eq!(result, 0b10000000);
+        assert_eq!(affected_flags, [Negative(true), Zero(false), Carry(false)]);
     }
 }
