@@ -699,6 +699,45 @@ impl CPU {
         self.increment_cycles_pla();
     }
 
+    fn plb(&mut self, bus: &Bus) {
+        self.registers.dbr = self.do_pull(bus, 1)[0];
+        self.increment_cycles_plb();
+    }
+
+    fn pld(&mut self, bus: &Bus) {
+        let bytes = self.do_pull(bus, 2);
+        self.registers.d = (bytes[0] as u16) | ((bytes[1] as u16) << 8);
+        self.increment_cycles_pld();
+    }
+
+    fn plp(&mut self, bus: &Bus) {
+        let bytes = self.do_pull(bus, 1);
+        self.registers.p = bytes[0];
+        self.increment_cycles_plp();
+    }
+
+    fn plx(&mut self, bus: &Bus) {
+        if self.registers.is_16bit_index() {
+            let bytes = self.do_pull(bus, 2);
+            self.registers.x = (bytes[0] as u16) | ((bytes[1] as u16) << 8);
+        } else {
+            let bytes = self.do_pull(bus, 1);
+            self.registers.set_low_x(bytes[0]);
+        }
+        self.increment_cycles_pl_index();
+    }
+
+    fn ply(&mut self, bus: &Bus) {
+        if self.registers.is_16bit_index() {
+            let bytes = self.do_pull(bus, 2);
+            self.registers.y = (bytes[0] as u16) | ((bytes[1] as u16) << 8);
+        } else {
+            let bytes = self.do_pull(bus, 1);
+            self.registers.set_low_y(bytes[0]);
+        }
+        self.increment_cycles_pl_index();
+    }
+
     pub fn execute_opcode(&mut self, opcode: u8, bus: &mut Bus) {
         type A = AddressingMode;
         type I = IndexRegister;
@@ -943,6 +982,16 @@ impl CPU {
             0x5A => self.phy(bus),
             // PLA
             0x68 => self.pla(bus),
+            // PLA
+            0xAB => self.plb(bus),
+            // PLD
+            0x2B => self.pld(bus),
+            // PLP
+            0x28 => self.plp(bus),
+            // PLX
+            0xFA => self.plx(bus),
+            // PLY
+            0x7A => self.ply(bus),
             _ => println!("Invalid opcode: {:02X}", opcode),
         }
     }
@@ -1914,6 +1963,7 @@ mod cpu_instructions_tests {
         let mut bus = Bus::new();
         cpu.registers.pc  = 0x0000;
         cpu.registers.y  = 0x1234;
+        cpu.registers.set_16bit_mode(true);
         cpu.registers.set_negative_flag(true);
         cpu.registers.set_zero_flag(true);
         bus.write(0x1FB, 0x34);
@@ -1921,6 +1971,102 @@ mod cpu_instructions_tests {
         cpu.registers.sp  = 0x1FA;
         cpu.pla(&mut bus);
         assert_eq!(cpu.registers.a, 0x1234);
+        assert_eq!(cpu.registers.sp, 0x1FC);
+        assert_eq!(cpu.registers.pc, 0x0001);
+        assert_eq!(cpu.registers.get_negative_flag(), false);
+        assert_eq!(cpu.registers.get_zero_flag(), false);
+        assert_eq!(cpu.cycles, 5);
+    }
+
+    #[test]
+    fn test_plb() {
+        let mut cpu = CPU::new();
+        let mut bus = Bus::new();
+        cpu.registers.pc  = 0x0000;
+        cpu.registers.dbr  = 0x00;
+        cpu.registers.set_negative_flag(true);
+        cpu.registers.set_zero_flag(true);
+        bus.write(0x1FC, 0x12);
+        cpu.registers.sp  = 0x1FB;
+        cpu.plb(&mut bus);
+        assert_eq!(cpu.registers.dbr, 0x12);
+        assert_eq!(cpu.registers.sp, 0x1FC);
+        assert_eq!(cpu.registers.pc, 0x0001);
+        assert_eq!(cpu.registers.get_negative_flag(), false);
+        assert_eq!(cpu.registers.get_zero_flag(), false);
+        assert_eq!(cpu.cycles, 4);
+    }
+
+    #[test]
+    fn test_pld() {
+        let mut cpu = CPU::new();
+        let mut bus = Bus::new();
+        cpu.registers.pc  = 0x0000;
+        cpu.registers.d  = 0x1234;
+        cpu.registers.set_negative_flag(true);
+        cpu.registers.set_zero_flag(true);
+        bus.write(0x1FB, 0x34);
+        bus.write(0x1FC, 0x12);
+        cpu.registers.sp  = 0x1FA;
+        cpu.pld(&mut bus);
+        assert_eq!(cpu.registers.d, 0x1234);
+        assert_eq!(cpu.registers.sp, 0x1FC);
+        assert_eq!(cpu.registers.pc, 0x0001);
+        assert_eq!(cpu.registers.get_negative_flag(), false);
+        assert_eq!(cpu.registers.get_zero_flag(), false);
+        assert_eq!(cpu.cycles, 5);
+    }
+
+    #[test]
+    fn test_plp() {
+        let mut cpu = CPU::new();
+        let mut bus = Bus::new();
+        cpu.registers.pc  = 0x0000;
+        cpu.registers.p  = 0x00;
+        bus.write(0x1FC, 0xFF);
+        cpu.registers.sp  = 0x1FB;
+        cpu.plp(&mut bus);
+        assert_eq!(cpu.registers.p, 0xFF);
+        assert_eq!(cpu.registers.sp, 0x1FC);
+        assert_eq!(cpu.registers.pc, 0x0001);
+        assert_eq!(cpu.cycles, 4);
+    }
+
+    #[test]
+    fn test_plx() {
+        let mut cpu = CPU::new();
+        let mut bus = Bus::new();
+        cpu.registers.pc  = 0x0000;
+        cpu.registers.x  = 0x1234;
+        cpu.registers.set_16bit_index(true);
+        cpu.registers.set_negative_flag(true);
+        cpu.registers.set_zero_flag(true);
+        bus.write(0x1FB, 0x34);
+        bus.write(0x1FC, 0x12);
+        cpu.registers.sp  = 0x1FA;
+        cpu.plx(&mut bus);
+        assert_eq!(cpu.registers.x, 0x1234);
+        assert_eq!(cpu.registers.sp, 0x1FC);
+        assert_eq!(cpu.registers.pc, 0x0001);
+        assert_eq!(cpu.registers.get_negative_flag(), false);
+        assert_eq!(cpu.registers.get_zero_flag(), false);
+        assert_eq!(cpu.cycles, 5);
+    }
+
+    #[test]
+    fn test_ply() {
+        let mut cpu = CPU::new();
+        let mut bus = Bus::new();
+        cpu.registers.pc  = 0x0000;
+        cpu.registers.y  = 0x1234;
+        cpu.registers.set_16bit_index(true);
+        cpu.registers.set_negative_flag(true);
+        cpu.registers.set_zero_flag(true);
+        bus.write(0x1FB, 0x34);
+        bus.write(0x1FC, 0x12);
+        cpu.registers.sp  = 0x1FA;
+        cpu.ply(&mut bus);
+        assert_eq!(cpu.registers.y, 0x1234);
         assert_eq!(cpu.registers.sp, 0x1FC);
         assert_eq!(cpu.registers.pc, 0x0001);
         assert_eq!(cpu.registers.get_negative_flag(), false);
