@@ -738,6 +738,11 @@ impl CPU {
         self.increment_cycles_pl_index();
     }
 
+    fn rep(&mut self, bus: &Bus) {
+        self.registers.p = self.get_8bit_from_address(bus, AddressingMode::Immediate);
+        self.increment_cycles_rep();
+    }
+
     pub fn execute_opcode(&mut self, opcode: u8, bus: &mut Bus) {
         type A = AddressingMode;
         type I = IndexRegister;
@@ -992,6 +997,8 @@ impl CPU {
             0xFA => self.plx(bus),
             // PLY
             0x7A => self.ply(bus),
+            // REP
+            0xC2 => self.rep(bus),
             _ => println!("Invalid opcode: {:02X}", opcode),
         }
     }
@@ -2072,5 +2079,18 @@ mod cpu_instructions_tests {
         assert_eq!(cpu.registers.get_negative_flag(), false);
         assert_eq!(cpu.registers.get_zero_flag(), false);
         assert_eq!(cpu.cycles, 5);
+    }
+
+    #[test]
+    fn test_rep() {
+        let mut cpu = CPU::new();
+        let mut bus = Bus::new();
+        cpu.registers.pc  = 0x0000;
+        cpu.registers.p  = 0x00;
+        bus.write(0x0001, 0xFF);
+        cpu.rep(&mut bus);
+        assert_eq!(cpu.registers.p, 0xFF);
+        assert_eq!(cpu.registers.pc, 0x0002);
+        assert_eq!(cpu.cycles, 3);
     }
 }

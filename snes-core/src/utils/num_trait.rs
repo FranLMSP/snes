@@ -9,9 +9,12 @@ pub trait SnesNum: Copy + Clone + Sized + Eq + PartialEq {
     fn lsr(&self) -> Self;
     fn xor(&self, v: Self) -> Self;
     fn ora(&self, v: Self) -> Self;
+    fn rol(&self, carry: bool) -> Self;
+    fn ror(&self, carry: bool) -> Self;
     fn is_negative(&self) -> bool;
     fn is_zero(&self) -> bool;
     fn next_to_highest_bit(&self) -> bool;
+    fn lowest_bit(&self) -> bool;
     fn to_u32(&self) -> u32;
     fn from_u32(v: u32) -> Self;
     fn invert(&self) -> Self;
@@ -82,12 +85,29 @@ macro_rules! define_impl {
                 (* self) | v
             }
 
+            fn rol(&self, carry: bool) -> $t {
+                ((* self) << 1) | (carry as $t)
+            }
+
+            fn ror(&self, carry: bool) -> $t {
+                let mut result = ((* self) >> 1);
+                if carry {
+                    result = result |
+                    ((<$t>::MAX) & !(<$t>::MAX >> 1))
+                }
+                result
+            }
+
             fn is_negative(&self) -> bool {
                 (*self) & !(<$t>::MAX >> 1) != 0
             }
 
             fn is_zero(&self) -> bool {
                 (*self) == 0
+            }
+
+            fn lowest_bit(&self) -> bool {
+                (*self) & 1 == 1
             }
 
             fn next_to_highest_bit(&self) -> bool {
