@@ -798,6 +798,26 @@ impl CPU {
         self.increment_cycles_return_subroutine();
     }
 
+    fn sec(&mut self) {
+        self.registers.set_carry_flag(true);
+        self.increment_cycles_set_flag();
+    }
+
+    fn sed(&mut self) {
+        self.registers.set_decimal_mode_flag(true);
+        self.increment_cycles_set_flag();
+    }
+
+    fn sei(&mut self) {
+        self.registers.set_irq_disable_flag(true);
+        self.increment_cycles_set_flag();
+    }
+
+    fn sep(&mut self, bus: &Bus) {
+        self.registers.p = self.get_8bit_from_address(bus, AddressingMode::Immediate);
+        self.increment_cycles_sep();
+    }
+
     pub fn execute_opcode(&mut self, opcode: u8, bus: &mut Bus) {
         type A = AddressingMode;
         type I = IndexRegister;
@@ -1072,6 +1092,14 @@ impl CPU {
             0xF7 => self.sbc(bus, A::DirectPageIndirectLongIndexed(I::Y)),
             0xE3 => self.sbc(bus, A::StackRelative),
             0xF3 => self.sbc(bus, A::StackRelativeIndirectIndexed(I::Y)),
+            // SEC
+            0x38 => self.sec(),
+            // SED
+            0xF8 => self.sed(),
+            // SEI
+            0x78 => self.sei(),
+            // SEP
+            0xE2 => self.sep(bus),
             _ => println!("Invalid opcode: {:02X}", opcode),
         }
     }
@@ -2227,5 +2255,51 @@ mod cpu_instructions_tests {
         assert_eq!(cpu.registers.pbr, 0x00);
         assert_eq!(cpu.registers.pc, 0x1234);
         assert_eq!(cpu.cycles, 6);
+    }
+
+    #[test]
+    fn test_sec() {
+        let mut cpu = CPU::new();
+        cpu.registers.pc = 0x0000;
+        cpu.registers.set_carry_flag(false);
+        cpu.sec();
+        assert_eq!(cpu.registers.get_carry_flag(), true);
+        assert_eq!(cpu.registers.pc, 0x0001);
+        assert_eq!(cpu.cycles, 2);
+    }
+
+    #[test]
+    fn test_sed() {
+        let mut cpu = CPU::new();
+        cpu.registers.pc = 0x0000;
+        cpu.registers.set_decimal_mode_flag(false);
+        cpu.sed();
+        assert_eq!(cpu.registers.get_decimal_mode_flag(), true);
+        assert_eq!(cpu.registers.pc, 0x0001);
+        assert_eq!(cpu.cycles, 2);
+    }
+
+    #[test]
+    fn test_sei() {
+        let mut cpu = CPU::new();
+        cpu.registers.pc = 0x0000;
+        cpu.registers.set_irq_disable_flag(false);
+        cpu.sei();
+        assert_eq!(cpu.registers.get_irq_disable_flag(), true);
+        assert_eq!(cpu.registers.pc, 0x0001);
+        assert_eq!(cpu.cycles, 2);
+    }
+
+    #[test]
+    fn test_sep() {
+        let mut cpu = CPU::new();
+        let mut bus = Bus::new();
+        cpu.registers.pc = 0x0000;
+        cpu.registers.p = 0x00;
+        bus.write(0x0001, 0xFF);
+        cpu.sep(&bus);
+        assert_eq!(cpu.registers.p, 0xFF);
+        assert_eq!(cpu.registers.pc, 0x0002);
+        assert_eq!(cpu.cycles, 3);
     }
 }

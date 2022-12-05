@@ -348,6 +348,14 @@ impl CPU {
     pub fn increment_cycles_return_subroutine(&mut self) {
         self.cycles += 6;
     }
+
+    pub fn increment_cycles_set_flag(&mut self) {
+        self.registers.increment_pc(1); self.cycles += 2;
+    }
+
+    pub fn increment_cycles_sep(&mut self) {
+        self.registers.increment_pc(2); self.cycles += 3;
+    }
 }
 
 #[cfg(test)]
