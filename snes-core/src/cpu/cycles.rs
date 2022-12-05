@@ -344,6 +344,10 @@ impl CPU {
     pub fn increment_cycles_rep(&mut self) {
         self.registers.increment_pc(2); self.cycles += 3;
     }
+
+    pub fn increment_cycles_return_subroutine(&mut self) {
+        self.cycles += 6;
+    }
 }
 
 #[cfg(test)]

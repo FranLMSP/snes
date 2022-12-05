@@ -783,6 +783,21 @@ impl CPU {
         self.increment_cycles_shift(addressing_mode);
     }
 
+    fn rtl(&mut self, bus: &Bus) {
+        let bytes = self.do_pull(bus, 3);
+        // Low byte of PC is pulled first, then high byte and then PBR
+        self.registers.pc = (bytes[0] as u16) | ((bytes[1] as u16) << 8);
+        self.registers.pbr = bytes[2];
+        self.increment_cycles_return_subroutine();
+    }
+
+    fn rts(&mut self, bus: &Bus) {
+        let bytes = self.do_pull(bus, 2);
+        // Low byte of PC is pulled first, then high byte
+        self.registers.pc = (bytes[0] as u16) | ((bytes[1] as u16) << 8);
+        self.increment_cycles_return_subroutine();
+    }
+
     pub fn execute_opcode(&mut self, opcode: u8, bus: &mut Bus) {
         type A = AddressingMode;
         type I = IndexRegister;
@@ -1051,6 +1066,12 @@ impl CPU {
             0x66 => self.ror(bus, AddressingMode::DirectPage),
             0x7E => self.ror(bus, AddressingMode::AbsoluteIndexed(I::X)),
             0x76 => self.ror(bus, AddressingMode::DirectPageIndexed(I::X)),
+            // RTI
+            0x40 => unimplemented!("RTI instruction not implemented yet"),
+            // RTL
+            0x6B => self.rtl(bus),
+            // RTS
+            0x60 => self.rts(bus),
             _ => println!("Invalid opcode: {:02X}", opcode),
         }
     }
@@ -2175,5 +2196,36 @@ mod cpu_instructions_tests {
         assert_eq!(cpu.registers.a, 0b1000_0000);
         assert_eq!(cpu.registers.pc, 0x0001);
         assert_eq!(cpu.cycles, 2);
+    }
+
+    #[test]
+    fn test_rtl() {
+        let mut cpu = CPU::new();
+        let mut bus = Bus::new();
+        cpu.registers.pbr = 0x00;
+        cpu.registers.pc  = 0x0000;
+        cpu.registers.sp  = 0x1F9;
+        bus.write(0x1FC, 0x12);
+        bus.write(0x1FB, 0x34);
+        bus.write(0x1FA, 0x56);
+        cpu.rtl(&mut bus);
+        assert_eq!(cpu.registers.pbr, 0x12);
+        assert_eq!(cpu.registers.pc, 0x3456);
+        assert_eq!(cpu.cycles, 6);
+    }
+
+    #[test]
+    fn test_rts() {
+        let mut cpu = CPU::new();
+        let mut bus = Bus::new();
+        cpu.registers.pbr = 0x00;
+        cpu.registers.pc  = 0x0000;
+        cpu.registers.sp  = 0x1FA;
+        bus.write(0x1FC, 0x12);
+        bus.write(0x1FB, 0x34);
+        cpu.rts(&mut bus);
+        assert_eq!(cpu.registers.pbr, 0x00);
+        assert_eq!(cpu.registers.pc, 0x1234);
+        assert_eq!(cpu.cycles, 6);
     }
 }
