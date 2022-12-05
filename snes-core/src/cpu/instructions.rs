@@ -1002,6 +1002,13 @@ impl CPU {
         self.increment_cycles_transfer();
     }
 
+    fn xba(&mut self) {
+        self.registers.a = (self.registers.a << 8) | (self.registers.a >> 8);
+        self.registers.set_negative_flag(((self.registers.a as u8) >> 7) == 1);
+        self.registers.set_zero_flag((self.registers.a as u8) == 0);
+        self.increment_cycles_xba();
+    }
+
     pub fn execute_opcode(&mut self, opcode: u8, bus: &mut Bus) {
         type A = AddressingMode;
         type I = IndexRegister;
@@ -1345,6 +1352,10 @@ impl CPU {
             0xCB => unimplemented!("WAI instruction not implemented yet"),
             // WDM
             0x42 => unimplemented!("WDM instruction not implemented yet"),
+            // XBA
+            0xEB => self.xba(),
+            // XCE
+            0xFB => unimplemented!("XCE instruction not implemented yet"),
             _ => println!("Invalid opcode: {:02X}", opcode),
         }
     }
@@ -2764,5 +2775,16 @@ mod cpu_instructions_tests {
         assert_eq!(cpu.registers.x, 0xF0F0);
         assert_eq!(cpu.registers.pc, 0x0001);
         assert_eq!(cpu.cycles, 2);
+    }
+
+    #[test]
+    fn test_xba() {
+        let mut cpu = CPU::new();
+        cpu.registers.pc = 0x0000;
+        cpu.registers.a = 0x11FF;
+        cpu.xba();
+        assert_eq!(cpu.registers.a, 0xFF11);
+        assert_eq!(cpu.registers.pc, 0x0001);
+        assert_eq!(cpu.cycles, 3);
     }
 }
