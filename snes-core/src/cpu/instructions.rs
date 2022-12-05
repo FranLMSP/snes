@@ -5,6 +5,9 @@ use crate::utils::alu;
 use crate::utils::num_trait::SnesNum;
 use crate::common::flags::Flags;
 
+/// TODO: separate this into different files, for example
+/// arithmetic instructions in one file, transfers in another file, etc
+
 impl CPU {
     fn get_effective_address(&self, bus: &Bus, addressing_mode: AddressingMode) -> u32 {
         addressing_mode.effective_address(
@@ -854,6 +857,58 @@ impl CPU {
         self.increment_cycles_st_index(addressing_mode);
     }
 
+    fn tax(&mut self) {
+        if !self.registers.is_16bit_index() {
+            let result = self.registers.a as u8;
+            self.registers.set_low_x(result);
+            self.registers.set_negative_flag((result >> 7) == 1);
+            self.registers.set_zero_flag(result == 0);
+        } else {
+            self.registers.x = self.registers.a;
+            self.registers.set_negative_flag((self.registers.x >> 15) == 1);
+            self.registers.set_zero_flag(self.registers.x == 0);
+        }
+        self.increment_cycles_transfer();
+    }
+
+    fn tay(&mut self) {
+        if !self.registers.is_16bit_index() {
+            let result = self.registers.a as u8;
+            self.registers.set_low_y(result);
+            self.registers.set_negative_flag((result >> 7) == 1);
+            self.registers.set_zero_flag(result == 0);
+        } else {
+            self.registers.y = self.registers.a;
+            self.registers.set_negative_flag((self.registers.y >> 15) == 1);
+            self.registers.set_zero_flag(self.registers.y == 0);
+        }
+        self.increment_cycles_transfer();
+    }
+
+    fn tcd(&mut self) {
+        let result = self.registers.a;
+        self.registers.d = result;
+        self.registers.set_negative_flag((result >> 7) == 1);
+        self.registers.set_zero_flag(result == 0);
+        self.increment_cycles_transfer();
+    }
+
+    fn tcs(&mut self) {
+        let result = self.registers.a;
+        self.registers.sp = result;
+        self.registers.set_negative_flag((result >> 7) == 1);
+        self.registers.set_zero_flag(result == 0);
+        self.increment_cycles_transfer();
+    }
+
+    fn tdc(&mut self) {
+        let result = self.registers.d;
+        self.registers.a = result;
+        self.registers.set_negative_flag((result >> 7) == 1);
+        self.registers.set_zero_flag(result == 0);
+        self.increment_cycles_transfer();
+    }
+
     pub fn execute_opcode(&mut self, opcode: u8, bus: &mut Bus) {
         type A = AddressingMode;
         type I = IndexRegister;
@@ -1166,6 +1221,16 @@ impl CPU {
             0x64 => self.stz(bus, A::DirectPage),
             0x9E => self.stz(bus, A::AbsoluteIndexed(I::X)),
             0x74 => self.stz(bus, A::DirectPageIndexed(I::X)),
+            // TAX
+            0xAA => self.tax(),
+            // TAY
+            0xA8 => self.tay(),
+            // TCD
+            0x5B => self.tcd(),
+            // TCS
+            0x1B => self.tcs(),
+            // TCD
+            0x7B => self.tdc(),
             _ => println!("Invalid opcode: {:02X}", opcode),
         }
     }
@@ -2427,5 +2492,73 @@ mod cpu_instructions_tests {
         assert_eq!(bus.read(0x0003), 0x00);
         assert_eq!(cpu.registers.pc, 0x0003);
         assert_eq!(cpu.cycles, 4);
+    }
+
+    #[test]
+    fn test_tax() {
+        let mut cpu = CPU::new();
+        cpu.registers.pc = 0x0000;
+        cpu.registers.a = 0xF0F0;
+        cpu.registers.x = 0x0000;
+        cpu.registers.set_16bit_mode(true);
+        cpu.registers.set_16bit_index(true);
+        cpu.tax();
+        assert_eq!(cpu.registers.get_negative_flag(), true);
+        assert_eq!(cpu.registers.get_zero_flag(), false);
+        assert_eq!(cpu.registers.x, 0xF0F0);
+        assert_eq!(cpu.registers.pc, 0x0001);
+        assert_eq!(cpu.cycles, 2);
+    }
+
+    #[test]
+    fn test_tay() {
+        let mut cpu = CPU::new();
+        cpu.registers.pc = 0x0000;
+        cpu.registers.a = 0xF0F0;
+        cpu.registers.y = 0x0000;
+        cpu.registers.set_16bit_mode(true);
+        cpu.registers.set_16bit_index(true);
+        cpu.tay();
+        assert_eq!(cpu.registers.get_negative_flag(), true);
+        assert_eq!(cpu.registers.get_zero_flag(), false);
+        assert_eq!(cpu.registers.y, 0xF0F0);
+        assert_eq!(cpu.registers.pc, 0x0001);
+        assert_eq!(cpu.cycles, 2);
+    }
+
+    #[test]
+    fn test_tcd() {
+        let mut cpu = CPU::new();
+        cpu.registers.pc = 0x0000;
+        cpu.registers.a = 0xF0F0;
+        cpu.registers.d = 0x0000;
+        cpu.tcd();
+        assert_eq!(cpu.registers.d, 0xF0F0);
+        assert_eq!(cpu.registers.pc, 0x0001);
+        assert_eq!(cpu.cycles, 2);
+    }
+
+    #[test]
+    fn test_tcs() {
+        let mut cpu = CPU::new();
+        cpu.registers.pc = 0x0000;
+        cpu.registers.a = 0xF0F0;
+        cpu.registers.sp = 0x0000;
+        cpu.tcs();
+        assert_eq!(cpu.registers.sp, 0xF0F0);
+        assert_eq!(cpu.registers.pc, 0x0001);
+        assert_eq!(cpu.cycles, 2);
+    }
+
+    #[test]
+    fn test_tdc() {
+        let mut cpu = CPU::new();
+        cpu.registers.pc = 0x0000;
+        cpu.registers.a = 0x0000;
+        cpu.registers.d = 0xF0F0;
+        cpu.tdc();
+        assert_eq!(cpu.registers.a, 0xF0F0);
+        assert_eq!(cpu.registers.pc, 0x0001);
+        assert_eq!(cpu.cycles, 2);
     }
 }
