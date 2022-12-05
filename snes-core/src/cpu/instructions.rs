@@ -1324,6 +1324,9 @@ impl CPU {
             0x1B => self.tcs(),
             // TCD
             0x7B => self.tdc(),
+            // TRB
+            0x1C => unimplemented!("TRB instruction not implemented yet"),
+            0x14 => unimplemented!("TRB instruction not implemented yet"),
             // TSC
             0x3B => self.tsc(),
             // TSX
@@ -1338,6 +1341,10 @@ impl CPU {
             0x98 => self.tya(),
             // TYX
             0xBB => self.tyx(),
+            // WAI
+            0xCB => unimplemented!("WAI instruction not implemented yet"),
+            // WDM
+            0x42 => unimplemented!("WDM instruction not implemented yet"),
             _ => println!("Invalid opcode: {:02X}", opcode),
         }
     }
