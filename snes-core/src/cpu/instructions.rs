@@ -818,6 +818,42 @@ impl CPU {
         self.increment_cycles_sep();
     }
 
+    fn sta(&mut self, bus: &mut Bus, addressing_mode: AddressingMode) {
+        if self.registers.is_16bit_mode() {
+            self.set_16bit_to_address(bus, addressing_mode, self.registers.a);
+        } else {
+            self.set_8bit_to_address(bus, addressing_mode, self.registers.a as u8);
+        }
+        self.increment_cycles_sta(addressing_mode);
+    }
+
+    fn stx(&mut self, bus: &mut Bus, addressing_mode: AddressingMode) {
+        if self.registers.is_16bit_mode() {
+            self.set_16bit_to_address(bus, addressing_mode, self.registers.x);
+        } else {
+            self.set_8bit_to_address(bus, addressing_mode, self.registers.x as u8);
+        }
+        self.increment_cycles_st_index(addressing_mode);
+    }
+
+    fn sty(&mut self, bus: &mut Bus, addressing_mode: AddressingMode) {
+        if self.registers.is_16bit_mode() {
+            self.set_16bit_to_address(bus, addressing_mode, self.registers.y);
+        } else {
+            self.set_8bit_to_address(bus, addressing_mode, self.registers.y as u8);
+        }
+        self.increment_cycles_st_index(addressing_mode);
+    }
+
+    fn stz(&mut self, bus: &mut Bus, addressing_mode: AddressingMode) {
+        if self.registers.is_16bit_mode() {
+            self.set_16bit_to_address(bus, addressing_mode, 0);
+        } else {
+            self.set_8bit_to_address(bus, addressing_mode, 0);
+        }
+        self.increment_cycles_st_index(addressing_mode);
+    }
+
     pub fn execute_opcode(&mut self, opcode: u8, bus: &mut Bus) {
         type A = AddressingMode;
         type I = IndexRegister;
@@ -1100,6 +1136,36 @@ impl CPU {
             0x78 => self.sei(),
             // SEP
             0xE2 => self.sep(bus),
+            // STA
+            0x8D => self.sta(bus, A::Absolute),
+            0x8F => self.sta(bus, A::AbsoluteLong),
+            0x85 => self.sta(bus, A::DirectPage),
+            0x92 => self.sta(bus, A::DirectPageIndirect),
+            0x87 => self.sta(bus, A::DirectPageIndirectLong),
+            0x9D => self.sta(bus, A::AbsoluteIndexed(I::X)),
+            0x9F => self.sta(bus, A::AbsoluteLongIndexed(I::X)),
+            0x99 => self.sta(bus, A::AbsoluteIndexed(I::Y)),
+            0x95 => self.sta(bus, A::DirectPageIndexed(I::X)),
+            0x81 => self.sta(bus, A::DirectPageIndexedIndirect(I::X)),
+            0x91 => self.sta(bus, A::DirectPageIndirectIndexed(I::Y)),
+            0x97 => self.sta(bus, A::DirectPageIndirectLongIndexed(I::Y)),
+            0x83 => self.sta(bus, A::StackRelative),
+            0x93 => self.sta(bus, A::StackRelativeIndirectIndexed(I::Y)),
+            // STP
+            0xDB => unimplemented!("STP instruction not implemented yet"),
+            // STX
+            0x8E => self.stx(bus, A::Absolute),
+            0x86 => self.stx(bus, A::DirectPage),
+            0x96 => self.stx(bus, A::DirectPageIndexed(I::Y)),
+            // STY
+            0x8C => self.sty(bus, A::Absolute),
+            0x84 => self.sty(bus, A::DirectPage),
+            0x94 => self.sty(bus, A::DirectPageIndexed(I::X)),
+            // STZ
+            0x9C => self.stz(bus, A::Absolute),
+            0x64 => self.stz(bus, A::DirectPage),
+            0x9E => self.stz(bus, A::AbsoluteIndexed(I::X)),
+            0x74 => self.stz(bus, A::DirectPageIndexed(I::X)),
             _ => println!("Invalid opcode: {:02X}", opcode),
         }
     }
@@ -2301,5 +2367,65 @@ mod cpu_instructions_tests {
         assert_eq!(cpu.registers.p, 0xFF);
         assert_eq!(cpu.registers.pc, 0x0002);
         assert_eq!(cpu.cycles, 3);
+    }
+
+    #[test]
+    fn test_sta() {
+        let mut cpu = CPU::new();
+        let mut bus = Bus::new();
+        cpu.registers.pc = 0x0000;
+        cpu.registers.a = 0x12;
+        cpu.registers.set_16bit_mode(false);
+        bus.write(0x0002, 0x00);
+        bus.write(0x0001, 0x03);
+        cpu.sta(&mut bus, AddressingMode::Absolute);
+        assert_eq!(bus.read(0x0003), 0x12);
+        assert_eq!(cpu.registers.pc, 0x0003);
+        assert_eq!(cpu.cycles, 4);
+    }
+
+    #[test]
+    fn test_stx() {
+        let mut cpu = CPU::new();
+        let mut bus = Bus::new();
+        cpu.registers.pc = 0x0000;
+        cpu.registers.x = 0x12;
+        cpu.registers.set_16bit_index(false);
+        bus.write(0x0002, 0x00);
+        bus.write(0x0001, 0x03);
+        cpu.stx(&mut bus, AddressingMode::Absolute);
+        assert_eq!(bus.read(0x0003), 0x12);
+        assert_eq!(cpu.registers.pc, 0x0003);
+        assert_eq!(cpu.cycles, 4);
+    }
+
+    #[test]
+    fn test_sty() {
+        let mut cpu = CPU::new();
+        let mut bus = Bus::new();
+        cpu.registers.pc = 0x0000;
+        cpu.registers.y = 0x12;
+        cpu.registers.set_16bit_index(false);
+        bus.write(0x0002, 0x00);
+        bus.write(0x0001, 0x03);
+        cpu.sty(&mut bus, AddressingMode::Absolute);
+        assert_eq!(bus.read(0x0003), 0x12);
+        assert_eq!(cpu.registers.pc, 0x0003);
+        assert_eq!(cpu.cycles, 4);
+    }
+
+    #[test]
+    fn test_stz() {
+        let mut cpu = CPU::new();
+        let mut bus = Bus::new();
+        cpu.registers.pc = 0x0000;
+        cpu.registers.set_16bit_index(false);
+        bus.write(0x0002, 0x00);
+        bus.write(0x0001, 0x03);
+        bus.write(0x0003, 0xFF);
+        cpu.stz(&mut bus, AddressingMode::Absolute);
+        assert_eq!(bus.read(0x0003), 0x00);
+        assert_eq!(cpu.registers.pc, 0x0003);
+        assert_eq!(cpu.cycles, 4);
     }
 }

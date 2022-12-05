@@ -356,6 +356,26 @@ impl CPU {
     pub fn increment_cycles_sep(&mut self) {
         self.registers.increment_pc(2); self.cycles += 3;
     }
+
+    pub fn increment_cycles_sta(&mut self, addressing_mode: AddressingMode) {
+        let (bytes, cycles) = CPU::common_bytes_cycles_arithmetic(addressing_mode);
+        self.registers.increment_pc(bytes); self.cycles += cycles;
+        let (_, cycles) = self.common_conditions(addressing_mode, &[
+            Condition::MemorySelectFlag,
+            Condition::DirectPageIsZero,
+        ]);
+        self.cycles += cycles;
+    }
+
+    pub fn increment_cycles_st_index(&mut self, addressing_mode: AddressingMode) {
+        let (bytes, cycles) = CPU::common_bytes_cycles_arithmetic(addressing_mode);
+        self.registers.increment_pc(bytes); self.cycles += cycles;
+        let (_, cycles) = self.common_conditions(addressing_mode, &[
+            Condition::IndexIs16Bit,
+            Condition::DirectPageIsZero,
+        ]);
+        self.cycles += cycles;
+    }
 }
 
 #[cfg(test)]
