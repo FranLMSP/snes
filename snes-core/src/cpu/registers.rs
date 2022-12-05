@@ -41,6 +41,10 @@ impl Registers {
         self.y = (self.y & 0xFF00) | (val as u16);
     }
 
+    pub fn set_low_sp(&mut self, val: u8) {
+        self.sp = (self.sp & 0xFF00) | (val as u16);
+    }
+
     pub fn get_carry_flag(&self) -> bool {
         (self.p & 0b0000_0001) == 1
     }
@@ -242,6 +246,14 @@ mod registers_tests {
         registers.y = 0xA1A1;
         registers.set_low_y(0xFF);
         assert_eq!(registers.y, 0xA1FF);
+    }
+
+    #[test]
+    fn test_set_low_sp() {
+        let mut registers = Registers::new();
+        registers.sp = 0xA1A1;
+        registers.set_low_sp(0xFF);
+        assert_eq!(registers.sp, 0xA1FF);
     }
 
     #[test]

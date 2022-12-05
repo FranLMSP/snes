@@ -858,29 +858,29 @@ impl CPU {
     }
 
     fn tax(&mut self) {
-        if !self.registers.is_16bit_index() {
+        if self.registers.is_16bit_index() {
+            self.registers.x = self.registers.a;
+            self.registers.set_negative_flag((self.registers.x >> 15) == 1);
+            self.registers.set_zero_flag(self.registers.x == 0);
+        } else {
             let result = self.registers.a as u8;
             self.registers.set_low_x(result);
             self.registers.set_negative_flag((result >> 7) == 1);
             self.registers.set_zero_flag(result == 0);
-        } else {
-            self.registers.x = self.registers.a;
-            self.registers.set_negative_flag((self.registers.x >> 15) == 1);
-            self.registers.set_zero_flag(self.registers.x == 0);
         }
         self.increment_cycles_transfer();
     }
 
     fn tay(&mut self) {
-        if !self.registers.is_16bit_index() {
+        if self.registers.is_16bit_index() {
+            self.registers.y = self.registers.a;
+            self.registers.set_negative_flag((self.registers.y >> 15) == 1);
+            self.registers.set_zero_flag(self.registers.y == 0);
+        } else {
             let result = self.registers.a as u8;
             self.registers.set_low_y(result);
             self.registers.set_negative_flag((result >> 7) == 1);
             self.registers.set_zero_flag(result == 0);
-        } else {
-            self.registers.y = self.registers.a;
-            self.registers.set_negative_flag((self.registers.y >> 15) == 1);
-            self.registers.set_zero_flag(self.registers.y == 0);
         }
         self.increment_cycles_transfer();
     }
@@ -906,6 +906,99 @@ impl CPU {
         self.registers.a = result;
         self.registers.set_negative_flag((result >> 7) == 1);
         self.registers.set_zero_flag(result == 0);
+        self.increment_cycles_transfer();
+    }
+
+    fn tsc(&mut self) {
+        let result = self.registers.sp;
+        self.registers.a = result;
+        self.registers.set_negative_flag((result >> 7) == 1);
+        self.registers.set_zero_flag(result == 0);
+        self.increment_cycles_transfer();
+    }
+
+    fn tsx(&mut self) {
+        if self.registers.is_16bit_index() {
+            let result = self.registers.sp;
+            self.registers.x = result;
+            self.registers.set_negative_flag((result >> 15) == 1);
+            self.registers.set_zero_flag(result == 0);
+        } else {
+            let result = self.registers.sp as u8;
+            self.registers.set_low_x(result);
+            self.registers.set_negative_flag((result >> 7) == 1);
+            self.registers.set_zero_flag(result == 0);
+        }
+        self.increment_cycles_transfer();
+    }
+
+    fn txa(&mut self) {
+        if self.registers.is_16bit_mode() {
+            self.registers.a = self.registers.x;
+            self.registers.set_negative_flag((self.registers.a >> 15) == 1);
+            self.registers.set_zero_flag(self.registers.a == 0);
+        } else {
+            let result = self.registers.x as u8;
+            self.registers.set_low_a(result);
+            self.registers.set_negative_flag((result >> 7) == 1);
+            self.registers.set_zero_flag(result == 0);
+        }
+        self.increment_cycles_transfer();
+    }
+
+    fn txs(&mut self) {
+        if self.registers.is_16bit_mode() {
+            self.registers.sp = self.registers.x;
+            self.registers.set_negative_flag((self.registers.a >> 15) == 1);
+            self.registers.set_zero_flag(self.registers.a == 0);
+        } else {
+            let result = self.registers.x as u8;
+            self.registers.set_low_sp(result);
+            self.registers.set_negative_flag((result >> 7) == 1);
+            self.registers.set_zero_flag(result == 0);
+        }
+        self.increment_cycles_transfer();
+    }
+
+    fn txy(&mut self) {
+        if self.registers.is_16bit_mode() {
+            self.registers.y = self.registers.x;
+            self.registers.set_negative_flag((self.registers.x >> 15) == 1);
+            self.registers.set_zero_flag(self.registers.x == 0);
+        } else {
+            let result = self.registers.x as u8;
+            self.registers.set_low_y(result);
+            self.registers.set_negative_flag((result >> 7) == 1);
+            self.registers.set_zero_flag(result == 0);
+        }
+        self.increment_cycles_transfer();
+    }
+
+    fn tya(&mut self) {
+        if self.registers.is_16bit_mode() {
+            self.registers.a = self.registers.y;
+            self.registers.set_negative_flag((self.registers.a >> 15) == 1);
+            self.registers.set_zero_flag(self.registers.a == 0);
+        } else {
+            let result = self.registers.y as u8;
+            self.registers.set_low_a(result);
+            self.registers.set_negative_flag((result >> 7) == 1);
+            self.registers.set_zero_flag(result == 0);
+        }
+        self.increment_cycles_transfer();
+    }
+
+    fn tyx(&mut self) {
+        if self.registers.is_16bit_mode() {
+            self.registers.x = self.registers.y;
+            self.registers.set_negative_flag((self.registers.y >> 15) == 1);
+            self.registers.set_zero_flag(self.registers.y == 0);
+        } else {
+            let result = self.registers.y as u8;
+            self.registers.set_low_x(result);
+            self.registers.set_negative_flag((result >> 7) == 1);
+            self.registers.set_zero_flag(result == 0);
+        }
         self.increment_cycles_transfer();
     }
 
@@ -1231,6 +1324,20 @@ impl CPU {
             0x1B => self.tcs(),
             // TCD
             0x7B => self.tdc(),
+            // TSC
+            0x3B => self.tsc(),
+            // TSX
+            0xBA => self.tsx(),
+            // TXA
+            0x8A => self.txa(),
+            // TXS
+            0x9A => self.txs(),
+            // TXY
+            0x9B => self.txy(),
+            // TYA
+            0x98 => self.tya(),
+            // TYX
+            0xBB => self.tyx(),
             _ => println!("Invalid opcode: {:02X}", opcode),
         }
     }
@@ -2558,6 +2665,96 @@ mod cpu_instructions_tests {
         cpu.registers.d = 0xF0F0;
         cpu.tdc();
         assert_eq!(cpu.registers.a, 0xF0F0);
+        assert_eq!(cpu.registers.pc, 0x0001);
+        assert_eq!(cpu.cycles, 2);
+    }
+
+    #[test]
+    fn test_tsc() {
+        let mut cpu = CPU::new();
+        cpu.registers.pc = 0x0000;
+        cpu.registers.a = 0x0000;
+        cpu.registers.sp = 0xF0F0;
+        cpu.tsc();
+        assert_eq!(cpu.registers.a, 0xF0F0);
+        assert_eq!(cpu.registers.pc, 0x0001);
+        assert_eq!(cpu.cycles, 2);
+    }
+
+    #[test]
+    fn test_tsx() {
+        let mut cpu = CPU::new();
+        cpu.registers.pc = 0x0000;
+        cpu.registers.x = 0x0000;
+        cpu.registers.sp = 0xF0F0;
+        cpu.registers.set_16bit_index(true);
+        cpu.tsx();
+        assert_eq!(cpu.registers.x, 0xF0F0);
+        assert_eq!(cpu.registers.pc, 0x0001);
+        assert_eq!(cpu.cycles, 2);
+    }
+
+    #[test]
+    fn test_txa() {
+        let mut cpu = CPU::new();
+        cpu.registers.pc = 0x0000;
+        cpu.registers.a = 0x0000;
+        cpu.registers.x = 0xF0F0;
+        cpu.registers.set_16bit_index(true);
+        cpu.txa();
+        assert_eq!(cpu.registers.a, 0xF0F0);
+        assert_eq!(cpu.registers.pc, 0x0001);
+        assert_eq!(cpu.cycles, 2);
+    }
+
+    #[test]
+    fn test_txs() {
+        let mut cpu = CPU::new();
+        cpu.registers.pc = 0x0000;
+        cpu.registers.sp = 0x0000;
+        cpu.registers.x = 0xF0F0;
+        cpu.registers.set_16bit_index(true);
+        cpu.txs();
+        assert_eq!(cpu.registers.sp, 0xF0F0);
+        assert_eq!(cpu.registers.pc, 0x0001);
+        assert_eq!(cpu.cycles, 2);
+    }
+
+    #[test]
+    fn test_txy() {
+        let mut cpu = CPU::new();
+        cpu.registers.pc = 0x0000;
+        cpu.registers.y = 0x0000;
+        cpu.registers.x = 0xF0F0;
+        cpu.registers.set_16bit_index(true);
+        cpu.txy();
+        assert_eq!(cpu.registers.y, 0xF0F0);
+        assert_eq!(cpu.registers.pc, 0x0001);
+        assert_eq!(cpu.cycles, 2);
+    }
+
+    #[test]
+    fn test_tya() {
+        let mut cpu = CPU::new();
+        cpu.registers.pc = 0x0000;
+        cpu.registers.a = 0x0000;
+        cpu.registers.y = 0xF0F0;
+        cpu.registers.set_16bit_index(true);
+        cpu.tya();
+        assert_eq!(cpu.registers.a, 0xF0F0);
+        assert_eq!(cpu.registers.pc, 0x0001);
+        assert_eq!(cpu.cycles, 2);
+    }
+
+    #[test]
+    fn test_tyx() {
+        let mut cpu = CPU::new();
+        cpu.registers.pc = 0x0000;
+        cpu.registers.x = 0x0000;
+        cpu.registers.y = 0xF0F0;
+        cpu.registers.set_16bit_index(true);
+        cpu.tyx();
+        assert_eq!(cpu.registers.x, 0xF0F0);
         assert_eq!(cpu.registers.pc, 0x0001);
         assert_eq!(cpu.cycles, 2);
     }
