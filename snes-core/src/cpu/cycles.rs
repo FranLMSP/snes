@@ -395,6 +395,20 @@ impl CPU {
     pub fn increment_cycles_move(&mut self, count: usize) {
         self.registers.increment_pc(3); self.cycles += 7 * count;
     }
+
+    pub fn increment_cycles_test(&mut self, addressing_mode: AddressingMode) {
+        let (bytes, cycles) = match addressing_mode {
+            AddressingMode::Absolute    => (3, 6),
+            AddressingMode::DirectPage  => (2, 5),
+            _ => unreachable!(),
+        };
+        self.registers.increment_pc(bytes); self.cycles += cycles;
+        let (_, cycles) = self.common_conditions(addressing_mode, &[
+            Condition::MemorySelectFlag,
+            Condition::DirectPageIsZero,
+        ]);
+        self.cycles += cycles;
+    }
 }
 
 #[cfg(test)]

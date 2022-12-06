@@ -1068,6 +1068,36 @@ impl CPU {
         self.registers.p = self.do_pull(bus, 1)[0];
     }
 
+    fn trb(&mut self, bus: &mut Bus, addressing_mode: AddressingMode) {
+        if self.registers.is_16bit_mode() {
+            let value = self.get_16bit_from_address(bus, addressing_mode);
+            let result = self.registers.a & value;
+            self.set_16bit_to_address(bus, addressing_mode, result);
+            self.registers.set_zero_flag(result == 0);
+        } else {
+            let value = self.get_8bit_from_address(bus, addressing_mode);
+            let result = (self.registers.a as u8) & value;
+            self.set_8bit_to_address(bus, addressing_mode, result);
+            self.registers.set_zero_flag(result == 0);
+        }
+        self.increment_cycles_test(addressing_mode);
+    }
+
+    fn tsb(&mut self, bus: &mut Bus, addressing_mode: AddressingMode) {
+        if self.registers.is_16bit_mode() {
+            let value = self.get_16bit_from_address(bus, addressing_mode);
+            let result = self.registers.a | value;
+            self.set_16bit_to_address(bus, addressing_mode, result);
+            self.registers.set_zero_flag(result == 0);
+        } else {
+            let value = self.get_8bit_from_address(bus, addressing_mode);
+            let result = (self.registers.a as u8) | value;
+            self.set_8bit_to_address(bus, addressing_mode, result);
+            self.registers.set_zero_flag(result == 0);
+        }
+        self.increment_cycles_test(addressing_mode);
+    }
+
     pub fn execute_opcode(&mut self, opcode: u8, bus: &mut Bus) {
         type A = AddressingMode;
         type I = IndexRegister;
@@ -1391,8 +1421,11 @@ impl CPU {
             // TCD
             0x7B => self.tdc(),
             // TRB
-            0x1C => unimplemented!("TRB instruction not implemented yet"),
-            0x14 => unimplemented!("TRB instruction not implemented yet"),
+            0x1C => self.trb(bus, A::Absolute),
+            0x14 => self.trb(bus, A::DirectPage),
+            // TSB
+            0x0C => self.tsb(bus, A::Absolute),
+            0x04 => self.tsb(bus, A::DirectPage),
             // TSC
             0x3B => self.tsc(),
             // TSX
@@ -1415,7 +1448,6 @@ impl CPU {
             0xEB => self.xba(),
             // XCE
             0xFB => unimplemented!("XCE instruction not implemented yet"),
-            _ => println!("Invalid opcode: {:02X}", opcode),
         }
     }
 }
