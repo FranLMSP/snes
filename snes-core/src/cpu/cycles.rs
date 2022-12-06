@@ -384,6 +384,13 @@ impl CPU {
     pub fn increment_cycles_xba(&mut self) {
         self.registers.increment_pc(1); self.cycles += 3;
     }
+
+    pub fn increment_cycles_brk(&mut self) {
+        self.registers.increment_pc(2); self.cycles += 7;
+        if self.registers.emulation_mode {
+            self.cycles += 1;
+        }
+    }
 }
 
 #[cfg(test)]

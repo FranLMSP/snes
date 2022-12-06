@@ -516,6 +516,24 @@ impl CPU {
         }
     }
 
+    fn brk(&mut self, bus: &mut Bus) {
+        self.do_push(bus, &[self.registers.pbr]);
+        self.do_push(bus, &[(self.registers.pc >> 8) as u8, self.registers.pc as u8]);
+        self.do_push(bus, &[self.registers.p]);
+        self.registers.set_decimal_mode_flag(false);
+        self.registers.set_irq_disable_flag(true);
+        self.increment_cycles_brk();
+    }
+
+    fn cop(&mut self, bus: &mut Bus) {
+        self.do_push(bus, &[self.registers.pbr]);
+        self.do_push(bus, &[(self.registers.pc >> 8) as u8, self.registers.pc as u8]);
+        self.do_push(bus, &[self.registers.p]);
+        self.registers.set_decimal_mode_flag(false);
+        self.registers.set_irq_disable_flag(true);
+        self.increment_cycles_brk();
+    }
+
     fn pea(&mut self, bus: &mut Bus) {
         let address = self.get_effective_address(bus, AddressingMode::Absolute);
         self.do_push(bus, &[(address >> 8) as u8, address as u8]);
@@ -1066,7 +1084,7 @@ impl CPU {
             // BRA
             0x80 => self.bra(bus),
             // BRK
-            0x00 => unimplemented!("BRK instruction not implemented yet"),
+            0x00 => self.brk(bus),
             // BRL
             0x82 => self.brl(bus),
             // BVC
@@ -1104,7 +1122,7 @@ impl CPU {
             0xC3 => self.cmp(bus, A::StackRelative),
             0xD3 => self.cmp(bus, A::StackRelativeIndirectIndexed(I::Y)),
             // COP
-            0x02 => unimplemented!("COP instruction not implemented yet"),
+            0x02 => self.cop(bus),
             // CPX
             0xE0 => self.cpx(bus, A::Immediate),
             0xEC => self.cpx(bus, A::Absolute),

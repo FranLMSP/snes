@@ -10,7 +10,7 @@ pub struct Registers {
     pub pbr: u8, // Program bank register
     pub dbr: u8, // Data bank register
     pub pc: u16, // Program counter
-    pub emulation_mode: bool, // Program counter
+    pub emulation_mode: bool,
 }
 
 impl Registers {
