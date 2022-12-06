@@ -1061,6 +1061,13 @@ impl CPU {
         self.do_move(bus, true);
     }
 
+    fn rti(&mut self, bus: &Bus) {
+        let pc_bytes = self.do_pull(bus, 2);
+        self.registers.pc = (pc_bytes[0] as u16) | ((pc_bytes[1] as u16) << 8);
+        self.registers.pbr = self.do_pull(bus, 1)[0];
+        self.registers.p = self.do_pull(bus, 1)[0];
+    }
+
     pub fn execute_opcode(&mut self, opcode: u8, bus: &mut Bus) {
         type A = AddressingMode;
         type I = IndexRegister;
@@ -1314,7 +1321,7 @@ impl CPU {
             0x7E => self.ror(bus, AddressingMode::AbsoluteIndexed(I::X)),
             0x76 => self.ror(bus, AddressingMode::DirectPageIndexed(I::X)),
             // RTI
-            0x40 => unimplemented!("RTI instruction not implemented yet"),
+            0x40 => self.rti(bus),
             // RTL
             0x6B => self.rtl(bus),
             // RTS
