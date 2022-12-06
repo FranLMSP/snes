@@ -391,6 +391,10 @@ impl CPU {
             self.cycles += 1;
         }
     }
+
+    pub fn increment_cycles_move(&mut self, count: usize) {
+        self.registers.increment_pc(3); self.cycles += 7 * count;
+    }
 }
 
 #[cfg(test)]

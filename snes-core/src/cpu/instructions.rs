@@ -1027,6 +1027,40 @@ impl CPU {
         self.increment_cycles_xba();
     }
 
+    fn do_move(&mut self, bus: &mut Bus, is_next: bool) {
+        let pc = self.registers.get_pc_address();
+        let source_bank = bus.read(pc + 2);
+        let dest_bank = bus.read(pc + 1);
+        let mut count = 0;
+        while self.registers.a != 0xFFFF {
+            let (x, y) = match self.registers.is_16bit_index() {
+                true => (self.registers.x, self.registers.y),
+                false => (self.registers.x & 0x00FF, self.registers.y & 0x00FF),
+            };
+            let source_address = ((source_bank as u32) << 16) | (x as u32);
+            let dest_address = ((dest_bank as u32) << 16) | (y as u32);
+            bus.write(dest_address, bus.read(source_address));
+            self.registers.a = self.registers.a.wrapping_sub(1);
+            if is_next {
+                self.registers.x = self.registers.x.wrapping_add(1);
+                self.registers.y = self.registers.y.wrapping_add(1);
+            } else {
+                self.registers.x = self.registers.x.wrapping_sub(1);
+                self.registers.y = self.registers.y.wrapping_sub(1);
+            }
+            count += 1;
+        }
+        self.increment_cycles_move(count);
+    }
+
+    fn mvn(&mut self, bus: &mut Bus) {
+        self.do_move(bus, true);
+    }
+
+    fn mvp(&mut self, bus: &mut Bus) {
+        self.do_move(bus, true);
+    }
+
     pub fn execute_opcode(&mut self, opcode: u8, bus: &mut Bus) {
         type A = AddressingMode;
         type I = IndexRegister;
@@ -1212,9 +1246,9 @@ impl CPU {
             0x5E => self.lsr(bus, A::AbsoluteIndexed(I::X)),
             0x56 => self.lsr(bus, A::DirectPageIndexed(I::X)),
             // MVN
-            0x54 => unimplemented!("MVN instruction not implemented yet"),
+            0x54 => self.mvn(bus),
             // MVP
-            0x44 => unimplemented!("MVP instruction not implemented yet"),
+            0x44 => self.mvp(bus),
             // NOP
             0xEA => self.nop(),
             // ORA
