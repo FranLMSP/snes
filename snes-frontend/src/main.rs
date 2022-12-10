@@ -12,7 +12,13 @@ use winit::{
     window::Window,
 };
 
+use snes_frontend::state::State;
+
 fn main() {
+    // Windowing state
+    let mut state = State::new();
+
+
     // Set up window and GPU
     let event_loop = EventLoop::new();
 
@@ -26,7 +32,7 @@ fn main() {
             width: 1280.0,
             height: 720.0,
         });
-        window.set_title(&format!("imgui-wgpu {}", version));
+        window.set_title(&format!("SNES {}", version));
         let size = window.inner_size();
 
         let surface = unsafe { instance.create_surface(&window) };
@@ -67,7 +73,7 @@ fn main() {
     );
     imgui.set_ini_filename(None);
 
-    let font_size = (13.0 * hidpi_factor) as f32;
+    let font_size = (12.0 * hidpi_factor) as f32;
     imgui.io_mut().font_global_scale = (1.0 / hidpi_factor) as f32;
 
     imgui.fonts().add_font(&[FontSource::DefaultFontData {
@@ -97,9 +103,38 @@ fn main() {
     let mut renderer = Renderer::new(&mut imgui, &device, &queue, renderer_config);
 
     let mut last_frame = Instant::now();
-    let mut demo_open = true;
 
     let mut last_cursor = None;
+
+    // Generate dummy texture
+    const WIDTH: usize = 400;
+    const HEIGHT: usize = 400;
+    let mut data = Vec::with_capacity(WIDTH * HEIGHT);
+    for i in 0..WIDTH {
+        for j in 0..HEIGHT {
+            // Insert RGB values
+            data.push(i as u8);
+            data.push(j as u8);
+            data.push((i + j) as u8);
+        }
+    }
+
+    let texture = imgui_wgpu::Texture::new(
+        &device,
+        &renderer,
+        imgui_wgpu::TextureConfig {
+            label: Some("framebuffer texture"),
+            size: wgpu::Extent3d {
+                width: WIDTH as u32,
+                height: HEIGHT as u32,
+                depth_or_array_layers: 1,
+            },
+            format: Some(wgpu::TextureFormat::Rgba8Unorm),
+            ..imgui_wgpu::TextureConfig::default()
+        },
+    );
+    let texture_id = renderer.textures.insert(texture);
+    
 
     // Event loop
     event_loop.run(move |event, _, control_flow| {
@@ -146,7 +181,6 @@ fn main() {
             }
             Event::MainEventsCleared => window.request_redraw(),
             Event::RedrawEventsCleared => {
-                let delta_s = last_frame.elapsed();
                 let now = Instant::now();
                 imgui.io_mut().update_delta_time(now - last_frame);
                 last_frame = now;
@@ -164,29 +198,47 @@ fn main() {
                 let ui = imgui.frame();
 
                 {
-                    let window = imgui::Window::new("Hello world");
-                    window
-                        .size([300.0, 100.0], Condition::FirstUseEver)
-                        .build(&ui, || {
-                            ui.text("Hello world!");
-                            ui.text("This...is...imgui-rs on WGPU!");
+                    ui.main_menu_bar(|| {
+                        ui.menu("Emulator", || {
+                            if imgui::MenuItem::new("Load ROM")
+                                .build(&ui)
+                            {
+                            }
                             ui.separator();
-                            let mouse_pos = ui.io().mouse_pos;
-                            ui.text(format!(
-                                "Mouse Position: ({:.1},{:.1})",
-                                mouse_pos[0], mouse_pos[1]
-                            ));
                         });
-
-                    let window = imgui::Window::new("Hello too");
-                    window
-                        .size([400.0, 200.0], Condition::FirstUseEver)
-                        .position([400.0, 200.0], Condition::FirstUseEver)
-                        .build(&ui, || {
-                            ui.text(format!("Frametime: {:?}", delta_s));
+                        ui.menu("Debug", || {
+                            if imgui::MenuItem::new("Show Debug menu")
+                                .build(&ui)
+                            {
+                                state.debug_options.show_debug_window = true;
+                            }
                         });
+                    });
 
-                    ui.show_demo_window(&mut demo_open);
+                    if state.debug_options.show_debug_window {
+                        let window = imgui::Window::new("Debug window");
+                        window
+                            .size([300.0, 100.0], Condition::FirstUseEver)
+                            .opened(&mut state.debug_options.show_debug_window)
+                            .build(&ui, || {
+                                ui.checkbox(
+                                    "Show CPU registers", 
+                                    &mut state.debug_options.show_cpu_registers,
+                                );
+                            });
+                    }
+                    {
+                        let tex = renderer.textures.get_mut(texture_id).unwrap();
+                        tex.write(&queue, &vec![0xAA; 400 * 400 * 4], 400, 400);
+                        let game_window = imgui::Window::new("Game");
+                        game_window
+                            .size([400.0, 400.0], Condition::FirstUseEver)
+                            .collapsible(false)
+                            .build(&ui, || {
+                                let game_image = imgui::Image::new(texture_id, [400.0, 400.0]);
+                                game_image.build(&ui);
+                            });
+                    }
                 }
 
                 let mut encoder: wgpu::CommandEncoder =
