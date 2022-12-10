@@ -1,4 +1,4 @@
-use crate::bus::Bus;
+use crate::cpu::bus::Bus;
 
 /// OPCODE #const
 pub fn immediate(pc_addr: u32) -> u32 {

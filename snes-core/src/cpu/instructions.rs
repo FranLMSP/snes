@@ -1,5 +1,5 @@
 use super::cpu::CPU;
-use crate::bus::Bus;
+use crate::cpu::bus::Bus;
 use crate::utils::addressing::{AddressingMode, IndexRegister};
 use crate::utils::alu;
 use crate::utils::num_trait::SnesNum;
@@ -1096,6 +1096,11 @@ impl CPU {
             self.registers.set_zero_flag(result == 0);
         }
         self.increment_cycles_test(addressing_mode);
+    }
+
+    pub fn run(&mut self, bus: &mut Bus) {
+        let opcode = bus.read(self.registers.get_pc_address());
+        self.execute_opcode(opcode, bus);
     }
 
     pub fn execute_opcode(&mut self, opcode: u8, bus: &mut Bus) {
