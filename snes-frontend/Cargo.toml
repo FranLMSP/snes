@@ -6,11 +6,13 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+snes-core = { path = "../snes-core" }
 winit = "0.26.1"
 imgui = "0.8.2"
 wgpu = "0.12.0"
 imgui-wgpu = "0.19.0"
 pollster = "0.2.5"
+rfd = "0.10.0"
 [dependencies.imgui-winit-support]
 version = "0.8.2"
 features = ["winit-26"]

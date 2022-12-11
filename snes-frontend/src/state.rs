@@ -16,14 +16,30 @@ impl DebugOptions {
     }
 }
 
+pub struct ErrorMessage {
+    pub show: bool,
+    pub message: String,
+}
+
+impl ErrorMessage {
+    pub fn new() -> Self {
+        Self {
+            show: false,
+            message: String::from(""),
+        }
+    }
+}
+
 pub struct State {
     pub debug_options: DebugOptions,
+    pub error_message: ErrorMessage,
 }
 
 impl State {
     pub fn new() -> Self {
         Self {
             debug_options: DebugOptions::new(),
+            error_message: ErrorMessage::new(),
         }
     }
 }

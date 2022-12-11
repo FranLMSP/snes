@@ -1,5 +1,6 @@
 extern crate imgui_winit_support;
 
+use rfd::FileDialog;
 use imgui::*;
 use imgui_wgpu::{Renderer, RendererConfig};
 use pollster::block_on;
@@ -13,10 +14,13 @@ use winit::{
 };
 
 use snes_frontend::state::State;
+extern crate snes_core;
+use snes_core::emulator::Emulator;
 
 fn main() {
     // Windowing state
     let mut state = State::new();
+    let mut emulator = Emulator::new();
 
 
     // Set up window and GPU
@@ -203,6 +207,19 @@ fn main() {
                             if imgui::MenuItem::new("Load ROM")
                                 .build(&ui)
                             {
+                                if let Some(path) = FileDialog::new()
+                                    .pick_file()
+                                {
+                                    match emulator.rom.load(&String::from(path.to_str().unwrap())) {
+                                        Ok(_) => {},
+                                        Err(err) => {
+                                            state.error_message.show = true;
+                                            state.error_message.message = format!(
+                                                "Could not load rom: {}", err,
+                                            );
+                                        }
+                                    }
+                                }
                             }
                             ui.separator();
                         });
@@ -227,18 +244,34 @@ fn main() {
                                 );
                             });
                     }
+
+                    // Render emulator framebuffer
                     {
                         let tex = renderer.textures.get_mut(texture_id).unwrap();
                         tex.write(&queue, &vec![0xAA; 400 * 400 * 4], 400, 400);
                         let game_window = imgui::Window::new("Game");
                         game_window
-                            .size([400.0, 400.0], Condition::FirstUseEver)
+                            .size([600.0, 600.0], Condition::FirstUseEver)
                             .collapsible(false)
                             .build(&ui, || {
                                 let game_image = imgui::Image::new(texture_id, [400.0, 400.0]);
                                 game_image.build(&ui);
                             });
                     }
+
+                    if state.error_message.show {
+                        let window = imgui::Window::new("Error");
+                        window
+                            .size([300.0, 100.0], Condition::Always)
+                            .collapsible(false)
+                            .build(&ui, || {
+                                ui.text(&state.error_message.message);
+                                if ui.button("Ok") {
+                                    state.error_message.show = false
+                                }
+                            });
+                    }
+
                 }
 
                 let mut encoder: wgpu::CommandEncoder =
