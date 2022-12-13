@@ -61,10 +61,21 @@ pub const TMW: u16          = 0x212E;  // Window Area Main Screen Disable (W)
 pub const TSW: u16          = 0x212F;  // Window Area Sub Screen Disable (W)
 
 pub struct PPURegisters {
-
+    data: [u8; 256],
 }
 
 impl PPURegisters {
+    pub fn new() -> Self {
+        Self {
+            data: [0x00; 256],
+        }
+    }
 
+    pub fn read(&self, address: u16) -> u8 {
+        self.data[(address as usize) - 0x2100]
+    }
 
+    pub fn write(&mut self, address: u16, value: u8) {
+        self.data[(address as usize) - 0x2100] = value;
+    }
 }

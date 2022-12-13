@@ -1,5 +1,8 @@
+use crate::ppu::PPU;
+
 pub struct Bus {
     wram: [u8; 0x10000],
+    pub ppu: PPU,
 }
 
 #[derive(PartialEq, Debug)]
@@ -15,6 +18,7 @@ impl Bus {
     pub fn new() -> Self {
         Self {
             wram: [0; 0x10000],
+            ppu: PPU::new(),
         }
     }
 
@@ -49,6 +53,7 @@ impl Bus {
         let section = Bus::map_address(address);
         match section {
             MemoryMap::WRAM => self.read_wram(address),
+            MemoryMap::PPU => self.ppu.registers.read(address as u16),
             _ => todo!("Implement other memory sections"),
         }
     }
@@ -57,6 +62,7 @@ impl Bus {
         let section = Bus::map_address(address);
         match section {
             MemoryMap::WRAM => self.write_wram(address, value),
+            MemoryMap::PPU => self.ppu.registers.write(address as u16, value),
             _ => todo!("Implement other memory sections"),
         }
     }
