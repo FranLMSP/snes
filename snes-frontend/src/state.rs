@@ -1,4 +1,13 @@
+extern crate snes_core;
+use snes_core::ppu::registers::{
+    Background as PPUBg,
+    MAX_BG_WIDTH,
+    MAX_BG_HEIGHT,
+};
+
+
 pub struct DebugOptions {
+    pub is_enabled: bool,
     pub show_debug_window: bool,
     pub show_cpu_registers: bool,
     pub show_spc700_registers: bool,
@@ -8,7 +17,8 @@ pub struct DebugOptions {
 impl DebugOptions {
     pub fn new() -> Self {
         Self {
-            show_debug_window: false,
+            is_enabled: true,
+            show_debug_window: true,
             show_cpu_registers: true,
             show_spc700_registers: true,
             show_cpu_memory: true,
@@ -30,9 +40,47 @@ impl ErrorMessage {
     }
 }
 
+pub struct BgDebug {
+    pub background: PPUBg,
+    pub is_enabled: bool,
+    pub texture_id: Option<imgui::TextureId>,
+    pub framebuffer: Vec<u8>,
+}
+
+impl BgDebug {
+    pub fn new(background: PPUBg) -> Self {
+        Self {
+            background: background,
+            is_enabled: false,
+            texture_id: None,
+            framebuffer: vec![0x00; MAX_BG_WIDTH * MAX_BG_HEIGHT * 4],
+        }
+    }
+}
+
+pub struct PPUDebug {
+    pub is_enabled: bool,
+    pub backgrounds: [BgDebug; 4],
+}
+
+impl PPUDebug {
+    pub fn new() -> Self {
+        Self {
+            is_enabled: true,
+            backgrounds: [
+                BgDebug::new(PPUBg::Bg1),
+                BgDebug::new(PPUBg::Bg2),
+                BgDebug::new(PPUBg::Bg3),
+                BgDebug::new(PPUBg::Bg4),
+            ],
+        }
+    }
+}
+
 pub struct State {
     pub debug_options: DebugOptions,
     pub error_message: ErrorMessage,
+    pub ppudebug: PPUDebug,
 }
 
 impl State {
@@ -40,6 +88,7 @@ impl State {
         Self {
             debug_options: DebugOptions::new(),
             error_message: ErrorMessage::new(),
+            ppudebug: PPUDebug::new(),
         }
     }
 }

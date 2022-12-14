@@ -4,8 +4,8 @@ use crate::rom::ROM;
 use crate::rom::lo_rom::LoROM;
 
 pub struct Emulator {
-    cpu: CPU,
-    bus: Bus,
+    pub cpu: CPU,
+    pub bus: Bus,
     pub rom: Box<dyn ROM>,
 }
 

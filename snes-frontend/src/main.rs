@@ -16,6 +16,7 @@ use winit::{
 use snes_frontend::state::State;
 extern crate snes_core;
 use snes_core::emulator::Emulator;
+use snes_frontend::ppu as ppu_render;
 
 fn main() {
     // Windowing state
@@ -138,6 +139,12 @@ fn main() {
         },
     );
     let texture_id = renderer.textures.insert(texture);
+
+    for bgdebug in state.ppudebug.backgrounds.iter_mut() {
+        bgdebug.texture_id = Some(
+            ppu_render::background_texture(&device, &mut renderer, bgdebug.background)
+        );
+    }
     
 
     // Event loop
@@ -239,10 +246,47 @@ fn main() {
                             .opened(&mut state.debug_options.show_debug_window)
                             .build(&ui, || {
                                 ui.checkbox(
+                                    "Enable debugging", 
+                                    &mut state.debug_options.is_enabled,
+                                );
+                                ui.separator();
+                                ui.checkbox(
+                                    "Show PPU debugging options", 
+                                    &mut state.ppudebug.is_enabled,
+                                );
+                                ui.checkbox(
                                     "Show CPU registers", 
                                     &mut state.debug_options.show_cpu_registers,
                                 );
                             });
+                    }
+
+                    // Render all debugging stuff
+                    if state.debug_options.is_enabled {
+                        if state.ppudebug.is_enabled {
+                            let window = imgui::Window::new("PPU Debugging options");
+                            window
+                                .size([300.0, 400.0], Condition::FirstUseEver)
+                                .build(&ui, || {
+                                    ui.text("Backgrounds:");
+
+                                    for bgdebug in state.ppudebug.backgrounds.iter_mut() {
+                                        ui.checkbox(
+                                            format!("Show {:?}", bgdebug.background),
+                                            &mut bgdebug.is_enabled,
+                                        );
+                                    }
+                                });
+                            for bgdebug in state.ppudebug.backgrounds.iter_mut() {
+                                ppu_render::background_window(
+                                    bgdebug,
+                                    &emulator.bus.ppu.registers,
+                                    &ui,
+                                    &mut renderer,
+                                    &queue,
+                                )
+                            }
+                        }
                     }
 
                     // Render emulator framebuffer
