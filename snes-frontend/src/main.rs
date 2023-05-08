@@ -218,7 +218,9 @@ fn main() {
                                     .pick_file()
                                 {
                                     match emulator.rom.load(&String::from(path.to_str().unwrap())) {
-                                        Ok(_) => {},
+                                        Ok(_) => {
+                                            state.emulation.is_paused = false;
+                                        },
                                         Err(err) => {
                                             state.error_message.show = true;
                                             state.error_message.message = format!(
@@ -287,6 +289,17 @@ fn main() {
                                 )
                             }
                         }
+                    }
+
+                    // Actually run the emulation
+                    if !state.emulation.is_paused {
+                        // We want to keep the emulator running
+                        // as long as we are not at the end of the frame
+                        while !emulator.is_frame_ending {
+                            emulator.run()
+                        }
+                        // Reset the flag because otherwise the emulator will never continue running
+                        emulator.is_frame_ending = false
                     }
 
                     // Render emulator framebuffer

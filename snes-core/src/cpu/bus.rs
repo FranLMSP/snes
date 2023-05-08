@@ -54,7 +54,7 @@ impl Bus {
         match section {
             MemoryMap::WRAM => self.read_wram(address),
             MemoryMap::PPU => self.ppu.registers.read(address as u16),
-            _ => todo!("Implement other memory sections"),
+            _ => todo!("Implement other memory sections. Address: {:#08X}", address),
         }
     }
 
@@ -63,7 +63,7 @@ impl Bus {
         match section {
             MemoryMap::WRAM => self.write_wram(address, value),
             MemoryMap::PPU => self.ppu.registers.write(address as u16, value),
-            _ => todo!("Implement other memory sections"),
+            _ => todo!("Implement other memory sections. Address: {:#08X}", address),
         }
     }
 }

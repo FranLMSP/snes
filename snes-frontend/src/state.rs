@@ -77,10 +77,23 @@ impl PPUDebug {
     }
 }
 
+pub struct Emulation {
+    pub is_paused: bool,
+}
+
+impl Emulation {
+    pub fn new() -> Self {
+        Self {
+            is_paused: true,
+        }
+    }
+}
+
 pub struct State {
     pub debug_options: DebugOptions,
     pub error_message: ErrorMessage,
     pub ppudebug: PPUDebug,
+    pub emulation: Emulation,
 }
 
 impl State {
@@ -89,6 +102,7 @@ impl State {
             debug_options: DebugOptions::new(),
             error_message: ErrorMessage::new(),
             ppudebug: PPUDebug::new(),
+            emulation: Emulation::new(),
         }
     }
 }
