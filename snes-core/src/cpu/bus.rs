@@ -1,8 +1,13 @@
 use crate::ppu::PPU;
+use crate::cpu::internal_registers::InternalRegisters;
+use crate::rom::ROM;
+use crate::rom::lo_rom::LoROM;
 
 pub struct Bus {
     wram: [u8; 0x10000],
     pub ppu: PPU,
+    pub rom: Box<dyn ROM>,
+    pub internal_registers: InternalRegisters,
 }
 
 #[derive(PartialEq, Debug)]
@@ -19,6 +24,8 @@ impl Bus {
         Self {
             wram: [0; 0x10000],
             ppu: PPU::new(),
+            rom: Box::new(LoROM::new()),
+            internal_registers: InternalRegisters::new(),
         }
     }
 
@@ -54,7 +61,9 @@ impl Bus {
         match section {
             MemoryMap::WRAM => self.read_wram(address),
             MemoryMap::PPU => self.ppu.registers.read(address as u16),
-            _ => todo!("Implement other memory sections. Address: {:#08X}", address),
+            MemoryMap::CPU => self.internal_registers.read(address as u16),
+            MemoryMap::Joypad => 0x00,  // TODO: Placeholder
+            MemoryMap::Cartridge => self.rom.read(address),
         }
     }
 
@@ -63,7 +72,9 @@ impl Bus {
         match section {
             MemoryMap::WRAM => self.write_wram(address, value),
             MemoryMap::PPU => self.ppu.registers.write(address as u16, value),
-            _ => todo!("Implement other memory sections. Address: {:#08X}", address),
+            MemoryMap::CPU => self.internal_registers.write(address as u16, value),
+            MemoryMap::Joypad => {},  // TODO: Placeholder
+            MemoryMap::Cartridge => self.rom.write(address, value),
         }
     }
 }

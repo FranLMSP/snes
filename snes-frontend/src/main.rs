@@ -217,7 +217,7 @@ fn main() {
                                 if let Some(path) = FileDialog::new()
                                     .pick_file()
                                 {
-                                    match emulator.rom.load(&String::from(path.to_str().unwrap())) {
+                                    match emulator.bus.rom.load(&String::from(path.to_str().unwrap())) {
                                         Ok(_) => {
                                             state.emulation.is_paused = false;
                                         },
@@ -288,6 +288,24 @@ fn main() {
                                     &queue,
                                 )
                             }
+                        }
+
+                        if state.debug_options.show_cpu_registers {
+                            let window = imgui::Window::new("CPU Registers");
+                            window
+                                .size([150.0, 200.0], Condition::FirstUseEver)
+                                .build(&ui, || {
+                                    ui.text(format!("SP:        | {:#06X}",   emulator.cpu.registers.sp));
+                                    ui.text(format!("X:         | {:#06X}",   emulator.cpu.registers.x));
+                                    ui.text(format!("Y:         | {:#06X}",   emulator.cpu.registers.y));
+                                    ui.text(format!("A:         | {:#06X}",   emulator.cpu.registers.a));
+                                    ui.text(format!("P:         |   {:#04X}", emulator.cpu.registers.p));
+                                    ui.text(format!("D:         | {:#06X}",   emulator.cpu.registers.d));
+                                    ui.text(format!("PBR:       |   {:#04X}", emulator.cpu.registers.pbr));
+                                    ui.text(format!("DBR:       |   {:#04X}", emulator.cpu.registers.dbr));
+                                    ui.text(format!("PC:        | {:#06X}",   emulator.cpu.registers.pc));
+                                    ui.text(format!("EMU MODE:  |  {}",       emulator.cpu.registers.emulation_mode));
+                                });
                         }
                     }
 
