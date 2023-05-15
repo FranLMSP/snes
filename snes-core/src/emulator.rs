@@ -20,8 +20,8 @@ impl Emulator {
         }
     }
 
-    pub fn run(&mut self) {
-        self.cpu.run(&mut self.bus);
+    pub fn tick(&mut self) {
+        self.cpu.tick(&mut self.bus);
         self.bus.ppu.tick(self.cpu.cycles);
 
         self.cpu.cycles = 0;

@@ -1098,7 +1098,7 @@ impl CPU {
         self.increment_cycles_test(addressing_mode);
     }
 
-    pub fn run(&mut self, bus: &mut Bus) {
+    pub fn tick(&mut self, bus: &mut Bus) {
         let opcode = bus.read(self.registers.get_pc_address());
         self.execute_opcode(opcode, bus);
     }

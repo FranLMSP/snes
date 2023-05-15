@@ -4,14 +4,86 @@ use snes_core::ppu::registers::{
     MAX_BG_WIDTH,
     MAX_BG_HEIGHT,
 };
+use regex::Regex;
 
+
+pub struct MemoryMap {
+    pub is_enabled: bool,
+    pub page_start: u8,
+    pub page_end: u8,
+    pub address_start: u16,
+    pub address_end: u16,
+    pub page_start_input: String,
+    pub page_end_input: String,
+    pub address_start_input: String,
+    pub address_end_input: String,
+}
+
+impl MemoryMap {
+    pub fn new() -> Self {
+        Self {
+            is_enabled: true,
+            page_start: 0xF0,
+            page_end: 0xFF,
+            address_start: 0xFFF0,
+            address_end: 0xFFFF,
+            page_start_input: String::from("0xF0"),
+            page_end_input: String::from("0xFF"),
+            address_start_input: String::from("0xFFF0"),
+            address_end_input: String::from("0xFFFF"),
+        }
+    }
+
+    fn validate_values(&mut self) {
+        if self.page_start > self.page_end {
+            self.page_start = self.page_end;
+        }
+        if self.page_end < self.page_start {
+            self.page_end = self.page_start;
+        }
+        if self.address_start > self.address_end {
+            self.address_start = self.address_end;
+        }
+        if self.address_end < self.address_start {
+            self.address_end = self.address_start;
+        }
+    }
+
+    pub fn set_values_from_inputs(&mut self) {
+        let page_regex = Regex::new(r"^(0x)?[0-9a-fA-F]{2,2}$").unwrap();
+        let address_regex = Regex::new(r"^(0x)?[0-9a-fA-F]{4,4}$").unwrap();
+
+        if !page_regex.is_match(&self.page_start_input) {
+            println!("Page start didn't match");
+            self.page_start_input = String::from("0x00");
+        }
+        if !page_regex.is_match(&self.page_end_input) {
+            println!("Page end didn't match");
+            self.page_end_input = String::from("0x00");
+        }
+        if !address_regex.is_match(&self.address_start_input) {
+            println!("Addr start didn't match");
+            self.address_start_input = String::from("0x0000");
+        }
+        if !address_regex.is_match(&self.address_end_input) {
+            println!("Addr end didn't match");
+            self.address_end_input = String::from("0x0000");
+        }
+
+        self.page_start = u8::from_str_radix(&self.page_start_input.trim_start_matches("0x"), 16).unwrap();
+        self.page_end = u8::from_str_radix(&self.page_end_input.trim_start_matches("0x"), 16).unwrap();
+        self.address_start = u16::from_str_radix(&self.address_start_input.trim_start_matches("0x"), 16).unwrap();
+        self.address_end = u16::from_str_radix(&self.address_end_input.trim_start_matches("0x"), 16).unwrap();
+        self.validate_values()
+    }
+}
 
 pub struct DebugOptions {
     pub is_enabled: bool,
     pub show_debug_window: bool,
     pub show_cpu_registers: bool,
     pub show_spc700_registers: bool,
-    pub show_cpu_memory: bool,
+    pub memory_map: MemoryMap,
 }
 
 impl DebugOptions {
@@ -21,7 +93,7 @@ impl DebugOptions {
             show_debug_window: true,
             show_cpu_registers: true,
             show_spc700_registers: true,
-            show_cpu_memory: true,
+            memory_map: MemoryMap::new(),
         }
     }
 }

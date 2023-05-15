@@ -7,6 +7,7 @@ edition = "2021"
 
 [dependencies]
 snes-core = { path = "../snes-core" }
+regex = "1.8.1"
 winit = "0.26.1"
 imgui = "0.8.2"
 wgpu = "0.12.0"

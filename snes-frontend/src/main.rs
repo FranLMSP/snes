@@ -18,6 +18,9 @@ extern crate snes_core;
 use snes_core::emulator::Emulator;
 use snes_frontend::ppu as ppu_render;
 
+
+// TODO: refactor this please
+
 fn main() {
     // Windowing state
     let mut state = State::new();
@@ -78,7 +81,7 @@ fn main() {
     );
     imgui.set_ini_filename(None);
 
-    let font_size = (12.0 * hidpi_factor) as f32;
+    let font_size = (14.0 * hidpi_factor) as f32;
     imgui.io_mut().font_global_scale = (1.0 / hidpi_factor) as f32;
 
     imgui.fonts().add_font(&[FontSource::DefaultFontData {
@@ -219,7 +222,7 @@ fn main() {
                                 {
                                     match emulator.bus.rom.load(&String::from(path.to_str().unwrap())) {
                                         Ok(_) => {
-                                            state.emulation.is_paused = false;
+                                            // state.emulation.is_paused = false;
                                         },
                                         Err(err) => {
                                             state.error_message.show = true;
@@ -247,11 +250,27 @@ fn main() {
                             .size([300.0, 100.0], Condition::FirstUseEver)
                             .opened(&mut state.debug_options.show_debug_window)
                             .build(&ui, || {
+                                ui.text("Controls:");
+                                let pause_text = if state.emulation.is_paused {"Resume"} else {"Pause"};
+                                if ui.button(pause_text) {
+                                    state.emulation.is_paused = !state.emulation.is_paused;
+                                }
+                                ui.disabled(!state.emulation.is_paused, || {
+                                    if ui.button("Tick") {
+                                        emulator.tick();
+                                    }
+                                });
+                                ui.separator();
+
                                 ui.checkbox(
                                     "Enable debugging", 
                                     &mut state.debug_options.is_enabled,
                                 );
                                 ui.separator();
+                                ui.checkbox(
+                                    "Show Memory Map", 
+                                    &mut state.debug_options.memory_map.is_enabled ,
+                                );
                                 ui.checkbox(
                                     "Show PPU debugging options", 
                                     &mut state.ppudebug.is_enabled,
@@ -295,16 +314,75 @@ fn main() {
                             window
                                 .size([150.0, 200.0], Condition::FirstUseEver)
                                 .build(&ui, || {
-                                    ui.text(format!("SP:        | {:#06X}",   emulator.cpu.registers.sp));
-                                    ui.text(format!("X:         | {:#06X}",   emulator.cpu.registers.x));
-                                    ui.text(format!("Y:         | {:#06X}",   emulator.cpu.registers.y));
-                                    ui.text(format!("A:         | {:#06X}",   emulator.cpu.registers.a));
-                                    ui.text(format!("P:         |   {:#04X}", emulator.cpu.registers.p));
-                                    ui.text(format!("D:         | {:#06X}",   emulator.cpu.registers.d));
-                                    ui.text(format!("PBR:       |   {:#04X}", emulator.cpu.registers.pbr));
-                                    ui.text(format!("DBR:       |   {:#04X}", emulator.cpu.registers.dbr));
-                                    ui.text(format!("PC:        | {:#06X}",   emulator.cpu.registers.pc));
-                                    ui.text(format!("EMU MODE:  |  {}",       emulator.cpu.registers.emulation_mode));
+                                    ui.text(format!("SP:       | {:#06X}",   emulator.cpu.registers.sp));
+                                    ui.text(format!("X:        | {:#06X}",   emulator.cpu.registers.x));
+                                    ui.text(format!("Y:        | {:#06X}",   emulator.cpu.registers.y));
+                                    ui.text(format!("A:        | {:#06X}",   emulator.cpu.registers.a));
+                                    ui.text(format!("P:        |   {:#04X}", emulator.cpu.registers.p));
+                                    ui.text(format!("D:        | {:#06X}",   emulator.cpu.registers.d));
+                                    ui.text(format!("PBR:      |   {:#04X}", emulator.cpu.registers.pbr));
+                                    ui.text(format!("DBR:      |   {:#04X}", emulator.cpu.registers.dbr));
+                                    ui.text(format!("PC:       | {:#06X}",   emulator.cpu.registers.pc));
+                                    ui.text(format!("EMU MODE: |  {}",       emulator.cpu.registers.emulation_mode));
+                                });
+                        }
+
+                        if state.debug_options.memory_map.is_enabled {
+                            let window = imgui::Window::new("Memory Map");
+                            window
+                                .size([400.0, 400.0], Condition::FirstUseEver)
+                                .build(&ui, || {
+                                    let page_start_input = ui.input_text(
+                                        "Page start",
+                                        &mut state.debug_options.memory_map.page_start_input
+                                    );
+                                    page_start_input.build();
+
+                                    let page_end_input = ui.input_text(
+                                        "Page end",
+                                        &mut state.debug_options.memory_map.page_end_input
+                                    );
+                                    page_end_input.build();
+
+                                    let address_start_input = ui.input_text(
+                                        "Address start",
+                                        &mut state.debug_options.memory_map.address_start_input
+                                    );
+                                    address_start_input.build();
+
+                                    let address_end_input = ui.input_text(
+                                        "Address end",
+                                        &mut state.debug_options.memory_map.address_end_input,
+                                    );
+                                    address_end_input.build();
+
+                                    if ui.button("Apply") {
+                                        state.debug_options.memory_map.set_values_from_inputs();
+                                    }
+
+                                    ui.separator();
+                                    let page_start = state.debug_options.memory_map.page_start;
+                                    let page_end = state.debug_options.memory_map.page_end;
+                                    let address_start = state.debug_options.memory_map.address_start;
+                                    let address_end = state.debug_options.memory_map.address_end;
+                                    let mut header = String::from("     | ");
+                                    for page in (page_start..=page_end).rev() {
+                                        header = format!("{}{:02X} ", header, page);
+                                    }
+                                    ui.text(header);
+                                    let mut divider = String::from("-----|-");
+                                    for _page in (page_start..=page_end).rev() {
+                                        divider = format!("{}---", divider);
+                                    }
+                                    ui.text(divider);
+                                    for address in (address_start..=address_end).rev() {
+                                        let mut address_row = format!("{:04X} | ", address);
+                                        for page in (page_start..=page_end).rev() {
+                                            let bus_address = ((page as u32) << 16) | (address as u32);
+                                            address_row = format!("{}{:02X} ", address_row, emulator.bus.read(bus_address));
+                                        }
+                                        ui.text(address_row);
+                                    }
                                 });
                         }
                     }
@@ -314,7 +392,7 @@ fn main() {
                         // We want to keep the emulator running
                         // as long as we are not at the end of the frame
                         while !emulator.is_frame_ending {
-                            emulator.run()
+                            emulator.tick()
                         }
                         // Reset the flag because otherwise the emulator will never continue running
                         emulator.is_frame_ending = false
