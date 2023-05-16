@@ -10,6 +10,12 @@ impl LoROM {
             data: vec![],
         }
     }
+
+    pub fn adjust_address(address: u32) -> u32 {
+        let page = (address >> 16) & 0x7F;
+        let address = address & 0x7FFF;
+        (page << 16) | address
+    }
 }
 
 impl ROM for LoROM {
@@ -18,6 +24,7 @@ impl ROM for LoROM {
     }
 
     fn read(&self, address: u32) -> u8 {
+        let address = LoROM::adjust_address(address);
         match self.data.get(address as usize) {
             Some(byte) => *byte,
             None => 0xFF,
