@@ -28,4 +28,9 @@ impl Emulator {
 
         self.is_frame_ending = true;
     }
+
+    pub fn reset(&mut self) {
+        let reset_vector = (self.bus.read(0x00FFFC) as u16) | ((self.bus.read(0x00FFFD) as u16) << 8);
+        self.cpu.registers.pc = reset_vector;
+    }
 }

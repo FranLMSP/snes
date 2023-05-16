@@ -260,6 +260,9 @@ fn main() {
                                         emulator.tick();
                                     }
                                 });
+                                if ui.button("Reset") {
+                                    emulator.reset();
+                                }
                                 ui.separator();
 
                                 ui.checkbox(
