@@ -327,6 +327,7 @@ fn main() {
                                     ui.text(format!("DBR:      |   {:#04X}", emulator.cpu.registers.dbr));
                                     ui.text(format!("PC:       | {:#06X}",   emulator.cpu.registers.pc));
                                     ui.text(format!("EMU MODE: |  {}",       emulator.cpu.registers.emulation_mode));
+                                    ui.text(format!("CARRY:    |  {}",       emulator.cpu.registers.carry));
                                 });
                         }
 

@@ -1098,6 +1098,11 @@ impl CPU {
         self.increment_cycles_test(addressing_mode);
     }
 
+    fn xce(&mut self) {
+        self.registers.exchange_carry_and_emulation();
+        self.increment_cycles_exchange();
+    }
+
     pub fn tick(&mut self, bus: &mut Bus) {
         let opcode = bus.read(self.registers.get_pc_address());
         self.execute_opcode(opcode, bus);
@@ -1452,7 +1457,7 @@ impl CPU {
             // XBA
             0xEB => self.xba(),
             // XCE
-            0xFB => unimplemented!("XCE instruction not implemented yet"),
+            0xFB => self.xce(),
         }
     }
 }
@@ -1460,6 +1465,7 @@ impl CPU {
 #[cfg(test)]
 mod cpu_instructions_tests {
     use super::*;
+    use crate::common::flags::ModeFlag;
 
     #[test]
     fn test_adc() {
@@ -2882,5 +2888,16 @@ mod cpu_instructions_tests {
         assert_eq!(cpu.registers.a, 0xFF11);
         assert_eq!(cpu.registers.pc, 0x0001);
         assert_eq!(cpu.cycles, 3);
+    }
+
+    #[test]
+    fn test_xce() {
+        let mut cpu = CPU::new();
+        cpu.registers.pc = 0x0000;
+        cpu.registers.exposed_bit_zero = ModeFlag::Carry;
+        cpu.xce();
+        assert_eq!(cpu.registers.exposed_bit_zero, ModeFlag::EmulationMode);
+        assert_eq!(cpu.registers.pc, 0x0001);
+        assert_eq!(cpu.cycles, 2);
     }
 }

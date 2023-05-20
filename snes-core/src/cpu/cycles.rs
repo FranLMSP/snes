@@ -381,6 +381,10 @@ impl CPU {
         self.registers.increment_pc(1); self.cycles += 2;
     }
 
+    pub fn increment_cycles_exchange(&mut self) {
+        self.registers.increment_pc(1); self.cycles += 2;
+    }
+
     pub fn increment_cycles_xba(&mut self) {
         self.registers.increment_pc(1); self.cycles += 3;
     }
