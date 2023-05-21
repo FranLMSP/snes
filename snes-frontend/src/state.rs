@@ -82,6 +82,7 @@ pub struct DebugOptions {
     pub is_enabled: bool,
     pub show_debug_window: bool,
     pub show_cpu_registers: bool,
+    pub show_cpu_disassembler: bool,
     pub show_spc700_registers: bool,
     pub memory_map: MemoryMap,
 }
@@ -92,6 +93,7 @@ impl DebugOptions {
             is_enabled: true,
             show_debug_window: true,
             show_cpu_registers: true,
+            show_cpu_disassembler: true,
             show_spc700_registers: true,
             memory_map: MemoryMap::new(),
         }

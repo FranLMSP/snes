@@ -17,6 +17,7 @@ use snes_frontend::state::State;
 extern crate snes_core;
 use snes_core::emulator::Emulator;
 use snes_frontend::ppu as ppu_render;
+use snes_frontend::cpu as cpu_debug;
 
 
 // TODO: refactor this please
@@ -282,6 +283,10 @@ fn main() {
                                     "Show CPU registers", 
                                     &mut state.debug_options.show_cpu_registers,
                                 );
+                                ui.checkbox(
+                                    "Show CPU disassembler", 
+                                    &mut state.debug_options.show_cpu_registers,
+                                );
                             });
                     }
 
@@ -328,6 +333,17 @@ fn main() {
                                     ui.text(format!("PC:       | {:#06X}",   emulator.cpu.registers.pc));
                                     ui.text(format!("EMU MODE: |  {}",       emulator.cpu.registers.emulation_mode));
                                     ui.text(format!("CARRY:    |  {}",       emulator.cpu.registers.carry));
+                                });
+                        }
+
+                        if state.debug_options.show_cpu_disassembler {
+                            let window = imgui::Window::new("CPU Disassembler");
+                            window
+                                .size([150.0, 200.0], Condition::FirstUseEver)
+                                .build(&ui, || {
+                                    ui.text("Upcoming instruction:");
+                                    ui.text(cpu_debug::CPUDisassembler::get_next_instruction(&emulator));
+                                    ui.separator();
                                 });
                         }
 

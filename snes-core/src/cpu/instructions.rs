@@ -1336,7 +1336,7 @@ impl CPU {
             0x5A => self.phy(bus),
             // PLA
             0x68 => self.pla(bus),
-            // PLA
+            // PLB
             0xAB => self.plb(bus),
             // PLD
             0x2B => self.pld(bus),
@@ -1350,13 +1350,13 @@ impl CPU {
             0xC2 => self.rep(bus),
             // ROL
             0x2A => self.rol(bus, AddressingMode::Accumulator),
-            0x2E => self.rol(bus, AddressingMode::Immediate),
+            0x2E => self.rol(bus, AddressingMode::Absolute),
             0x26 => self.rol(bus, AddressingMode::DirectPage),
             0x3E => self.rol(bus, AddressingMode::AbsoluteIndexed(I::X)),
             0x36 => self.rol(bus, AddressingMode::DirectPageIndexed(I::X)),
             // ROR
             0x6A => self.ror(bus, AddressingMode::Accumulator),
-            0x6E => self.ror(bus, AddressingMode::Immediate),
+            0x6E => self.ror(bus, AddressingMode::Absolute),
             0x66 => self.ror(bus, AddressingMode::DirectPage),
             0x7E => self.ror(bus, AddressingMode::AbsoluteIndexed(I::X)),
             0x76 => self.ror(bus, AddressingMode::DirectPageIndexed(I::X)),
