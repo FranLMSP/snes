@@ -185,6 +185,13 @@ impl Registers {
         self.d as u8
     }
 
+    pub fn is_emu_mode_flag_exposed(&self) -> bool {
+        match self.exposed_bit_zero {
+            ModeFlag::Carry => false,
+            ModeFlag::EmulationMode => true,
+        }
+    }
+
     pub fn exchange_carry_and_emulation(&mut self) {
         match self.exposed_bit_zero {
             ModeFlag::Carry => {

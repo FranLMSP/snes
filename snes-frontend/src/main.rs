@@ -333,6 +333,11 @@ fn main() {
                                     ui.text(format!("PC:       | {:#06X}",   emulator.cpu.registers.pc));
                                     ui.text(format!("EMU MODE: |  {}",       emulator.cpu.registers.emulation_mode));
                                     ui.text(format!("CARRY:    |  {}",       emulator.cpu.registers.carry));
+                                    ui.separator();
+                                    ui.text("Status flags:");
+                                    ui.text(format!("       E (exposed: {})", emulator.cpu.registers.is_emu_mode_flag_exposed()));
+                                    ui.text("NVMXDIZC");
+                                    ui.text(format!("{:08b}", emulator.cpu.registers.p));
                                 });
                         }
 
