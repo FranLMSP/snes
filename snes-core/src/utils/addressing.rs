@@ -83,7 +83,7 @@ pub fn direct_page_indexed(bus: &Bus, pc_addr: u32, direct_page_register: u16, x
 /// OPCODE (dp,X)
 /// OPCODE (dp,Y)
 pub fn direct_page_indexed_indirect(bus: &Bus, pc_addr: u32, direct_page_register: u16, xy: u16) -> u32 {
-    direct_page_indirect(bus, pc_addr, direct_page_register + xy)
+    direct_page_indirect(bus, pc_addr, direct_page_register.wrapping_add(xy))
 }
 
 /// OPCODE (dp),X
