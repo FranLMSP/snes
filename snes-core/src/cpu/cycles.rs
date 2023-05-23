@@ -223,6 +223,10 @@ impl CPU {
         self.registers.increment_pc(1); self.cycles += 2;
     }
 
+    pub fn increment_cycles_wdm(&mut self) {
+        self.registers.increment_pc(2); self.cycles += 2;
+    }
+
     pub fn increment_cycles_jmp(&mut self, addressing_mode: AddressingMode) {
         let (_, cycles) = match addressing_mode {
             A::Absolute                         => (3, 3),

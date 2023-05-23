@@ -875,8 +875,8 @@ impl CPU {
         self.increment_cycles_st_index(addressing_mode);
     }
 
-    fn stp(&mut self, bus: &Bus) {
-        self.reset_vector(bus);
+    fn stp(&mut self) {
+        self.is_stopped = true;
         self.increment_cycles_stp();
     }
 
@@ -1103,14 +1103,37 @@ impl CPU {
         self.increment_cycles_test(addressing_mode);
     }
 
+    fn wai(&mut self) {
+        self.is_waiting_interrupt = true;
+        self.increment_cycles_stp();
+    }
+
+
+    fn wdm(&mut self) {
+        self.increment_cycles_wdm();
+    }
+
+
     fn xce(&mut self) {
         self.registers.exchange_carry_and_emulation();
         self.increment_cycles_exchange();
     }
 
-    pub fn tick(&mut self, bus: &mut Bus) {
+    fn check_running_state(&mut self) -> bool {
         if self.is_stopped {
             self.increment_cycles_while_stopped();
+            return false;
+        }
+        if self.is_waiting_interrupt {
+            // TODO: check for interrupts here
+            self.increment_cycles_while_stopped();
+            return false;
+        }
+        return true;
+    }
+
+    pub fn tick(&mut self, bus: &mut Bus) {
+        if !self.check_running_state() {
             return;
         }
         let opcode = bus.read(self.registers.get_pc_address());
@@ -1415,7 +1438,7 @@ impl CPU {
             0x83 => self.sta(bus, A::StackRelative),
             0x93 => self.sta(bus, A::StackRelativeIndirectIndexed(I::Y)),
             // STP
-            0xDB => self.stp(bus),
+            0xDB => self.stp(),
             // STX
             0x8E => self.stx(bus, A::Absolute),
             0x86 => self.stx(bus, A::DirectPage),
@@ -1460,9 +1483,9 @@ impl CPU {
             // TYX
             0xBB => self.tyx(),
             // WAI
-            0xCB => unimplemented!("WAI instruction not implemented yet"),
+            0xCB => self.wai(),
             // WDM
-            0x42 => unimplemented!("WDM instruction not implemented yet"),
+            0x42 => self.wdm(),
             // XBA
             0xEB => self.xba(),
             // XCE
@@ -2688,11 +2711,10 @@ mod cpu_instructions_tests {
     #[test]
     fn test_stp() {
         let mut cpu = CPU::new();
-        let bus = Bus::new();
         cpu.is_stopped = false;
         cpu.registers.pc = 0x0000;
-        cpu.stp(&bus);
-        assert_eq!(cpu.registers.pc, 0x0003);
+        cpu.stp();
+        assert_eq!(cpu.registers.pc, 0x0001);
         assert_eq!(cpu.is_stopped, true);
         assert_eq!(cpu.cycles, 3);
     }
@@ -2897,6 +2919,26 @@ mod cpu_instructions_tests {
         cpu.tyx();
         assert_eq!(cpu.registers.x, 0xF0F0);
         assert_eq!(cpu.registers.pc, 0x0001);
+        assert_eq!(cpu.cycles, 2);
+    }
+
+    #[test]
+    fn test_wai() {
+        let mut cpu = CPU::new();
+        cpu.is_waiting_interrupt = false;
+        cpu.registers.pc = 0x0000;
+        cpu.wai();
+        assert_eq!(cpu.registers.pc, 0x0001);
+        assert_eq!(cpu.is_waiting_interrupt, true);
+        assert_eq!(cpu.cycles, 3);
+    }
+
+    #[test]
+    fn test_wdm() {
+        let mut cpu = CPU::new();
+        cpu.registers.pc = 0x0000;
+        cpu.wdm();
+        assert_eq!(cpu.registers.pc, 0x0002);
         assert_eq!(cpu.cycles, 2);
     }
 
