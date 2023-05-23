@@ -875,6 +875,11 @@ impl CPU {
         self.increment_cycles_st_index(addressing_mode);
     }
 
+    fn stp(&mut self, bus: &Bus) {
+        self.reset_vector(bus);
+        self.increment_cycles_stp();
+    }
+
     fn tax(&mut self) {
         if self.registers.is_16bit_index() {
             self.registers.x = self.registers.a;
@@ -1104,6 +1109,10 @@ impl CPU {
     }
 
     pub fn tick(&mut self, bus: &mut Bus) {
+        if self.is_stopped {
+            self.increment_cycles_while_stopped();
+            return;
+        }
         let opcode = bus.read(self.registers.get_pc_address());
         self.execute_opcode(opcode, bus);
     }
@@ -1406,7 +1415,7 @@ impl CPU {
             0x83 => self.sta(bus, A::StackRelative),
             0x93 => self.sta(bus, A::StackRelativeIndirectIndexed(I::Y)),
             // STP
-            0xDB => unimplemented!("STP instruction not implemented yet"),
+            0xDB => self.stp(bus),
             // STX
             0x8E => self.stx(bus, A::Absolute),
             0x86 => self.stx(bus, A::DirectPage),
@@ -2674,6 +2683,18 @@ mod cpu_instructions_tests {
         assert_eq!(bus.read(0x0003), 0x12);
         assert_eq!(cpu.registers.pc, 0x0003);
         assert_eq!(cpu.cycles, 4);
+    }
+
+    #[test]
+    fn test_stp() {
+        let mut cpu = CPU::new();
+        let bus = Bus::new();
+        cpu.is_stopped = false;
+        cpu.registers.pc = 0x0000;
+        cpu.stp(&bus);
+        assert_eq!(cpu.registers.pc, 0x0003);
+        assert_eq!(cpu.is_stopped, true);
+        assert_eq!(cpu.cycles, 3);
     }
 
     #[test]

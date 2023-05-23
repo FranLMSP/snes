@@ -3,5 +3,6 @@ pub use cpu::CPU;
 pub mod bus;
 pub mod registers;
 pub mod instructions;
+pub mod vectors;
 pub mod cycles;
 pub mod internal_registers;

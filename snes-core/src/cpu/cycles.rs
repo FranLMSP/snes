@@ -396,6 +396,14 @@ impl CPU {
         }
     }
 
+    pub fn increment_cycles_stp(&mut self) {
+        self.registers.increment_pc(1); self.cycles += 3;
+    }
+
+    pub fn increment_cycles_while_stopped(&mut self) {
+        self.cycles += 1;
+    }
+
     pub fn increment_cycles_move(&mut self, count: usize) {
         self.registers.increment_pc(3); self.cycles += 7 * count;
     }

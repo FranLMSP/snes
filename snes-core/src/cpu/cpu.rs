@@ -3,6 +3,7 @@ use super::registers::Registers;
 pub struct CPU {
     pub registers: Registers,
     pub cycles: usize,
+    pub is_stopped: bool,
 }
 
 impl CPU {
@@ -10,6 +11,7 @@ impl CPU {
         Self {
             registers: Registers::new(),
             cycles: 0,
+            is_stopped: false,
         }
     }
 }
