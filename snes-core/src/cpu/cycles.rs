@@ -353,6 +353,13 @@ impl CPU {
         self.cycles += 6;
     }
 
+    pub fn increment_cycles_return_interrupt(&mut self) {
+        self.cycles += 6;
+        if !self.registers.emulation_mode {
+            self.cycles += 1;
+        }
+    }
+
     pub fn increment_cycles_set_flag(&mut self) {
         self.registers.increment_pc(1); self.cycles += 2;
     }

@@ -508,7 +508,7 @@ impl CPU {
         self.increment_cycles_jmp(addressing_mode);
     }
 
-    fn do_push(&mut self, bus: &mut Bus, bytes: &[u8]) {
+    pub fn do_push(&mut self, bus: &mut Bus, bytes: &[u8]) {
         for byte in bytes {
             let address = self.registers.sp as u32;
             bus.write(address, *byte);
@@ -578,12 +578,12 @@ impl CPU {
         self.increment_cycles_phd();
     }
 
-    fn phk(&mut self, bus: &mut Bus) {
+    pub fn phk(&mut self, bus: &mut Bus) {
         self.do_push(bus, &[self.registers.pbr]);
         self.increment_cycles_phk();
     }
 
-    fn php(&mut self, bus: &mut Bus) {
+    pub fn php(&mut self, bus: &mut Bus) {
         self.do_push(bus, &[self.registers.p]);
         self.increment_cycles_php();
     }
@@ -1067,10 +1067,13 @@ impl CPU {
     }
 
     fn rti(&mut self, bus: &Bus) {
+        self.registers.p = self.do_pull(bus, 1)[0];
         let pc_bytes = self.do_pull(bus, 2);
         self.registers.pc = (pc_bytes[0] as u16) | ((pc_bytes[1] as u16) << 8);
-        self.registers.pbr = self.do_pull(bus, 1)[0];
-        self.registers.p = self.do_pull(bus, 1)[0];
+        if !self.registers.emulation_mode {
+            self.registers.pbr = self.do_pull(bus, 1)[0];
+        }
+        self.increment_cycles_return_interrupt();
     }
 
     fn trb(&mut self, bus: &mut Bus, addressing_mode: AddressingMode) {
