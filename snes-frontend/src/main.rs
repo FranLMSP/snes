@@ -261,7 +261,7 @@ fn main() {
                                         emulator.tick();
                                     }
                                 });
-                                if ui.button("Reset") {
+                                if ui.button("Reset Vector") {
                                     emulator.reset();
                                 }
                                 ui.separator();

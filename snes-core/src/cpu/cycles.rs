@@ -51,7 +51,7 @@ impl CPU {
             match condition {
                 // Add 1 byte and 1 cycle if m = 0 (16-bit memory/accumulator)
                 Condition::MemorySelectFlag => {
-                    if !self.registers.get_memory_select_flag() {
+                    if self.registers.is_16bit_mode() {
                         cycles += 1;
                         match addressing_mode {
                             A::Immediate => bytes += 1,
@@ -441,6 +441,7 @@ mod cpu_instructions_tests {
     #[test]
     fn test_common_conditions() {
         let mut cpu = CPU::new();
+        cpu.registers.emulation_mode = false;
 
         // 16-bit Memory/accumulator flag condition
         cpu.registers.pc = 0;

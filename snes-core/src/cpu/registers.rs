@@ -27,8 +27,8 @@ impl Registers {
             pbr: 0,
             dbr: 0,
             pc: 0,
-            exposed_bit_zero: ModeFlag::Carry,
-            emulation_mode: false,
+            exposed_bit_zero: ModeFlag::EmulationMode,
+            emulation_mode: true,
             carry: false,
         }
     }
@@ -154,10 +154,16 @@ impl Registers {
     }
 
     pub fn is_16bit_index(&self) -> bool {
+        if self.emulation_mode {
+            return false
+        }
         !self.get_index_register_select_flag()
     }
 
     pub fn is_16bit_mode(&self) -> bool {
+        if self.emulation_mode {
+            return false
+        }
         !self.get_memory_select_flag()
     }
 
@@ -223,6 +229,15 @@ impl Registers {
             }
         }
     }
+
+    pub fn reset_rep_byte(&mut self, byte: u8) {
+        self.p = self.p & !byte;
+        // Avoid messing up exposed emu mode flag logic
+        let reset_carry_flag = (byte & 0x01) == 1;
+        if reset_carry_flag {
+            self.set_carry_flag(false);
+        }
+    }
 }
 
 #[cfg(test)]
@@ -232,6 +247,7 @@ mod registers_tests {
     #[test]
     fn test_is_16bit_mode() {
         let mut registers = Registers::new();
+        registers.emulation_mode = false;
         registers.set_memory_select_flag(false);
         assert!(registers.is_16bit_mode());
         registers.set_memory_select_flag(true);
@@ -241,6 +257,7 @@ mod registers_tests {
     #[test]
     fn test_set_16bit_mode() {
         let mut registers = Registers::new();
+        registers.emulation_mode = false;
         registers.set_16bit_mode(true);
         assert!(registers.is_16bit_mode());
         registers.set_16bit_mode(false);
@@ -250,6 +267,7 @@ mod registers_tests {
     #[test]
     fn test_is_16bit_index() {
         let mut registers = Registers::new();
+        registers.emulation_mode = false;
         registers.set_index_register_select_flag(false);
         assert!(registers.is_16bit_index());
         registers.set_index_register_select_flag(true);
@@ -259,6 +277,7 @@ mod registers_tests {
     #[test]
     fn test_set_16bit_index() {
         let mut registers = Registers::new();
+        registers.emulation_mode = false;
         registers.set_16bit_index(true);
         assert!(registers.is_16bit_index());
         registers.set_16bit_index(false);
@@ -268,6 +287,7 @@ mod registers_tests {
     #[test]
     fn test_set_low_a() {
         let mut registers = Registers::new();
+        registers.emulation_mode = false;
         registers.a = 0xA1A1;
         registers.set_low_a(0xFF);
         assert_eq!(registers.a, 0xA1FF);
@@ -276,6 +296,7 @@ mod registers_tests {
     #[test]
     fn test_set_low_x() {
         let mut registers = Registers::new();
+        registers.emulation_mode = false;
         registers.x = 0xA1A1;
         registers.set_low_x(0xFF);
         assert_eq!(registers.x, 0xA1FF);
@@ -284,6 +305,7 @@ mod registers_tests {
     #[test]
     fn test_set_low_y() {
         let mut registers = Registers::new();
+        registers.emulation_mode = false;
         registers.y = 0xA1A1;
         registers.set_low_y(0xFF);
         assert_eq!(registers.y, 0xA1FF);
@@ -292,6 +314,7 @@ mod registers_tests {
     #[test]
     fn test_set_low_sp() {
         let mut registers = Registers::new();
+        registers.emulation_mode = false;
         registers.sp = 0xA1A1;
         registers.set_low_sp(0xFF);
         assert_eq!(registers.sp, 0xA1FF);
@@ -319,6 +342,7 @@ mod registers_tests {
     #[test]
     fn test_status_registers() {
         let mut registers = Registers::new();
+        registers.emulation_mode = false;
         registers.p = 0x00;
 
         registers.set_carry_flag(true);
@@ -388,6 +412,7 @@ mod registers_tests {
     #[test]
     fn test_set_flags() {
         let mut registers = Registers::new();
+        registers.emulation_mode = false;
 
         registers.p = 0x00;
         registers .set_flags(&[
@@ -411,6 +436,7 @@ mod registers_tests {
     #[test]
     fn test_exchange_carry_and_emulation() {
         let mut registers = Registers::new();
+        registers.emulation_mode = false;
         registers.exposed_bit_zero = ModeFlag::Carry;
         registers .set_flags(&[Flags::Carry(false)]);
         registers.exposed_bit_zero = ModeFlag::EmulationMode;
@@ -432,5 +458,41 @@ mod registers_tests {
         assert_eq!(registers.get_emulation_mode_flag(), true);
         registers.exchange_carry_and_emulation();
         assert_eq!(registers.get_emulation_mode_flag(), false);
+    }
+
+    #[test]
+    fn test_reset_rep_byte() {
+        let mut registers = Registers::new();
+        registers.p = 0xFF;
+        registers.reset_rep_byte(0b0000_0001);
+        assert_eq!(registers.p,  0b1111_1110);
+
+        registers.p = 0xFF;
+        registers.reset_rep_byte(0b0000_0010);
+        assert_eq!(registers.p,  0b1111_1101);
+
+        registers.p = 0xFF;
+        registers.reset_rep_byte(0b0010_0010);
+        assert_eq!(registers.p,  0b1101_1101);
+
+        registers.p = 0xFF;
+        registers.reset_rep_byte(0b1111_1111);
+        assert_eq!(registers.p,  0b0000_0000);
+
+        registers.p = 0b0000_0010;
+        registers.reset_rep_byte(0b0000_0001);
+        assert_eq!(registers.p,  0b0000_0010);
+
+        registers.p = 0b0000_0010;
+        registers.reset_rep_byte(0b0000_0010);
+        assert_eq!(registers.p,  0b0000_0000);
+
+        registers.p = 0x38;
+        registers.reset_rep_byte(0x38);
+        assert_eq!(registers.p,  0x00);
+
+        registers.p = 0x86;
+        registers.reset_rep_byte(0x38);
+        assert_eq!(registers.p,  0b10000110);
     }
 }

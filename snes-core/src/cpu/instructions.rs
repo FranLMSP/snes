@@ -760,7 +760,8 @@ impl CPU {
     }
 
     fn rep(&mut self, bus: &Bus) {
-        self.registers.p = self.get_8bit_from_address(bus, AddressingMode::Immediate);
+        let byte = self.get_8bit_from_address(bus, AddressingMode::Immediate);
+        self.registers.reset_rep_byte(byte);
         self.increment_cycles_rep();
     }
 
@@ -1506,6 +1507,7 @@ mod cpu_instructions_tests {
     fn test_adc() {
         let mut cpu = CPU::new();
         let mut bus = Bus::new();
+        cpu.registers.emulation_mode = false;
         cpu.registers.a   = 0x0000;
         cpu.registers.pbr = 0x00;
         cpu.registers.pc  = 0x0000;
@@ -1539,6 +1541,7 @@ mod cpu_instructions_tests {
     fn test_sbc() {
         let mut cpu = CPU::new();
         let mut bus = Bus::new();
+        cpu.registers.emulation_mode = false;
         cpu.registers.a   = 0x0001;
         cpu.registers.pbr = 0x00;
         cpu.registers.pc  = 0x0000;
@@ -1556,6 +1559,7 @@ mod cpu_instructions_tests {
     fn test_and() {
         let mut cpu = CPU::new();
         let mut bus = Bus::new();
+        cpu.registers.emulation_mode = false;
         cpu.registers.a   = 0x0101;
         cpu.registers.pbr = 0x00;
         cpu.registers.pc  = 0x0000;
@@ -1591,6 +1595,7 @@ mod cpu_instructions_tests {
     fn test_asl() {
         let mut cpu = CPU::new();
         let mut bus = Bus::new();
+        cpu.registers.emulation_mode = false;
         cpu.registers.a   = 0b01010000_00000000;
         cpu.registers.pbr = 0x00;
         cpu.registers.pc  = 0x0000;
@@ -1608,6 +1613,8 @@ mod cpu_instructions_tests {
     fn test_lsr() {
         let mut cpu = CPU::new();
         let mut bus = Bus::new();
+        cpu.registers.emulation_mode = false;
+        cpu.registers.exposed_bit_zero = ModeFlag::Carry;
         cpu.registers.a   = 0b00000000_00000011;
         cpu.registers.pbr = 0x00;
         cpu.registers.pc  = 0x0000;
@@ -1627,6 +1634,7 @@ mod cpu_instructions_tests {
     fn test_bit() {
         let mut cpu = CPU::new();
         let mut bus = Bus::new();
+        cpu.registers.emulation_mode = false;
         cpu.registers.a   = 0b1111_0000;
         cpu.registers.pbr = 0x00;
         cpu.registers.pc  = 0x0000;
@@ -2041,6 +2049,7 @@ mod cpu_instructions_tests {
         // store the result nor it affects the overflow flag
         let mut cpu = CPU::new();
         let mut bus = Bus::new();
+        cpu.registers.emulation_mode = false;
         cpu.registers.x   = 0x01;
         cpu.registers.pbr = 0x00;
         cpu.registers.pc  = 0x0000;
@@ -2058,6 +2067,8 @@ mod cpu_instructions_tests {
         cpu.registers.x   = 0x50;
         cpu.registers.pbr = 0x00;
         cpu.registers.pc  = 0x0000;
+        cpu.registers.emulation_mode = false;
+        cpu.registers.exposed_bit_zero = ModeFlag::Carry;
         cpu.registers.set_16bit_index(true);
         cpu.registers.set_overflow_flag(false);
         bus.write(0x000002, 0xB0);
@@ -2077,6 +2088,8 @@ mod cpu_instructions_tests {
         // store the result nor it affects the overflow flag
         let mut cpu = CPU::new();
         let mut bus = Bus::new();
+        cpu.registers.emulation_mode = false;
+        cpu.registers.exposed_bit_zero = ModeFlag::Carry;
         cpu.registers.y   = 0x01;
         cpu.registers.pbr = 0x00;
         cpu.registers.pc  = 0x0000;
@@ -2432,6 +2445,7 @@ mod cpu_instructions_tests {
     fn test_phx() {
         let mut cpu = CPU::new();
         let mut bus = Bus::new();
+        cpu.registers.emulation_mode = false;
         cpu.registers.pc  = 0x0000;
         cpu.registers.x  = 0x1234;
         cpu.registers.sp  = 0x1FC;
@@ -2447,6 +2461,7 @@ mod cpu_instructions_tests {
     fn test_phy() {
         let mut cpu = CPU::new();
         let mut bus = Bus::new();
+        cpu.registers.emulation_mode = false;
         cpu.registers.pc  = 0x0000;
         cpu.registers.y  = 0x1234;
         cpu.registers.sp  = 0x1FC;
@@ -2462,6 +2477,7 @@ mod cpu_instructions_tests {
     fn test_pla() {
         let mut cpu = CPU::new();
         let mut bus = Bus::new();
+        cpu.registers.emulation_mode = false;
         cpu.registers.pc  = 0x0000;
         cpu.registers.y  = 0x1234;
         cpu.registers.set_16bit_mode(true);
@@ -2537,6 +2553,7 @@ mod cpu_instructions_tests {
     fn test_plx() {
         let mut cpu = CPU::new();
         let mut bus = Bus::new();
+        cpu.registers.emulation_mode = false;
         cpu.registers.pc  = 0x0000;
         cpu.registers.x  = 0x1234;
         cpu.registers.set_16bit_index(true);
@@ -2558,6 +2575,7 @@ mod cpu_instructions_tests {
     fn test_ply() {
         let mut cpu = CPU::new();
         let mut bus = Bus::new();
+        cpu.registers.emulation_mode = false;
         cpu.registers.pc  = 0x0000;
         cpu.registers.y  = 0x1234;
         cpu.registers.set_16bit_index(true);
@@ -2579,11 +2597,12 @@ mod cpu_instructions_tests {
     fn test_rep() {
         let mut cpu = CPU::new();
         let mut bus = Bus::new();
+        cpu.registers.emulation_mode = false;
         cpu.registers.pc  = 0x0000;
-        cpu.registers.p  = 0x00;
+        cpu.registers.p  = 0xFF;
         bus.write(0x0001, 0xFF);
         cpu.rep(&mut bus);
-        assert_eq!(cpu.registers.p, 0xFF);
+        assert_eq!(cpu.registers.p, 0x00);
         assert_eq!(cpu.registers.pc, 0x0002);
         assert_eq!(cpu.cycles, 3);
     }
@@ -2592,6 +2611,7 @@ mod cpu_instructions_tests {
     fn test_rol() {
         let mut cpu = CPU::new();
         let mut bus = Bus::new();
+        cpu.registers.emulation_mode = false;
         cpu.registers.set_16bit_mode(false);
         cpu.registers.a  = 0b0100_0000;
         cpu.registers.pc  = 0x0000;
@@ -2607,6 +2627,7 @@ mod cpu_instructions_tests {
     fn test_ror() {
         let mut cpu = CPU::new();
         let mut bus = Bus::new();
+        cpu.registers.emulation_mode = false;
         cpu.registers.set_16bit_mode(false);
         cpu.registers.set_carry_flag(true);
         cpu.registers.a  = 0x00;
@@ -2770,6 +2791,7 @@ mod cpu_instructions_tests {
     #[test]
     fn test_tax() {
         let mut cpu = CPU::new();
+        cpu.registers.emulation_mode = false;
         cpu.registers.pc = 0x0000;
         cpu.registers.a = 0xF0F0;
         cpu.registers.x = 0x0000;
@@ -2786,6 +2808,7 @@ mod cpu_instructions_tests {
     #[test]
     fn test_tay() {
         let mut cpu = CPU::new();
+        cpu.registers.emulation_mode = false;
         cpu.registers.pc = 0x0000;
         cpu.registers.a = 0xF0F0;
         cpu.registers.y = 0x0000;
@@ -2850,6 +2873,7 @@ mod cpu_instructions_tests {
     #[test]
     fn test_tsx() {
         let mut cpu = CPU::new();
+        cpu.registers.emulation_mode = false;
         cpu.registers.pc = 0x0000;
         cpu.registers.x = 0x0000;
         cpu.registers.sp = 0xF0F0;
@@ -2863,6 +2887,7 @@ mod cpu_instructions_tests {
     #[test]
     fn test_txa() {
         let mut cpu = CPU::new();
+        cpu.registers.emulation_mode = false;
         cpu.registers.pc = 0x0000;
         cpu.registers.a = 0x0000;
         cpu.registers.x = 0xF0F0;
@@ -2876,6 +2901,7 @@ mod cpu_instructions_tests {
     #[test]
     fn test_txs() {
         let mut cpu = CPU::new();
+        cpu.registers.emulation_mode = false;
         cpu.registers.pc = 0x0000;
         cpu.registers.sp = 0x0000;
         cpu.registers.x = 0xF0F0;
@@ -2889,6 +2915,7 @@ mod cpu_instructions_tests {
     #[test]
     fn test_txy() {
         let mut cpu = CPU::new();
+        cpu.registers.emulation_mode = false;
         cpu.registers.pc = 0x0000;
         cpu.registers.y = 0x0000;
         cpu.registers.x = 0xF0F0;
@@ -2902,6 +2929,7 @@ mod cpu_instructions_tests {
     #[test]
     fn test_tya() {
         let mut cpu = CPU::new();
+        cpu.registers.emulation_mode = false;
         cpu.registers.pc = 0x0000;
         cpu.registers.a = 0x0000;
         cpu.registers.y = 0xF0F0;
@@ -2915,6 +2943,7 @@ mod cpu_instructions_tests {
     #[test]
     fn test_tyx() {
         let mut cpu = CPU::new();
+        cpu.registers.emulation_mode = false;
         cpu.registers.pc = 0x0000;
         cpu.registers.x = 0x0000;
         cpu.registers.y = 0xF0F0;
