@@ -372,8 +372,7 @@ impl CPU {
         self.increment_cycles_bit(addressing_mode);
     }
 
-    fn do_branch(&mut self, bus: &Bus) -> bool {
-        let nearlabel = bus.read(self.registers.get_pc_address());
+    fn do_branch(&mut self, nearlabel: u8) -> bool {
         let is_negative = (nearlabel >> 7) != 0;
         let old_pc = self.registers.get_pc_address();
         if is_negative {
@@ -388,56 +387,63 @@ impl CPU {
     }
 
     fn bcc(&mut self, bus: &Bus) {
+        let nearlabel = bus.read(self.registers.get_pc_address().wrapping_add(1));
         self.increment_cycles_branch();
         if !self.registers.get_carry_flag() {
-            let page_boundary_crossed = self.do_branch(bus);
+            let page_boundary_crossed = self.do_branch(nearlabel);
             self.increment_cycles_branch_taken(page_boundary_crossed);
         }
     }
 
     fn bcs(&mut self, bus: &Bus) {
+        let nearlabel = bus.read(self.registers.get_pc_address().wrapping_add(1));
         self.increment_cycles_branch();
         if self.registers.get_carry_flag() {
-            let page_boundary_crossed = self.do_branch(bus);
+            let page_boundary_crossed = self.do_branch(nearlabel);
             self.increment_cycles_branch_taken(page_boundary_crossed);
         }
     }
 
     fn beq(&mut self, bus: &Bus) {
+        let nearlabel = bus.read(self.registers.get_pc_address().wrapping_add(1));
         self.increment_cycles_branch();
         if self.registers.get_zero_flag() {
-            let page_boundary_crossed = self.do_branch(bus);
+            let page_boundary_crossed = self.do_branch(nearlabel);
             self.increment_cycles_branch_taken(page_boundary_crossed);
         }
     }
 
     fn bne(&mut self, bus: &Bus) {
+        let nearlabel = bus.read(self.registers.get_pc_address().wrapping_add(1));
         self.increment_cycles_branch();
         if !self.registers.get_zero_flag() {
-            let page_boundary_crossed = self.do_branch(bus);
+            let page_boundary_crossed = self.do_branch(nearlabel);
             self.increment_cycles_branch_taken(page_boundary_crossed);
         }
     }
 
     fn bmi(&mut self, bus: &Bus) {
+        let nearlabel = bus.read(self.registers.get_pc_address().wrapping_add(1));
         self.increment_cycles_branch();
         if self.registers.get_negative_flag() {
-            let page_boundary_crossed = self.do_branch(bus);
+            let page_boundary_crossed = self.do_branch(nearlabel);
             self.increment_cycles_branch_taken(page_boundary_crossed);
         }
     }
 
     fn bpl(&mut self, bus: &Bus) {
+        let nearlabel = bus.read(self.registers.get_pc_address().wrapping_add(1));
         self.increment_cycles_branch();
         if !self.registers.get_negative_flag() {
-            let page_boundary_crossed = self.do_branch(bus);
+            let page_boundary_crossed = self.do_branch(nearlabel);
             self.increment_cycles_branch_taken(page_boundary_crossed);
         }
     }
 
     fn bra(&mut self, bus: &Bus) {
+        let nearlabel = bus.read(self.registers.get_pc_address().wrapping_add(1));
         self.increment_cycles_branch();
-        let page_boundary_crossed = self.do_branch(bus);
+        let page_boundary_crossed = self.do_branch(nearlabel);
         self.increment_cycles_branch_taken(page_boundary_crossed);
     }
 
@@ -455,17 +461,19 @@ impl CPU {
     }
 
     fn bvc(&mut self, bus: &Bus) {
+        let nearlabel = bus.read(self.registers.get_pc_address().wrapping_add(1));
         self.increment_cycles_branch();
         if !self.registers.get_overflow_flag() {
-            let page_boundary_crossed = self.do_branch(bus);
+            let page_boundary_crossed = self.do_branch(nearlabel);
             self.increment_cycles_branch_taken(page_boundary_crossed);
         }
     }
 
     fn bvs(&mut self, bus: &Bus) {
+        let nearlabel = bus.read(self.registers.get_pc_address().wrapping_add(1));
         self.increment_cycles_branch();
         if self.registers.get_overflow_flag() {
-            let page_boundary_crossed = self.do_branch(bus);
+            let page_boundary_crossed = self.do_branch(nearlabel);
             self.increment_cycles_branch_taken(page_boundary_crossed);
         }
     }
@@ -1733,17 +1741,17 @@ mod cpu_instructions_tests {
         cpu.registers.pc  = 0x0000;
         cpu.cycles        = 0;
         cpu.registers.set_carry_flag(false);
-        bus.write(0x02, 0b00001111);
+        bus.write(0x01, 0b00001111);
         cpu.bcc(&bus);
         assert_eq!(cpu.registers.pc, 0x02 + 0b00001111);
         assert_eq!(cpu.cycles, 3);
         // test with negative nearlabel and boundary cross
-        cpu.registers.pc  = 0x00FE;
+        cpu.registers.pc  = 0x0100;
         cpu.cycles        = 0;
         cpu.registers.set_carry_flag(false);
-        bus.write(0x100, 0xFF); // write -1
+        bus.write(0x101, 0xFB); // write -5
         cpu.bcc(&bus);
-        assert_eq!(cpu.registers.pc, 0xFF);
+        assert_eq!(cpu.registers.pc, 0xFD);
         assert_eq!(cpu.cycles, 4);
     }
 
@@ -1764,17 +1772,17 @@ mod cpu_instructions_tests {
         cpu.registers.pc  = 0x0000;
         cpu.cycles        = 0;
         cpu.registers.set_carry_flag(true);
-        bus.write(0x02, 0b00001111);
+        bus.write(0x01, 0b00001111);
         cpu.bcs(&bus);
         assert_eq!(cpu.registers.pc, 0x02 + 0b00001111);
         assert_eq!(cpu.cycles, 3);
         // test with negative nearlabel and boundary cross
-        cpu.registers.pc  = 0x00FE;
+        cpu.registers.pc  = 0x0100;
         cpu.cycles        = 0;
         cpu.registers.set_carry_flag(true);
-        bus.write(0x100, 0xFF); // write -1
+        bus.write(0x101, 0xFB); // write -5
         cpu.bcs(&bus);
-        assert_eq!(cpu.registers.pc, 0xFF);
+        assert_eq!(cpu.registers.pc, 0xFD);
         assert_eq!(cpu.cycles, 4);
     }
 
@@ -1795,17 +1803,17 @@ mod cpu_instructions_tests {
         cpu.registers.pc  = 0x0000;
         cpu.cycles        = 0;
         cpu.registers.set_zero_flag(true);
-        bus.write(0x02, 0b00001111);
+        bus.write(0x01, 0b00001111);
         cpu.beq(&bus);
         assert_eq!(cpu.registers.pc, 0x02 + 0b00001111);
         assert_eq!(cpu.cycles, 3);
         // test with negative nearlabel and boundary cross
-        cpu.registers.pc  = 0x00FE;
+        cpu.registers.pc  = 0x0100;
         cpu.cycles        = 0;
         cpu.registers.set_zero_flag(true);
-        bus.write(0x100, 0xFF); // write -1
+        bus.write(0x101, 0xFB); // write -5
         cpu.beq(&bus);
-        assert_eq!(cpu.registers.pc, 0xFF);
+        assert_eq!(cpu.registers.pc, 0xFD);
         assert_eq!(cpu.cycles, 4);
     }
 
@@ -1826,17 +1834,17 @@ mod cpu_instructions_tests {
         cpu.registers.pc  = 0x0000;
         cpu.cycles        = 0;
         cpu.registers.set_zero_flag(false);
-        bus.write(0x02, 0b00001111);
+        bus.write(0x01, 0b00001111);
         cpu.bne(&bus);
         assert_eq!(cpu.registers.pc, 0x02 + 0b00001111);
         assert_eq!(cpu.cycles, 3);
         // test with negative nearlabel and boundary cross
-        cpu.registers.pc  = 0x00FE;
+        cpu.registers.pc  = 0x0100;
         cpu.cycles        = 0;
         cpu.registers.set_zero_flag(false);
-        bus.write(0x100, 0xFF); // write -1
+        bus.write(0x101, 0xFB); // write -5
         cpu.bne(&bus);
-        assert_eq!(cpu.registers.pc, 0xFF);
+        assert_eq!(cpu.registers.pc, 0xFD);
         assert_eq!(cpu.cycles, 4);
     }
 
@@ -1857,17 +1865,17 @@ mod cpu_instructions_tests {
         cpu.registers.pc  = 0x0000;
         cpu.cycles        = 0;
         cpu.registers.set_negative_flag(true);
-        bus.write(0x02, 0b00001111);
+        bus.write(0x01, 0b00001111);
         cpu.bmi(&bus);
         assert_eq!(cpu.registers.pc, 0x02 + 0b00001111);
         assert_eq!(cpu.cycles, 3);
         // test with negative nearlabel and boundary cross
-        cpu.registers.pc  = 0x00FE;
+        cpu.registers.pc  = 0x0100;
         cpu.cycles        = 0;
         cpu.registers.set_negative_flag(true);
-        bus.write(0x100, 0xFF); // write -1
+        bus.write(0x101, 0xFB); // write -5
         cpu.bmi(&bus);
-        assert_eq!(cpu.registers.pc, 0xFF);
+        assert_eq!(cpu.registers.pc, 0xFD);
         assert_eq!(cpu.cycles, 4);
     }
 
@@ -1888,17 +1896,17 @@ mod cpu_instructions_tests {
         cpu.registers.pc  = 0x0000;
         cpu.cycles        = 0;
         cpu.registers.set_negative_flag(false);
-        bus.write(0x02, 0b00001111);
+        bus.write(0x01, 0b00001111);
         cpu.bpl(&bus);
         assert_eq!(cpu.registers.pc, 0x02 + 0b00001111);
         assert_eq!(cpu.cycles, 3);
         // test with negative nearlabel and boundary cross
-        cpu.registers.pc  = 0x00FE;
+        cpu.registers.pc  = 0x0100;
         cpu.cycles        = 0;
         cpu.registers.set_negative_flag(false);
-        bus.write(0x100, 0xFF); // write -1
+        bus.write(0x101, 0xFB); // write -5
         cpu.bpl(&bus);
-        assert_eq!(cpu.registers.pc, 0xFF);
+        assert_eq!(cpu.registers.pc, 0xFD);
         assert_eq!(cpu.cycles, 4);
     }
 
@@ -1910,16 +1918,16 @@ mod cpu_instructions_tests {
         let mut bus = Bus::new();
         cpu.registers.pc  = 0x0000;
         cpu.cycles        = 0;
-        bus.write(0x02, 0b00001111);
+        bus.write(0x01, 0b00001111);
         cpu.bra(&bus);
         assert_eq!(cpu.registers.pc, 0x02 + 0b00001111);
         assert_eq!(cpu.cycles, 3);
         // test with negative nearlabel and boundary cross
-        cpu.registers.pc  = 0x00FE;
+        cpu.registers.pc  = 0x0100;
         cpu.cycles        = 0;
-        bus.write(0x100, 0xFF); // write -1
+        bus.write(0x101, 0xFB); // write -5
         cpu.bra(&bus);
-        assert_eq!(cpu.registers.pc, 0xFF);
+        assert_eq!(cpu.registers.pc, 0xFD);
         assert_eq!(cpu.cycles, 4);
     }
 
@@ -1963,17 +1971,17 @@ mod cpu_instructions_tests {
         cpu.registers.pc  = 0x0000;
         cpu.cycles        = 0;
         cpu.registers.set_overflow_flag(false);
-        bus.write(0x02, 0b00001111);
+        bus.write(0x01, 0b00001111);
         cpu.bvc(&bus);
         assert_eq!(cpu.registers.pc, 0x02 + 0b00001111);
         assert_eq!(cpu.cycles, 3);
         // test with negative nearlabel and boundary cross
-        cpu.registers.pc  = 0x00FE;
+        cpu.registers.pc  = 0x0100;
         cpu.cycles        = 0;
         cpu.registers.set_overflow_flag(false);
-        bus.write(0x100, 0xFF); // write -1
+        bus.write(0x101, 0xFB); // write -5
         cpu.bvc(&bus);
-        assert_eq!(cpu.registers.pc, 0xFF);
+        assert_eq!(cpu.registers.pc, 0xFD);
         assert_eq!(cpu.cycles, 4);
     }
 
@@ -1994,17 +2002,17 @@ mod cpu_instructions_tests {
         cpu.registers.pc  = 0x0000;
         cpu.cycles        = 0;
         cpu.registers.set_overflow_flag(true);
-        bus.write(0x02, 0b00001111);
+        bus.write(0x01, 0b00001111);
         cpu.bvs(&bus);
         assert_eq!(cpu.registers.pc, 0x02 + 0b00001111);
         assert_eq!(cpu.cycles, 3);
         // test with negative nearlabel and boundary cross
-        cpu.registers.pc  = 0x00FE;
+        cpu.registers.pc  = 0x0100;
         cpu.cycles        = 0;
         cpu.registers.set_overflow_flag(true);
-        bus.write(0x100, 0xFF); // write -1
+        bus.write(0x101, 0xFB); // write -5
         cpu.bvs(&bus);
-        assert_eq!(cpu.registers.pc, 0xFF);
+        assert_eq!(cpu.registers.pc, 0xFD);
         assert_eq!(cpu.cycles, 4);
     }
 
