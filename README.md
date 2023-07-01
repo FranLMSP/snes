@@ -1,6 +1,12 @@
 # SNES
 Work in progress experimental SNES emulator written in Rust.
 
+## Install dependencies
+For Debian-based distros, you will need to install these dependencies:
+```
+sudo apt install libgtk-3-dev
+```
+
 ## Resources
 * SNES General:
     * https://wiki.superfamicom.org
