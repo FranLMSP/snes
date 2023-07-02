@@ -60,6 +60,8 @@ pub const WOBJLOG: u16      = 0x212B;  // Window 2 Mask Logic (W)
 pub const TMW: u16          = 0x212E;  // Window Area Main Screen Disable (W)
 pub const TSW: u16          = 0x212F;  // Window Area Sub Screen Disable (W)
 
+// PPU Interrupts
+pub const RDNMI: u16        = 0x4210;  // V-Blank NMI Flag
 
 pub const MAX_BG_WIDTH: usize  = 16 * 64;
 pub const MAX_BG_HEIGHT: usize = 16 * 64;

@@ -46,7 +46,7 @@ impl CPU {
     }
 
     fn push_emulation_interrupt(&mut self, bus: &mut Bus) {
-        if ! self.registers.emulation_mode {
+        if !self.registers.emulation_mode {
             self.phk(bus);
         }
         self.do_push(bus, &[
