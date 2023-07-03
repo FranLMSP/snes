@@ -103,6 +103,16 @@ impl BgSize {
     }
 }
 
+#[derive(Debug, PartialEq, Copy, Clone)]
+pub enum BgMode{
+    Color2BPP,
+    Color4BPP,
+    Color8BPP,
+    OffsetPerTile,
+    ExtBg,
+}
+
+
 #[derive(Debug, Copy, Clone)]
 pub enum Background {
     Bg1,
@@ -172,6 +182,61 @@ impl PPURegisters {
         }
     }
 
+    pub fn get_bg_modes(&self) -> (Option<BgMode>, Option<BgMode>, Option<BgMode>, Option<BgMode>) {
+        let byte = self.read(BGMODE);
+        match byte & 0b111 {
+            0 => (
+                Some(BgMode::Color2BPP),
+                Some(BgMode::Color2BPP),
+                Some(BgMode::Color2BPP),
+                Some(BgMode::Color2BPP),
+            ),
+            1 => (
+                Some(BgMode::Color4BPP),
+                Some(BgMode::Color4BPP),
+                Some(BgMode::Color2BPP),
+                None,
+            ),
+            2 => (
+                Some(BgMode::Color4BPP),
+                Some(BgMode::Color4BPP),
+                Some(BgMode::OffsetPerTile),
+                None,
+            ),
+            3 => (
+                Some(BgMode::Color8BPP),
+                Some(BgMode::Color4BPP),
+                None,
+                None,
+            ),
+            4 => (
+                Some(BgMode::Color8BPP),
+                Some(BgMode::Color2BPP),
+                Some(BgMode::OffsetPerTile),
+                None,
+            ),
+            5 => (
+                Some(BgMode::Color4BPP),
+                Some(BgMode::Color2BPP),
+                None,
+                None,
+            ),
+            6 => (
+                Some(BgMode::Color4BPP),
+                None,
+                Some(BgMode::OffsetPerTile),
+                None,
+            ),
+            7 => (
+                Some(BgMode::Color8BPP),
+                Some(BgMode::ExtBg),
+                None,
+                None,
+            ),
+            _ => unreachable!(),
+        }
+    }
+
     pub fn is_vblanking(&self) -> bool {
         if self.h_count >= 1 && self.h_count <= 224 {
             return false
@@ -199,6 +264,51 @@ mod ppu_registers_test {
         let mut registers = PPURegisters::new();
         registers.write(BG1SC, 2);
         assert_eq!(registers.get_bg_size(Background::Bg1), BgSize::T32x64);
+    }
+
+    #[test]
+    fn test_get_bg_modes() {
+        let mut registers = PPURegisters::new();
+        registers.write(BGMODE, 0);
+        assert_eq!(
+            registers.get_bg_modes(),
+            (Some(BgMode::Color2BPP), Some(BgMode::Color2BPP), Some(BgMode::Color2BPP), Some(BgMode::Color2BPP)),
+        );
+        registers.write(BGMODE, 1);
+        assert_eq!(
+            registers.get_bg_modes(),
+            (Some(BgMode::Color4BPP), Some(BgMode::Color4BPP), Some(BgMode::Color2BPP), None),
+        );
+        registers.write(BGMODE, 2);
+        assert_eq!(
+            registers.get_bg_modes(),
+            (Some(BgMode::Color4BPP), Some(BgMode::Color4BPP), Some(BgMode::OffsetPerTile), None),
+        );
+        registers.write(BGMODE, 3);
+        assert_eq!(
+            registers.get_bg_modes(),
+            (Some(BgMode::Color8BPP), Some(BgMode::Color4BPP), None, None),
+        );
+        registers.write(BGMODE, 4);
+        assert_eq!(
+            registers.get_bg_modes(),
+            (Some(BgMode::Color8BPP), Some(BgMode::Color2BPP), Some(BgMode::OffsetPerTile), None),
+        );
+        registers.write(BGMODE, 5);
+        assert_eq!(
+            registers.get_bg_modes(),
+            (Some(BgMode::Color4BPP), Some(BgMode::Color2BPP), None, None),
+        );
+        registers.write(BGMODE, 6);
+        assert_eq!(
+            registers.get_bg_modes(),
+            (Some(BgMode::Color4BPP), None, Some(BgMode::OffsetPerTile), None),
+        );
+        registers.write(BGMODE, 7);
+        assert_eq!(
+            registers.get_bg_modes(),
+            (Some(BgMode::Color8BPP), Some(BgMode::ExtBg), None, None),
+        );
     }
 
     #[test]
