@@ -124,6 +124,7 @@ pub enum Background {
 
 pub struct PPURegisters {
     data: [u8; 256],
+    vram: [u8; 0x10000],
     pub h_count: u16,
     pub v_count: u16,
 }
@@ -132,6 +133,7 @@ impl PPURegisters {
     pub fn new() -> Self {
         Self {
             data: [0x00; 256],
+            vram: [0; 0x10000],
             h_count: 0,
             v_count: 0,
         }
@@ -237,6 +239,30 @@ impl PPURegisters {
         }
     }
 
+    pub fn get_bg_tile_base_address(&self, background: Background) -> u16 {
+        let register = match background {
+            Background::Bg1 => BG1SC,
+            Background::Bg2 => BG2SC,
+            Background::Bg3 => BG3SC,
+            Background::Bg4 => BG4SC,
+        };
+        // Most significant bit is unused
+        let base_address = (self.read(register) & 0b01111111) >> 2;
+        let result = (base_address as u16) * 0x400;
+        result
+    }
+
+    pub fn get_bg_char_base_address(&self, background: Background) -> u16 {
+        let register = match background {
+            Background::Bg1 => self.read(BG12NBA),
+            Background::Bg2 => self.read(BG12NBA) >> 4,
+            Background::Bg3 => self.read(BG34NBA),
+            Background::Bg4 => self.read(BG34NBA) >> 4,
+        };
+        // Most significant bit is unused
+        ((register as u16) & 0b111) * 0x1000
+    }
+
     pub fn is_vblanking(&self) -> bool {
         if self.h_count >= 1 && self.h_count <= 224 {
             return false
@@ -309,6 +335,32 @@ mod ppu_registers_test {
             registers.get_bg_modes(),
             (Some(BgMode::Color8BPP), Some(BgMode::ExtBg), None, None),
         );
+    }
+
+    #[test]
+    fn test_get_bg_tile_base_address() {
+        let mut registers = PPURegisters::new();
+        registers.write(BG1SC, 0x00);
+        assert_eq!(registers.get_bg_tile_base_address(Background::Bg1), 0x0000);
+        registers.write(BG2SC, 0b00000100);
+        assert_eq!(registers.get_bg_tile_base_address(Background::Bg2), 0x0400);
+        registers.write(BG3SC, 0b10000100);
+        assert_eq!(registers.get_bg_tile_base_address(Background::Bg3), 0x0400);
+        registers.write(BG4SC, 0b11111100);
+        assert_eq!(registers.get_bg_tile_base_address(Background::Bg4), 0x7C00);
+        registers.write(BG1SC, 0b00001000);
+        assert_eq!(registers.get_bg_tile_base_address(Background::Bg1), 0x0800);
+    }
+
+    #[test]
+    fn test_get_bg_char_base_address() {
+        let mut registers = PPURegisters::new();
+        registers.write(BG12NBA, 0b10100001);
+        registers.write(BG34NBA, 0b01011111);
+        assert_eq!(registers.get_bg_char_base_address(Background::Bg1), 0x1000);
+        assert_eq!(registers.get_bg_char_base_address(Background::Bg2), 0x2000);
+        assert_eq!(registers.get_bg_char_base_address(Background::Bg3), 0x7000);
+        assert_eq!(registers.get_bg_char_base_address(Background::Bg4), 0x5000);
     }
 
     #[test]
