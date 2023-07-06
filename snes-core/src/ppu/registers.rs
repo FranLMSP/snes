@@ -64,7 +64,8 @@ pub const TSW: u16          = 0x212F;  // Window Area Sub Screen Disable (W)
 pub const RDNMI: u16        = 0x4210;  // V-Blank NMI Flag
 
 // PPU VRAM Access
-pub const VMAINC: u16       = 0x2115; // VRAM Address Increment
+pub const VMAIN: u16        = 0x2115; // VRAM Address Increment
+pub const VMAINC: u16       = VMAIN; // VRAM Address Increment
 
 pub const VMADDL: u16       = 0x2116;  // VRAM Address Low
 pub const VMADDH: u16       = 0x2117;  // VRAM Address High
@@ -139,6 +140,7 @@ pub enum Background {
 pub struct PPURegisters {
     data: [u8; 256],
     vram: [u8; 0x10000],
+    pub vblank_nmi: bool,
     pub h_count: u16,
     pub v_count: u16,
 }
@@ -148,6 +150,7 @@ impl PPURegisters {
         Self {
             data: [0x00; 256],
             vram: [0; 0x10000],
+            vblank_nmi: false,
             h_count: 0,
             v_count: 0,
         }
@@ -161,7 +164,13 @@ impl PPURegisters {
         self.data[(address as usize) - 0x2100] = value;
     }
 
-    pub fn read(&self, address: u16) -> u8 {
+    pub fn read(&mut self, address: u16) -> u8 {
+        let result = self._read(address);
+        match address {
+            VMDATALR => self.handle_vram_addr_auto_increment(Some(result), None),
+            VMDATAHR => self.handle_vram_addr_auto_increment(None, Some(result)),
+            _ => {},
+        };
         self._read(address)
     }
 
@@ -191,6 +200,41 @@ impl PPURegisters {
             self.vram[effective_address as usize] = byte;
             self._write(VMDATAHR, byte);
         }
+        self.handle_vram_addr_auto_increment(byte_lo, byte_hi);
+    }
+
+    fn handle_vram_addr_auto_increment(&mut self, byte_lo: Option<u8>, byte_hi: Option<u8>) {
+        let register = self._read(VMAINC);
+        let amount_to_increment = match register & 0b11 {
+            0b00 => 1,
+            0b01 => 32,
+            0b10 => 128,
+            0b11 => 128,
+            _ => unreachable!(),
+        };
+        let increment_when_lo = (register >> 7) != 1;
+        let increment_when_hi = !increment_when_lo;
+        let current_value = self.get_current_vram_address();
+        if increment_when_lo {
+            if let Some(_) = byte_lo {
+                self.set_current_vram_address(current_value.wrapping_add(amount_to_increment));
+            }
+        }
+        if increment_when_hi {
+            if let Some(_) = byte_hi {
+                self.set_current_vram_address(current_value.wrapping_add(amount_to_increment));
+            }
+        }
+    }
+
+    fn get_current_vram_address(&self) -> u16 {
+        ((self._read(VMADDH) as u16) << 8) | (self._read(VMADDL) as u16)
+    }
+
+    fn set_current_vram_address(&mut self, value: u16) {
+        let bytes = value.to_be_bytes();
+        self._write(VMADDH, bytes[0]);
+        self._write(VMADDL, bytes[1]);
     }
 
     ///  7    BG4 Tile Size (0=8x8, 1=16x16)  ;\(BgMode0..4: variable 8x8 or 16x16)
@@ -200,7 +244,7 @@ impl PPURegisters {
     ///  3    BG3 Priority in Mode 1 (0=Normal, 1=High)
     ///  2-0  BG Screen Mode (0..7 = see below)
     pub fn get_bg_tile_size(&self, background: Background) -> TileSize {
-        let byte = self.read(BGMODE);
+        let byte = self._read(BGMODE);
         let bit = match background {
             Background::Bg1 => byte >> 3 & 0b1 == 1, // Bit 4
             Background::Bg2 => byte >> 4 & 0b1 == 1, // Bit 5
@@ -215,10 +259,10 @@ impl PPURegisters {
 
     pub fn get_bg_size(&self, background: Background) -> BgSize {
         let byte = match background {
-            Background::Bg1 => self.read(BG1SC),
-            Background::Bg2 => self.read(BG2SC),
-            Background::Bg3 => self.read(BG3SC),
-            Background::Bg4 => self.read(BG4SC),
+            Background::Bg1 => self._read(BG1SC),
+            Background::Bg2 => self._read(BG2SC),
+            Background::Bg3 => self._read(BG3SC),
+            Background::Bg4 => self._read(BG4SC),
         };
         match byte & 0b11 {
             0 => BgSize::T32x32,
@@ -230,7 +274,7 @@ impl PPURegisters {
     }
 
     pub fn get_bg_modes(&self) -> (Option<BgMode>, Option<BgMode>, Option<BgMode>, Option<BgMode>) {
-        let byte = self.read(BGMODE);
+        let byte = self._read(BGMODE);
         match byte & 0b111 {
             0 => (
                 Some(BgMode::Color2BPP),
@@ -292,17 +336,17 @@ impl PPURegisters {
             Background::Bg4 => BG4SC,
         };
         // Most significant bit is unused
-        let base_address = (self.read(register) & 0b01111111) >> 2;
+        let base_address = (self._read(register) & 0b01111111) >> 2;
         let result = (base_address as u16) * 0x400;
         result
     }
 
     pub fn get_bg_char_base_address(&self, background: Background) -> u16 {
         let register = match background {
-            Background::Bg1 => self.read(BG12NBA),
-            Background::Bg2 => self.read(BG12NBA) >> 4,
-            Background::Bg3 => self.read(BG34NBA),
-            Background::Bg4 => self.read(BG34NBA) >> 4,
+            Background::Bg1 => self._read(BG12NBA),
+            Background::Bg2 => self._read(BG12NBA) >> 4,
+            Background::Bg3 => self._read(BG34NBA),
+            Background::Bg4 => self._read(BG34NBA) >> 4,
         };
         // Most significant bit is unused
         ((register as u16) & 0b111) * 0x1000
@@ -435,6 +479,74 @@ mod ppu_registers_test {
         assert_eq!(registers.vram[0xFFFF], 0xCD);
         assert_eq!(registers.read(VMDATAHR), 0xAB);
         assert_eq!(registers.read(VMDATALR), 0xCD);
+    }
+
+    #[test]
+    fn test_auto_increment_vram_address() {
+        let mut registers = PPURegisters::new();
+        // Increment after writing
+        registers.write(VMADDL, 0x00);
+        registers.write(VMADDH, 0x00);
+
+        // Increment when low bit is written to
+        registers.write(VMAINC, 0x00);
+
+        registers.write(VMDATAHW, 0xAA);
+        assert_eq!(registers.get_current_vram_address(), 0x0000);
+        registers.write(VMDATALW, 0xAA);
+        assert_eq!(registers.get_current_vram_address(), 0x0001);
+
+        // Increment when hi bit is written to
+        registers.write(VMAINC, 0b1000_0000);
+        registers.write(VMDATAHW, 0xAA);
+        assert_eq!(registers.get_current_vram_address(), 0x0002);
+        registers.write(VMDATALW, 0xAA);
+        assert_eq!(registers.get_current_vram_address(), 0x0002);
+
+
+        // Increment after reading
+        registers.write(VMADDL, 0x00);
+        registers.write(VMADDH, 0x00);
+
+        // Increment when low bit is read from
+        registers.write(VMAINC, 0x00);
+
+        registers.read(VMDATAHR);
+        assert_eq!(registers.get_current_vram_address(), 0x0000);
+        registers.read(VMDATALR);
+        assert_eq!(registers.get_current_vram_address(), 0x0001);
+
+        // Increment when hi bit is read from
+        registers.write(VMAINC, 0b1000_0000);
+        registers.read(VMDATAHR);
+        assert_eq!(registers.get_current_vram_address(), 0x0002);
+        registers.read(VMDATALR);
+        assert_eq!(registers.get_current_vram_address(), 0x0002);
+
+        // Increment amounts
+        registers.write(VMAINC, 0b1000_0000);
+        registers.write(VMADDL, 0x00);
+        registers.write(VMADDH, 0x00);
+        registers.write(VMDATAHW, 0xAA);
+        assert_eq!(registers.get_current_vram_address(), 1);
+
+        registers.write(VMAINC, 0b1000_0001);
+        registers.write(VMADDL, 0x00);
+        registers.write(VMADDH, 0x00);
+        registers.write(VMDATAHW, 0xAA);
+        assert_eq!(registers.get_current_vram_address(), 32);
+
+        registers.write(VMAINC, 0b1000_0010);
+        registers.write(VMADDL, 0x00);
+        registers.write(VMADDH, 0x00);
+        registers.write(VMDATAHW, 0xAA);
+        assert_eq!(registers.get_current_vram_address(), 128);
+
+        registers.write(VMAINC, 0b1000_0011);
+        registers.write(VMADDL, 0x00);
+        registers.write(VMADDH, 0x00);
+        registers.write(VMDATAHW, 0xAA);
+        assert_eq!(registers.get_current_vram_address(), 128);
     }
 
     #[test]

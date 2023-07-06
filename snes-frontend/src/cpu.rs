@@ -7,7 +7,8 @@ pub struct CPUDisassembler {
 }
 
 impl CPUDisassembler {
-    pub fn get_next_instruction(emulator: &Emulator) -> String {
+    // TODO FIXME: please do not mutate the emulator state to fetch upcoming instructions
+    pub fn get_next_instruction(emulator: &mut Emulator) -> String {
         let opcode = emulator.bus.read(emulator.cpu.registers.get_pc_address());
         let is_cpu_16bit = emulator.cpu.registers.is_16bit_mode();
         let is_index_16bit = emulator.cpu.registers.is_16bit_index();

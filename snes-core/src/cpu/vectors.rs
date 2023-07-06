@@ -27,11 +27,11 @@ impl Vector {
 }
 
 impl CPU {
-    fn get_vector(base_address: u32, bus: &Bus) -> u16 {
+    fn get_vector(base_address: u32, bus: &mut Bus) -> u16 {
         (bus.read(base_address) as u16) | ((bus.read(base_address + 1) as u16) << 8)
     }
 
-    pub fn reset_vector(&mut self, bus: &Bus) {
+    pub fn reset_vector(&mut self, bus: &mut Bus) {
         let base_address = Vector::Reset.get_base_address();
         let reset_vector = CPU::get_vector(base_address, bus);
         self.registers.pc = reset_vector;
@@ -74,10 +74,10 @@ mod cpu_vectors_tests {
     #[test]
     fn test_reset_vector() {
         let mut cpu = CPU::new();
-        let bus = Bus::new();
+        let mut bus = Bus::new();
         cpu.is_stopped = true;
         // TODO: test that the PC register got the right vector
-        cpu.reset_vector(&bus);
+        cpu.reset_vector(&mut bus);
         assert_eq!(cpu.is_stopped, false);
     }
 }

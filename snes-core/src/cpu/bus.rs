@@ -56,14 +56,14 @@ impl Bus {
         }
     }
 
-    pub fn read(&self, address: u32) -> u8 {
+    pub fn read(&mut self, address: u32) -> u8 {
         let section = Bus::map_address(address);
         match section {
             MemoryMap::WRAM => self.read_wram(address),
             MemoryMap::PPU => self.ppu.registers.read(address as u16),
             MemoryMap::CPU => self.internal_registers.read(
                 address as u16,
-                &self.ppu.registers,
+                &mut self.ppu.registers,
             ),
             MemoryMap::Joypad => 0x00,  // TODO: Placeholder
             MemoryMap::Cartridge => self.rom.read(address),

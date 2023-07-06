@@ -24,7 +24,7 @@ impl InternalRegisters {
         self.registers[(address - INTERNAL_REGISTERS_ADDRESS) as usize] = value
     }
 
-    pub fn read(&self, address: u16, ppu_registers: &PPURegisters) -> u8 {
+    pub fn read(&self, address: u16, ppu_registers: &mut PPURegisters) -> u8 {
         match address {
             RDNMI => self.read_vblank_nmi(ppu_registers),
             _ => self._read(address),
@@ -35,10 +35,12 @@ impl InternalRegisters {
         self._write(address, value);
     }
 
-    fn read_vblank_nmi(&self, ppu_registers: &PPURegisters) -> u8 {
+    fn read_vblank_nmi(&self, ppu_registers: &mut PPURegisters) -> u8 {
         let byte = self._read(RDNMI);
-        // TODO: when this register is read, bit 7 is cleared
-        (byte & 0x7F) | ((ppu_registers.is_vblanking() as u8) << 7)
+        // When register is read, bit 7 is cleared
+        let result = (byte & 0x7F) | ((ppu_registers.vblank_nmi as u8) << 7);
+        ppu_registers.vblank_nmi = false;
+        result
     }
 }
 
@@ -46,17 +48,21 @@ impl InternalRegisters {
 #[cfg(test)]
 mod ppu_general_test {
     use super::*;
+    use crate::ppu::ppu::PPU;
 
     #[test]
     fn test_read_vblank_nmi() {
         let registers = InternalRegisters::new();
-        let mut ppu_registers = PPURegisters::new();
-        ppu_registers.h_count = 20;
-        assert_eq!(registers.read_vblank_nmi(&ppu_registers), 0x00);
-        ppu_registers.h_count = 300;
-        assert_eq!(registers.read_vblank_nmi(&ppu_registers), 0x80);
-        // TODO: reset vblank bit after read
-        // ppu_registers.h_count = 300;
-        // assert_eq!(registers.read_vblank_nmi(&ppu_registers), 0x00);
+        let mut ppu = PPU::new();
+        ppu.registers.h_count = 20;
+        ppu.dot_cycle();
+        assert_eq!(registers.read_vblank_nmi(&mut ppu.registers), 0x00);
+        ppu.registers.h_count = 339;
+        ppu.registers.v_count = 224;
+        ppu.dot_cycle();
+        assert_eq!(registers.read_vblank_nmi(&mut ppu.registers), 0x80);
+        // vblank bit is reset after read
+        ppu.dot_cycle();
+        assert_eq!(registers.read_vblank_nmi(&mut ppu.registers), 0x00);
     }
 }

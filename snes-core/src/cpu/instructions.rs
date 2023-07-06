@@ -9,7 +9,7 @@ use crate::common::flags::Flags;
 /// arithmetic instructions in one file, transfers in another file, etc
 
 impl CPU {
-    fn get_effective_address(&self, bus: &Bus, addressing_mode: AddressingMode) -> u32 {
+    fn get_effective_address(&self, bus: &mut Bus, addressing_mode: AddressingMode) -> u32 {
         addressing_mode.effective_address(
             bus,
             self.registers.get_pc_address(),
@@ -19,7 +19,7 @@ impl CPU {
         )
     }
 
-    fn get_8bit_from_address(&self, bus: &Bus, addressing_mode: AddressingMode) -> u8 {
+    fn get_8bit_from_address(&self, bus: &mut Bus, addressing_mode: AddressingMode) -> u8 {
         match addressing_mode {
             AddressingMode::Accumulator => self.registers.a as u8,
             _ => addressing_mode.value_8bit(
@@ -32,7 +32,7 @@ impl CPU {
         }
     }
 
-    fn get_16bit_from_address(&self, bus: &Bus, addressing_mode: AddressingMode) -> u16 {
+    fn get_16bit_from_address(&self, bus: &mut Bus, addressing_mode: AddressingMode) -> u16 {
         match addressing_mode {
             AddressingMode::Accumulator => self.registers.a,
             _ => addressing_mode.value_16bit(
@@ -73,7 +73,7 @@ impl CPU {
         };
     }
 
-    fn adc(&mut self, bus: &Bus, addressing_mode: AddressingMode) {
+    fn adc(&mut self, bus: &mut Bus, addressing_mode: AddressingMode) {
         let carry_flag = self.registers.get_carry_flag();
         let is_decimal_mode = self.registers.get_decimal_mode_flag();
         let is_16bit = self.registers.is_16bit_mode();
@@ -98,7 +98,7 @@ impl CPU {
         self.increment_cycles_arithmetic(addressing_mode);
     }
 
-    fn sbc(&mut self, bus: &Bus, addressing_mode: AddressingMode) {
+    fn sbc(&mut self, bus: &mut Bus, addressing_mode: AddressingMode) {
         let carry_flag = self.registers.get_carry_flag();
         let is_decimal_mode = self.registers.get_decimal_mode_flag();
         let is_16bit = self.registers.is_16bit_mode();
@@ -221,7 +221,7 @@ impl CPU {
         }
     }
 
-    fn cmp(&mut self, bus: &Bus, addressing_mode: AddressingMode) {
+    fn cmp(&mut self, bus: &mut Bus, addressing_mode: AddressingMode) {
         let is_16bit = self.registers.is_16bit_mode();
         let target = self.registers.a;
         if is_16bit {
@@ -234,7 +234,7 @@ impl CPU {
         self.increment_cycles_arithmetic(addressing_mode);
     }
 
-    fn cpx(&mut self, bus: &Bus, addressing_mode: AddressingMode) {
+    fn cpx(&mut self, bus: &mut Bus, addressing_mode: AddressingMode) {
         let is_16bit = self.registers.is_16bit_index();
         let target = self.registers.x;
         if is_16bit {
@@ -247,7 +247,7 @@ impl CPU {
         self.increment_cycles_comp_index(addressing_mode);
     }
 
-    fn cpy(&mut self, bus: &Bus, addressing_mode: AddressingMode) {
+    fn cpy(&mut self, bus: &mut Bus, addressing_mode: AddressingMode) {
         let is_16bit = self.registers.is_16bit_index();
         let target = self.registers.y;
         if is_16bit {
@@ -260,7 +260,7 @@ impl CPU {
         self.increment_cycles_comp_index(addressing_mode);
     }
 
-    fn and(&mut self, bus: &Bus, addressing_mode: AddressingMode) {
+    fn and(&mut self, bus: &mut Bus, addressing_mode: AddressingMode) {
         let target = self.registers.a;
         if self.registers.is_16bit_mode() {
             let value = self.get_16bit_from_address(bus, addressing_mode);
@@ -276,7 +276,7 @@ impl CPU {
         self.increment_cycles_bitwise(addressing_mode);
     }
 
-    fn ora(&mut self, bus: &Bus, addressing_mode: AddressingMode) {
+    fn ora(&mut self, bus: &mut Bus, addressing_mode: AddressingMode) {
         let target = self.registers.a;
         if self.registers.is_16bit_mode() {
             let value = self.get_16bit_from_address(bus, addressing_mode);
@@ -292,7 +292,7 @@ impl CPU {
         self.increment_cycles_bitwise(addressing_mode);
     }
 
-    fn eor(&mut self, bus: &Bus, addressing_mode: AddressingMode) {
+    fn eor(&mut self, bus: &mut Bus, addressing_mode: AddressingMode) {
         let target = self.registers.a;
         if self.registers.is_16bit_mode() {
             let value = self.get_16bit_from_address(bus, addressing_mode);
@@ -361,7 +361,7 @@ impl CPU {
         };
     }
 
-    fn bit(&mut self, bus: &Bus, addressing_mode: AddressingMode) {
+    fn bit(&mut self, bus: &mut Bus, addressing_mode: AddressingMode) {
         if self.registers.is_16bit_mode() {
             let value = self.get_16bit_from_address(bus, addressing_mode);
             self.do_bit(self.registers.a, value, addressing_mode);
@@ -386,7 +386,7 @@ impl CPU {
         return page_boundary_crossed
     }
 
-    fn bcc(&mut self, bus: &Bus) {
+    fn bcc(&mut self, bus: &mut Bus) {
         let nearlabel = bus.read(self.registers.get_pc_address().wrapping_add(1));
         self.increment_cycles_branch();
         if !self.registers.get_carry_flag() {
@@ -395,7 +395,7 @@ impl CPU {
         }
     }
 
-    fn bcs(&mut self, bus: &Bus) {
+    fn bcs(&mut self, bus: &mut Bus) {
         let nearlabel = bus.read(self.registers.get_pc_address().wrapping_add(1));
         self.increment_cycles_branch();
         if self.registers.get_carry_flag() {
@@ -404,7 +404,7 @@ impl CPU {
         }
     }
 
-    fn beq(&mut self, bus: &Bus) {
+    fn beq(&mut self, bus: &mut Bus) {
         let nearlabel = bus.read(self.registers.get_pc_address().wrapping_add(1));
         self.increment_cycles_branch();
         if self.registers.get_zero_flag() {
@@ -413,7 +413,7 @@ impl CPU {
         }
     }
 
-    fn bne(&mut self, bus: &Bus) {
+    fn bne(&mut self, bus: &mut Bus) {
         let nearlabel = bus.read(self.registers.get_pc_address().wrapping_add(1));
         self.increment_cycles_branch();
         if !self.registers.get_zero_flag() {
@@ -422,7 +422,7 @@ impl CPU {
         }
     }
 
-    fn bmi(&mut self, bus: &Bus) {
+    fn bmi(&mut self, bus: &mut Bus) {
         let nearlabel = bus.read(self.registers.get_pc_address().wrapping_add(1));
         self.increment_cycles_branch();
         if self.registers.get_negative_flag() {
@@ -431,7 +431,7 @@ impl CPU {
         }
     }
 
-    fn bpl(&mut self, bus: &Bus) {
+    fn bpl(&mut self, bus: &mut Bus) {
         let nearlabel = bus.read(self.registers.get_pc_address().wrapping_add(1));
         self.increment_cycles_branch();
         if !self.registers.get_negative_flag() {
@@ -440,14 +440,14 @@ impl CPU {
         }
     }
 
-    fn bra(&mut self, bus: &Bus) {
+    fn bra(&mut self, bus: &mut Bus) {
         let nearlabel = bus.read(self.registers.get_pc_address().wrapping_add(1));
         self.increment_cycles_branch();
         let page_boundary_crossed = self.do_branch(nearlabel);
         self.increment_cycles_branch_taken(page_boundary_crossed);
     }
 
-    fn brl(&mut self, bus: &Bus) {
+    fn brl(&mut self, bus: &mut Bus) {
         let label = bus.read(self.registers.get_pc_address()) as u16 |
             ((bus.read(self.registers.get_pc_address() + 1) as u16) << 8);
         let is_negative = (label >> 15) != 0;
@@ -460,7 +460,7 @@ impl CPU {
         self.increment_cycles_branch_long();
     }
 
-    fn bvc(&mut self, bus: &Bus) {
+    fn bvc(&mut self, bus: &mut Bus) {
         let nearlabel = bus.read(self.registers.get_pc_address().wrapping_add(1));
         self.increment_cycles_branch();
         if !self.registers.get_overflow_flag() {
@@ -469,7 +469,7 @@ impl CPU {
         }
     }
 
-    fn bvs(&mut self, bus: &Bus) {
+    fn bvs(&mut self, bus: &mut Bus) {
         let nearlabel = bus.read(self.registers.get_pc_address().wrapping_add(1));
         self.increment_cycles_branch();
         if self.registers.get_overflow_flag() {
@@ -502,7 +502,7 @@ impl CPU {
         self.increment_cycles_nop();
     }
 
-    fn jmp(&mut self, bus: &Bus, addressing_mode: AddressingMode) {
+    fn jmp(&mut self, bus: &mut Bus, addressing_mode: AddressingMode) {
         let effective_address = self.get_effective_address(bus, addressing_mode);
         let is_long = match addressing_mode {
             AddressingMode::AbsoluteLong |
@@ -644,7 +644,7 @@ impl CPU {
         }
     }
 
-    fn lda(&mut self, bus: &Bus, addressing_mode: AddressingMode) {
+    fn lda(&mut self, bus: &mut Bus, addressing_mode: AddressingMode) {
         if self.registers.is_16bit_mode() {
             let value = self.get_16bit_from_address(bus, addressing_mode);
             self.registers.a = value;
@@ -664,7 +664,7 @@ impl CPU {
         self.increment_cycles_lda(addressing_mode);
     }
 
-    fn do_ld_index(&mut self, bus: &Bus, index: IndexRegister, addressing_mode: AddressingMode) {
+    fn do_ld_index(&mut self, bus: &mut Bus, index: IndexRegister, addressing_mode: AddressingMode) {
         if self.registers.is_16bit_index() {
             let value = self.get_16bit_from_address(bus, addressing_mode);
             match index {
@@ -689,15 +689,15 @@ impl CPU {
         self.increment_cycles_ld_index(addressing_mode);
     }
 
-    fn ldx(&mut self, bus: &Bus, addressing_mode: AddressingMode) {
+    fn ldx(&mut self, bus: &mut Bus, addressing_mode: AddressingMode) {
         self.do_ld_index(bus, IndexRegister::X, addressing_mode);
     }
 
-    fn ldy(&mut self, bus: &Bus, addressing_mode: AddressingMode) {
+    fn ldy(&mut self, bus: &mut Bus, addressing_mode: AddressingMode) {
         self.do_ld_index(bus, IndexRegister::Y, addressing_mode);
     }
 
-    fn do_pull(&mut self, bus: &Bus, count: usize) -> Vec<u8> {
+    fn do_pull(&mut self, bus: &mut Bus, count: usize) -> Vec<u8> {
         let mut bytes = vec![];
         let mut is_zero = true;
         for _ in 0..count {
@@ -717,7 +717,7 @@ impl CPU {
         bytes
     }
 
-    fn pla(&mut self, bus: &Bus) {
+    fn pla(&mut self, bus: &mut Bus) {
         if self.registers.is_16bit_mode() {
             let bytes = self.do_pull(bus, 2);
             self.registers.a = (bytes[0] as u16) | ((bytes[1] as u16) << 8);
@@ -728,24 +728,24 @@ impl CPU {
         self.increment_cycles_pla();
     }
 
-    fn plb(&mut self, bus: &Bus) {
+    fn plb(&mut self, bus: &mut Bus) {
         self.registers.dbr = self.do_pull(bus, 1)[0];
         self.increment_cycles_plb();
     }
 
-    fn pld(&mut self, bus: &Bus) {
+    fn pld(&mut self, bus: &mut Bus) {
         let bytes = self.do_pull(bus, 2);
         self.registers.d = (bytes[0] as u16) | ((bytes[1] as u16) << 8);
         self.increment_cycles_pld();
     }
 
-    fn plp(&mut self, bus: &Bus) {
+    fn plp(&mut self, bus: &mut Bus) {
         let bytes = self.do_pull(bus, 1);
         self.registers.p = bytes[0];
         self.increment_cycles_plp();
     }
 
-    fn plx(&mut self, bus: &Bus) {
+    fn plx(&mut self, bus: &mut Bus) {
         if self.registers.is_16bit_index() {
             let bytes = self.do_pull(bus, 2);
             self.registers.x = (bytes[0] as u16) | ((bytes[1] as u16) << 8);
@@ -756,7 +756,7 @@ impl CPU {
         self.increment_cycles_pl_index();
     }
 
-    fn ply(&mut self, bus: &Bus) {
+    fn ply(&mut self, bus: &mut Bus) {
         if self.registers.is_16bit_index() {
             let bytes = self.do_pull(bus, 2);
             self.registers.y = (bytes[0] as u16) | ((bytes[1] as u16) << 8);
@@ -767,7 +767,7 @@ impl CPU {
         self.increment_cycles_pl_index();
     }
 
-    fn rep(&mut self, bus: &Bus) {
+    fn rep(&mut self, bus: &mut Bus) {
         let byte = self.get_8bit_from_address(bus, AddressingMode::Immediate);
         self.registers.reset_rep_byte(byte);
         self.increment_cycles_rep();
@@ -813,7 +813,7 @@ impl CPU {
         self.increment_cycles_shift(addressing_mode);
     }
 
-    fn rtl(&mut self, bus: &Bus) {
+    fn rtl(&mut self, bus: &mut Bus) {
         let bytes = self.do_pull(bus, 3);
         // Low byte of PC is pulled first, then high byte and then PBR
         self.registers.pc = (bytes[0] as u16) | ((bytes[1] as u16) << 8);
@@ -821,7 +821,7 @@ impl CPU {
         self.increment_cycles_return_subroutine();
     }
 
-    fn rts(&mut self, bus: &Bus) {
+    fn rts(&mut self, bus: &mut Bus) {
         let bytes = self.do_pull(bus, 2);
         // Low byte of PC is pulled first, then high byte
         self.registers.pc = (bytes[0] as u16) | ((bytes[1] as u16) << 8);
@@ -843,7 +843,7 @@ impl CPU {
         self.increment_cycles_set_flag();
     }
 
-    fn sep(&mut self, bus: &Bus) {
+    fn sep(&mut self, bus: &mut Bus) {
         self.registers.p = self.get_8bit_from_address(bus, AddressingMode::Immediate);
         self.increment_cycles_sep();
     }
@@ -1053,7 +1053,8 @@ impl CPU {
             };
             let source_address = ((source_bank as u32) << 16) | (x as u32);
             let dest_address = ((dest_bank as u32) << 16) | (y as u32);
-            bus.write(dest_address, bus.read(source_address));
+            let byte = bus.read(source_address);
+            bus.write(dest_address, byte);
             self.registers.a = self.registers.a.wrapping_sub(1);
             if is_next {
                 self.registers.x = self.registers.x.wrapping_add(1);
@@ -1075,7 +1076,7 @@ impl CPU {
         self.do_move(bus, true);
     }
 
-    fn rti(&mut self, bus: &Bus) {
+    fn rti(&mut self, bus: &mut Bus) {
         self.registers.p = self.do_pull(bus, 1)[0];
         let pc_bytes = self.do_pull(bus, 2);
         self.registers.pc = (pc_bytes[0] as u16) | ((pc_bytes[1] as u16) << 8);
@@ -1521,7 +1522,7 @@ mod cpu_instructions_tests {
         cpu.registers.pc  = 0x0000;
         cpu.registers.set_memory_select_flag(true);
         bus.write(0x000001, 0x40);
-        cpu.adc(&bus, AddressingMode::Immediate);
+        cpu.adc(&mut bus, AddressingMode::Immediate);
         assert_eq!(cpu.registers.a, 0x40);
         assert_eq!(cpu.registers.pc, 0x02);
         assert_eq!(cpu.cycles, 2);
@@ -1537,7 +1538,7 @@ mod cpu_instructions_tests {
         cpu.registers.pc  = 0x0000;
         cpu.registers.set_16bit_mode(false);
         bus.write(0x000001, 0xF0);
-        cpu.eor(&bus, AddressingMode::Immediate);
+        cpu.eor(&mut bus, AddressingMode::Immediate);
         assert_eq!(cpu.registers.a, 0xFF);
         assert_eq!(cpu.registers.pc, 0x02);
         assert_eq!(cpu.cycles, 2);
@@ -1555,7 +1556,7 @@ mod cpu_instructions_tests {
         cpu.registers.pc  = 0x0000;
         cpu.registers.set_memory_select_flag(true);
         bus.write(0x000001, 1);
-        cpu.sbc(&bus, AddressingMode::Immediate);
+        cpu.sbc(&mut bus, AddressingMode::Immediate);
         assert_eq!(cpu.registers.a, 0);
         assert_eq!(cpu.registers.pc, 0x02);
         assert_eq!(cpu.cycles, 2);
@@ -1574,7 +1575,7 @@ mod cpu_instructions_tests {
         cpu.registers.set_memory_select_flag(true);
         bus.write(0x000001, 0x01);
         bus.write(0x000002, 0x01);
-        cpu.and(&bus, AddressingMode::Immediate);
+        cpu.and(&mut bus, AddressingMode::Immediate);
         assert_eq!(cpu.registers.a, 0x0101);
         assert_eq!(cpu.registers.pc, 0x02);
         assert_eq!(cpu.cycles, 2);
@@ -1591,7 +1592,7 @@ mod cpu_instructions_tests {
         cpu.registers.pc  = 0x0000;
         cpu.registers.set_memory_select_flag(true);
         bus.write(0x000001, 0xF0);
-        cpu.ora(&bus, AddressingMode::Immediate);
+        cpu.ora(&mut bus, AddressingMode::Immediate);
         assert_eq!(cpu.registers.a, 0xFF);
         assert_eq!(cpu.registers.pc, 0x02);
         assert_eq!(cpu.cycles, 2);
@@ -1649,7 +1650,7 @@ mod cpu_instructions_tests {
         cpu.registers.p   = 0x00;
         bus.write(0x000001, 0b0000_1111);
         cpu.registers.set_16bit_mode(false);
-        cpu.bit(&bus, AddressingMode::Immediate);
+        cpu.bit(&mut bus, AddressingMode::Immediate);
         // Check that it only affects the zero flag on immediate mode
         assert_eq!(cpu.registers.a, 0b1111_0000); // Check that A is not altered
         assert_eq!(cpu.registers.p, 0b0010_0010); // Only zero flag was altered (bit 6 is memory select mode)
@@ -1669,7 +1670,7 @@ mod cpu_instructions_tests {
         bus.write(0x000004, 0x00);
         bus.write(0x000005, 0b1100_0000);
         cpu.registers.set_16bit_mode(true);
-        cpu.bit(&bus, AddressingMode::Absolute);
+        cpu.bit(&mut bus, AddressingMode::Absolute);
         // Check that it only affects the zero flag on immediate mode
         assert_eq!(cpu.registers.a, 0b00110000_00000000); // Check that A is not altered
         assert_eq!(cpu.registers.p, 0b1100_0010);
@@ -1734,7 +1735,7 @@ mod cpu_instructions_tests {
         cpu.cycles        = 0;
         cpu.registers.set_carry_flag(true);
         bus.write(0x02, 0b00001111);
-        cpu.bcc(&bus);
+        cpu.bcc(&mut bus);
         assert_eq!(cpu.registers.pc, 0x02);
         assert_eq!(cpu.cycles, 2);
         // branch taken
@@ -1742,7 +1743,7 @@ mod cpu_instructions_tests {
         cpu.cycles        = 0;
         cpu.registers.set_carry_flag(false);
         bus.write(0x01, 0b00001111);
-        cpu.bcc(&bus);
+        cpu.bcc(&mut bus);
         assert_eq!(cpu.registers.pc, 0x02 + 0b00001111);
         assert_eq!(cpu.cycles, 3);
         // test with negative nearlabel and boundary cross
@@ -1750,7 +1751,7 @@ mod cpu_instructions_tests {
         cpu.cycles        = 0;
         cpu.registers.set_carry_flag(false);
         bus.write(0x101, 0xFB); // write -5
-        cpu.bcc(&bus);
+        cpu.bcc(&mut bus);
         assert_eq!(cpu.registers.pc, 0xFD);
         assert_eq!(cpu.cycles, 4);
     }
@@ -1765,7 +1766,7 @@ mod cpu_instructions_tests {
         cpu.cycles        = 0;
         cpu.registers.set_carry_flag(false);
         bus.write(0x02, 0b00001111);
-        cpu.bcs(&bus);
+        cpu.bcs(&mut bus);
         assert_eq!(cpu.registers.pc, 0x02);
         assert_eq!(cpu.cycles, 2);
         // branch taken
@@ -1773,7 +1774,7 @@ mod cpu_instructions_tests {
         cpu.cycles        = 0;
         cpu.registers.set_carry_flag(true);
         bus.write(0x01, 0b00001111);
-        cpu.bcs(&bus);
+        cpu.bcs(&mut bus);
         assert_eq!(cpu.registers.pc, 0x02 + 0b00001111);
         assert_eq!(cpu.cycles, 3);
         // test with negative nearlabel and boundary cross
@@ -1781,7 +1782,7 @@ mod cpu_instructions_tests {
         cpu.cycles        = 0;
         cpu.registers.set_carry_flag(true);
         bus.write(0x101, 0xFB); // write -5
-        cpu.bcs(&bus);
+        cpu.bcs(&mut bus);
         assert_eq!(cpu.registers.pc, 0xFD);
         assert_eq!(cpu.cycles, 4);
     }
@@ -1796,7 +1797,7 @@ mod cpu_instructions_tests {
         cpu.cycles        = 0;
         cpu.registers.set_zero_flag(false);
         bus.write(0x02, 0b00001111);
-        cpu.beq(&bus);
+        cpu.beq(&mut bus);
         assert_eq!(cpu.registers.pc, 0x02);
         assert_eq!(cpu.cycles, 2);
         // branch taken
@@ -1804,7 +1805,7 @@ mod cpu_instructions_tests {
         cpu.cycles        = 0;
         cpu.registers.set_zero_flag(true);
         bus.write(0x01, 0b00001111);
-        cpu.beq(&bus);
+        cpu.beq(&mut bus);
         assert_eq!(cpu.registers.pc, 0x02 + 0b00001111);
         assert_eq!(cpu.cycles, 3);
         // test with negative nearlabel and boundary cross
@@ -1812,7 +1813,7 @@ mod cpu_instructions_tests {
         cpu.cycles        = 0;
         cpu.registers.set_zero_flag(true);
         bus.write(0x101, 0xFB); // write -5
-        cpu.beq(&bus);
+        cpu.beq(&mut bus);
         assert_eq!(cpu.registers.pc, 0xFD);
         assert_eq!(cpu.cycles, 4);
     }
@@ -1827,7 +1828,7 @@ mod cpu_instructions_tests {
         cpu.cycles        = 0;
         cpu.registers.set_zero_flag(true);
         bus.write(0x02, 0b00001111);
-        cpu.bne(&bus);
+        cpu.bne(&mut bus);
         assert_eq!(cpu.registers.pc, 0x02);
         assert_eq!(cpu.cycles, 2);
         // branch taken
@@ -1835,7 +1836,7 @@ mod cpu_instructions_tests {
         cpu.cycles        = 0;
         cpu.registers.set_zero_flag(false);
         bus.write(0x01, 0b00001111);
-        cpu.bne(&bus);
+        cpu.bne(&mut bus);
         assert_eq!(cpu.registers.pc, 0x02 + 0b00001111);
         assert_eq!(cpu.cycles, 3);
         // test with negative nearlabel and boundary cross
@@ -1843,7 +1844,7 @@ mod cpu_instructions_tests {
         cpu.cycles        = 0;
         cpu.registers.set_zero_flag(false);
         bus.write(0x101, 0xFB); // write -5
-        cpu.bne(&bus);
+        cpu.bne(&mut bus);
         assert_eq!(cpu.registers.pc, 0xFD);
         assert_eq!(cpu.cycles, 4);
     }
@@ -1858,7 +1859,7 @@ mod cpu_instructions_tests {
         cpu.cycles        = 0;
         cpu.registers.set_negative_flag(false);
         bus.write(0x02, 0b00001111);
-        cpu.bmi(&bus);
+        cpu.bmi(&mut bus);
         assert_eq!(cpu.registers.pc, 0x02);
         assert_eq!(cpu.cycles, 2);
         // branch taken
@@ -1866,7 +1867,7 @@ mod cpu_instructions_tests {
         cpu.cycles        = 0;
         cpu.registers.set_negative_flag(true);
         bus.write(0x01, 0b00001111);
-        cpu.bmi(&bus);
+        cpu.bmi(&mut bus);
         assert_eq!(cpu.registers.pc, 0x02 + 0b00001111);
         assert_eq!(cpu.cycles, 3);
         // test with negative nearlabel and boundary cross
@@ -1874,7 +1875,7 @@ mod cpu_instructions_tests {
         cpu.cycles        = 0;
         cpu.registers.set_negative_flag(true);
         bus.write(0x101, 0xFB); // write -5
-        cpu.bmi(&bus);
+        cpu.bmi(&mut bus);
         assert_eq!(cpu.registers.pc, 0xFD);
         assert_eq!(cpu.cycles, 4);
     }
@@ -1889,7 +1890,7 @@ mod cpu_instructions_tests {
         cpu.cycles        = 0;
         cpu.registers.set_negative_flag(true);
         bus.write(0x02, 0b00001111);
-        cpu.bpl(&bus);
+        cpu.bpl(&mut bus);
         assert_eq!(cpu.registers.pc, 0x02);
         assert_eq!(cpu.cycles, 2);
         // branch taken
@@ -1897,7 +1898,7 @@ mod cpu_instructions_tests {
         cpu.cycles        = 0;
         cpu.registers.set_negative_flag(false);
         bus.write(0x01, 0b00001111);
-        cpu.bpl(&bus);
+        cpu.bpl(&mut bus);
         assert_eq!(cpu.registers.pc, 0x02 + 0b00001111);
         assert_eq!(cpu.cycles, 3);
         // test with negative nearlabel and boundary cross
@@ -1905,7 +1906,7 @@ mod cpu_instructions_tests {
         cpu.cycles        = 0;
         cpu.registers.set_negative_flag(false);
         bus.write(0x101, 0xFB); // write -5
-        cpu.bpl(&bus);
+        cpu.bpl(&mut bus);
         assert_eq!(cpu.registers.pc, 0xFD);
         assert_eq!(cpu.cycles, 4);
     }
@@ -1919,14 +1920,14 @@ mod cpu_instructions_tests {
         cpu.registers.pc  = 0x0000;
         cpu.cycles        = 0;
         bus.write(0x01, 0b00001111);
-        cpu.bra(&bus);
+        cpu.bra(&mut bus);
         assert_eq!(cpu.registers.pc, 0x02 + 0b00001111);
         assert_eq!(cpu.cycles, 3);
         // test with negative nearlabel and boundary cross
         cpu.registers.pc  = 0x0100;
         cpu.cycles        = 0;
         bus.write(0x101, 0xFB); // write -5
-        cpu.bra(&bus);
+        cpu.bra(&mut bus);
         assert_eq!(cpu.registers.pc, 0xFD);
         assert_eq!(cpu.cycles, 4);
     }
@@ -1941,7 +1942,7 @@ mod cpu_instructions_tests {
         cpu.cycles        = 0;
         bus.write(0x01, 0b00000000);
         bus.write(0x02, 0b00001111);
-        cpu.brl(&bus);
+        cpu.brl(&mut bus);
         assert_eq!(cpu.registers.pc, 0x04 + 0b00001111_00000000);
         assert_eq!(cpu.cycles, 4);
         // test with negative nearlabel and boundary cross
@@ -1949,7 +1950,7 @@ mod cpu_instructions_tests {
         cpu.cycles        = 0;
         bus.write(0xFD, 0xFF); // write -1
         bus.write(0xFE, 0xFF); // write -1
-        cpu.brl(&bus);
+        cpu.brl(&mut bus);
         assert_eq!(cpu.registers.pc, 0xFF);
         assert_eq!(cpu.cycles, 4);
     }
@@ -1964,7 +1965,7 @@ mod cpu_instructions_tests {
         cpu.cycles        = 0;
         cpu.registers.set_overflow_flag(true);
         bus.write(0x02, 0b00001111);
-        cpu.bvc(&bus);
+        cpu.bvc(&mut bus);
         assert_eq!(cpu.registers.pc, 0x02);
         assert_eq!(cpu.cycles, 2);
         // branch taken
@@ -1972,7 +1973,7 @@ mod cpu_instructions_tests {
         cpu.cycles        = 0;
         cpu.registers.set_overflow_flag(false);
         bus.write(0x01, 0b00001111);
-        cpu.bvc(&bus);
+        cpu.bvc(&mut bus);
         assert_eq!(cpu.registers.pc, 0x02 + 0b00001111);
         assert_eq!(cpu.cycles, 3);
         // test with negative nearlabel and boundary cross
@@ -1980,7 +1981,7 @@ mod cpu_instructions_tests {
         cpu.cycles        = 0;
         cpu.registers.set_overflow_flag(false);
         bus.write(0x101, 0xFB); // write -5
-        cpu.bvc(&bus);
+        cpu.bvc(&mut bus);
         assert_eq!(cpu.registers.pc, 0xFD);
         assert_eq!(cpu.cycles, 4);
     }
@@ -1995,7 +1996,7 @@ mod cpu_instructions_tests {
         cpu.cycles        = 0;
         cpu.registers.set_overflow_flag(false);
         bus.write(0x02, 0b00001111);
-        cpu.bvs(&bus);
+        cpu.bvs(&mut bus);
         assert_eq!(cpu.registers.pc, 0x02);
         assert_eq!(cpu.cycles, 2);
         // branch taken
@@ -2003,7 +2004,7 @@ mod cpu_instructions_tests {
         cpu.cycles        = 0;
         cpu.registers.set_overflow_flag(true);
         bus.write(0x01, 0b00001111);
-        cpu.bvs(&bus);
+        cpu.bvs(&mut bus);
         assert_eq!(cpu.registers.pc, 0x02 + 0b00001111);
         assert_eq!(cpu.cycles, 3);
         // test with negative nearlabel and boundary cross
@@ -2011,7 +2012,7 @@ mod cpu_instructions_tests {
         cpu.cycles        = 0;
         cpu.registers.set_overflow_flag(true);
         bus.write(0x101, 0xFB); // write -5
-        cpu.bvs(&bus);
+        cpu.bvs(&mut bus);
         assert_eq!(cpu.registers.pc, 0xFD);
         assert_eq!(cpu.cycles, 4);
     }
@@ -2027,7 +2028,7 @@ mod cpu_instructions_tests {
         cpu.registers.pc  = 0x0000;
         cpu.registers.set_memory_select_flag(true);
         bus.write(0x000001, 1);
-        cpu.cmp(&bus, AddressingMode::Immediate);
+        cpu.cmp(&mut bus, AddressingMode::Immediate);
         assert_eq!(cpu.registers.a, 0x0001); // check A is not affected
         assert_eq!(cpu.registers.pc, 0x02);
         assert_eq!(cpu.cycles, 2);
@@ -2042,7 +2043,7 @@ mod cpu_instructions_tests {
         cpu.registers.set_16bit_mode(false);
         cpu.registers.set_overflow_flag(false);
         bus.write(0x000001, 0xB0);
-        cpu.cmp(&bus, AddressingMode::Immediate);
+        cpu.cmp(&mut bus, AddressingMode::Immediate);
         assert_eq!(cpu.registers.a, 0x0050); // check A is not affected
         assert_eq!(cpu.registers.pc, 0x02);
         assert_eq!(cpu.cycles, 2);
@@ -2063,7 +2064,7 @@ mod cpu_instructions_tests {
         cpu.registers.pc  = 0x0000;
         cpu.registers.set_16bit_index(false);
         bus.write(0x000001, 1);
-        cpu.cpx(&bus, AddressingMode::Immediate);
+        cpu.cpx(&mut bus, AddressingMode::Immediate);
         assert_eq!(cpu.registers.x, 0x01); // check A is not affected
         assert_eq!(cpu.registers.pc, 0x02);
         assert_eq!(cpu.cycles, 2);
@@ -2081,7 +2082,7 @@ mod cpu_instructions_tests {
         cpu.registers.set_overflow_flag(false);
         bus.write(0x000002, 0xB0);
         bus.write(0x000001, 0x00);
-        cpu.cpx(&bus, AddressingMode::Immediate);
+        cpu.cpx(&mut bus, AddressingMode::Immediate);
         assert_eq!(cpu.registers.x, 0x50); // check X is not affected
         assert_eq!(cpu.registers.pc, 0x03);
         assert_eq!(cpu.cycles, 3);
@@ -2103,7 +2104,7 @@ mod cpu_instructions_tests {
         cpu.registers.pc  = 0x0000;
         cpu.registers.set_16bit_index(false);
         bus.write(0x000001, 1);
-        cpu.cpy(&bus, AddressingMode::Immediate);
+        cpu.cpy(&mut bus, AddressingMode::Immediate);
         assert_eq!(cpu.registers.y, 0x01); // check A is not affected
         assert_eq!(cpu.registers.pc, 0x02);
         assert_eq!(cpu.cycles, 2);
@@ -2119,7 +2120,7 @@ mod cpu_instructions_tests {
         cpu.registers.set_overflow_flag(false);
         bus.write(0x000002, 0xB0);
         bus.write(0x000001, 0x00);
-        cpu.cpy(&bus, AddressingMode::Immediate);
+        cpu.cpy(&mut bus, AddressingMode::Immediate);
         assert_eq!(cpu.registers.y, 0x50); // check X is not affected
         assert_eq!(cpu.registers.pc, 0x03);
         assert_eq!(cpu.cycles, 3);
@@ -2232,7 +2233,7 @@ mod cpu_instructions_tests {
         cpu.registers.pc  = 0x0000;
         bus.write(0x000002, 0xAA);
         bus.write(0x000001, 0xBB);
-        cpu.jmp(&bus, AddressingMode::Absolute);
+        cpu.jmp(&mut bus, AddressingMode::Absolute);
         assert_eq!(cpu.registers.pc, 0xAABB);
         assert_eq!(cpu.cycles, 3);
 
@@ -2244,7 +2245,7 @@ mod cpu_instructions_tests {
         bus.write(0x000003, 0xAA);
         bus.write(0x000002, 0xBB);
         bus.write(0x000001, 0xCC);
-        cpu.jmp(&bus, AddressingMode::AbsoluteLong);
+        cpu.jmp(&mut bus, AddressingMode::AbsoluteLong);
         assert_eq!(cpu.registers.pbr, 0xAA);
         assert_eq!(cpu.registers.pc, 0xBBCC);
         assert_eq!(cpu.cycles, 4);
@@ -2283,7 +2284,7 @@ mod cpu_instructions_tests {
         cpu.registers.set_zero_flag(true);
         cpu.registers.set_16bit_mode(false);
         bus.write(0x0001, 0xFF);
-        cpu.lda(&bus, AddressingMode::Immediate);
+        cpu.lda(&mut bus, AddressingMode::Immediate);
         assert_eq!(cpu.registers.pc, 0x0002);
         assert_eq!(cpu.registers.a, 0x00FF);
         assert_eq!(cpu.cycles, 2);
@@ -2302,7 +2303,7 @@ mod cpu_instructions_tests {
         cpu.registers.set_zero_flag(true);
         cpu.registers.set_16bit_index(false);
         bus.write(0x0001, 0xFF);
-        cpu.ldx(&bus, AddressingMode::Immediate);
+        cpu.ldx(&mut bus, AddressingMode::Immediate);
         assert_eq!(cpu.registers.pc, 0x0002);
         assert_eq!(cpu.registers.x, 0x00FF);
         assert_eq!(cpu.cycles, 2);
@@ -2321,7 +2322,7 @@ mod cpu_instructions_tests {
         cpu.registers.set_zero_flag(true);
         cpu.registers.set_16bit_index(false);
         bus.write(0x0001, 0xFF);
-        cpu.ldy(&bus, AddressingMode::Immediate);
+        cpu.ldy(&mut bus, AddressingMode::Immediate);
         assert_eq!(cpu.registers.pc, 0x0002);
         assert_eq!(cpu.registers.y, 0x00FF);
         assert_eq!(cpu.cycles, 2);
@@ -2719,7 +2720,7 @@ mod cpu_instructions_tests {
         cpu.registers.pc = 0x0000;
         cpu.registers.p = 0x00;
         bus.write(0x0001, 0xFF);
-        cpu.sep(&bus);
+        cpu.sep(&mut bus);
         assert_eq!(cpu.registers.p, 0xFF);
         assert_eq!(cpu.registers.pc, 0x0002);
         assert_eq!(cpu.cycles, 3);

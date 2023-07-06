@@ -30,6 +30,6 @@ impl Emulator {
     }
 
     pub fn reset(&mut self) {
-        self.cpu.reset_vector(&self.bus);
+        self.cpu.reset_vector(&mut self.bus);
     }
 }

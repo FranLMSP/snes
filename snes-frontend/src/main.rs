@@ -347,7 +347,7 @@ fn main() {
                                 .size([150.0, 200.0], Condition::FirstUseEver)
                                 .build(&ui, || {
                                     ui.text("Upcoming instruction:");
-                                    ui.text(cpu_debug::CPUDisassembler::get_next_instruction(&emulator));
+                                    ui.text(cpu_debug::CPUDisassembler::get_next_instruction(&mut emulator));
                                     ui.separator();
                                 });
                         }

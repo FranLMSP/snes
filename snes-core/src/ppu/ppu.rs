@@ -28,9 +28,15 @@ impl PPU {
         if self.registers.h_count > 339 {
             self.registers.h_count = 0;
             self.registers.v_count += 1;
+            if self.registers.v_count > 224 {
+                self.registers.vblank_nmi = true;
+            }
             if self.registers.v_count > 261 {
                 self.registers.v_count = 0;
             }
+        }
+        if !self.registers.is_vblanking() {
+            self.registers.vblank_nmi = false;
         }
     }
 
