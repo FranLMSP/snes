@@ -63,9 +63,23 @@ pub const TSW: u16          = 0x212F;  // Window Area Sub Screen Disable (W)
 // PPU Interrupts
 pub const RDNMI: u16        = 0x4210;  // V-Blank NMI Flag
 
+// PPU VRAM Access
+pub const VMAINC: u16       = 0x2115; // VRAM Address Increment
+
+pub const VMADDL: u16       = 0x2116;  // VRAM Address Low
+pub const VMADDH: u16       = 0x2117;  // VRAM Address High
+pub const VMDATAL: u16      = 0x2118;  // VRAM Write Low
+pub const VMDATAH: u16      = 0x2119;  // VRAM Write High
+pub const VMDATALW: u16     = VMDATAL;
+pub const VMDATAHW: u16     = VMDATAH;
+pub const RDVRAML: u16      = 0x2139;  // VRAM Read Low
+pub const RDVRAMH: u16      = 0x213A;  // VRAM Read High
+pub const VMDATALR: u16     = RDVRAML;
+pub const VMDATAHR: u16     = RDVRAMH;
+
+
 pub const MAX_BG_WIDTH: usize  = 16 * 64;
 pub const MAX_BG_HEIGHT: usize = 16 * 64;
-
 
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum TileSize {
@@ -139,14 +153,45 @@ impl PPURegisters {
         }
     }
 
-    pub fn read(&self, address: u16) -> u8 {
+    fn _read(&self, address: u16) -> u8 {
         self.data[(address as usize) - 0x2100]
     }
 
-    pub fn write(&mut self, address: u16, value: u8) {
+    pub fn _write(&mut self, address: u16, value: u8) {
         self.data[(address as usize) - 0x2100] = value;
     }
 
+    pub fn read(&self, address: u16) -> u8 {
+        self._read(address)
+    }
+
+    pub fn write(&mut self, address: u16, value: u8) {
+        match address {
+            VMDATALW => {
+                self._write(address, value);
+                self.handle_write_vram(Some(value), None);
+            },
+            VMDATAHW => {
+                self._write(address, value);
+                self.handle_write_vram(None, Some(value));
+            },
+            VMDATALR | VMDATAHR => {},
+            _ => self._write(address, value),
+        };
+    }
+
+    fn handle_write_vram(&mut self, byte_lo: Option<u8>, byte_hi: Option<u8>) {
+        let address = ((self.read(VMADDH) as u16) << 8) | (self.read(VMADDL) as u16);
+        let effective_address = (address & 0x7FFF) * 2;
+        if let Some(byte) = byte_lo {
+            self.vram[effective_address.wrapping_add(1) as usize] = byte;
+            self._write(VMDATALR, byte);
+        }
+        if let Some(byte) = byte_hi {
+            self.vram[effective_address as usize] = byte;
+            self._write(VMDATAHR, byte);
+        }
+    }
 
     ///  7    BG4 Tile Size (0=8x8, 1=16x16)  ;\(BgMode0..4: variable 8x8 or 16x16)
     ///  6    BG3 Tile Size (0=8x8, 1=16x16)  ; (BgMode5: 8x8 acts as 16x8)
@@ -361,6 +406,35 @@ mod ppu_registers_test {
         assert_eq!(registers.get_bg_char_base_address(Background::Bg2), 0x2000);
         assert_eq!(registers.get_bg_char_base_address(Background::Bg3), 0x7000);
         assert_eq!(registers.get_bg_char_base_address(Background::Bg4), 0x5000);
+    }
+
+    #[test]
+    fn test_get_vram_registers() {
+        let mut registers = PPURegisters::new();
+        registers.write(VMADDL, 0x00);
+        registers.write(VMADDH, 0x00);
+        registers.write(VMDATAHW, 0xAB);
+        registers.write(VMDATALW, 0xCD);
+        assert_eq!(registers.vram[0x0000], 0xAB);
+        assert_eq!(registers.vram[0x0001], 0xCD);
+
+        registers.write(VMADDH, 0x12);
+        registers.write(VMADDL, 0x34);
+        registers.write(VMDATAHW, 0xAB);
+        registers.write(VMDATALW, 0xCD);
+        assert_eq!(registers.vram[0x2468], 0xAB);
+        assert_eq!(registers.vram[0x2469], 0xCD);
+        assert_eq!(registers.read(VMDATAHR), 0xAB);
+        assert_eq!(registers.read(VMDATALR), 0xCD);
+
+        registers.write(VMADDH, 0xFF);
+        registers.write(VMADDL, 0xFF);
+        registers.write(VMDATAHW, 0xAB);
+        registers.write(VMDATALW, 0xCD);
+        assert_eq!(registers.vram[0xFFFE], 0xAB);
+        assert_eq!(registers.vram[0xFFFF], 0xCD);
+        assert_eq!(registers.read(VMDATAHR), 0xAB);
+        assert_eq!(registers.read(VMDATALR), 0xCD);
     }
 
     #[test]
