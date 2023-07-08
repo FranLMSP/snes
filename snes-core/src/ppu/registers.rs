@@ -164,6 +164,10 @@ impl PPURegisters {
         self.data[(address as usize) - 0x2100] = value;
     }
 
+    pub fn read_external(&self, address: u16) -> u8 {
+        self._read(address)
+    }
+
     pub fn read(&mut self, address: u16) -> u8 {
         let result = self._read(address);
         match address {

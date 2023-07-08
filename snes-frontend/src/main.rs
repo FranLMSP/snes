@@ -404,7 +404,7 @@ fn main() {
                                         let mut address_row = format!("{:04X} | ", address);
                                         for page in (page_start..=page_end).rev() {
                                             let bus_address = ((page as u32) << 16) | (address as u32);
-                                            address_row = format!("{}{:02X} ", address_row, emulator.bus.read(bus_address));
+                                            address_row = format!("{}{:02X} ", address_row, emulator.bus.read_external(bus_address));
                                         }
                                         ui.text(address_row);
                                     }

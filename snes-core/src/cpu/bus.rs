@@ -56,6 +56,22 @@ impl Bus {
         }
     }
 
+    /// This function is meant to be used by external parts of the code,
+    /// for example, to render register info without mutating them
+    pub fn read_external(&self, address: u32) -> u8 {
+        let section = Bus::map_address(address);
+        match section {
+            MemoryMap::WRAM => self.read_wram(address),
+            MemoryMap::PPU => self.ppu.registers.read_external(address as u16),
+            MemoryMap::CPU => self.internal_registers.read_external(
+                address as u16,
+                &self.ppu.registers,
+            ),
+            MemoryMap::Joypad => 0x00,  // TODO: Placeholder
+            MemoryMap::Cartridge => self.rom.read(address),
+        }
+    }
+
     pub fn read(&mut self, address: u32) -> u8 {
         let section = Bus::map_address(address);
         match section {

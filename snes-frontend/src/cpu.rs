@@ -7,22 +7,21 @@ pub struct CPUDisassembler {
 }
 
 impl CPUDisassembler {
-    // TODO FIXME: please do not mutate the emulator state to fetch upcoming instructions
-    pub fn get_next_instruction(emulator: &mut Emulator) -> String {
-        let opcode = emulator.bus.read(emulator.cpu.registers.get_pc_address());
+    pub fn get_next_instruction(emulator: &Emulator) -> String {
+        let opcode = emulator.bus.read_external(emulator.cpu.registers.get_pc_address());
         let is_cpu_16bit = emulator.cpu.registers.is_16bit_mode();
         let is_index_16bit = emulator.cpu.registers.is_16bit_index();
-        let next_byte = emulator.bus.read(emulator.cpu.registers.get_pc_address() + 1);
-        let next_second_byte = emulator.bus.read(emulator.cpu.registers.get_pc_address() + 2);
-        let next_third_byte = emulator.bus.read(emulator.cpu.registers.get_pc_address() + 3);
+        let next_byte = emulator.bus.read_external(emulator.cpu.registers.get_pc_address() + 1);
+        let next_second_byte = emulator.bus.read_external(emulator.cpu.registers.get_pc_address() + 2);
+        let next_third_byte = emulator.bus.read_external(emulator.cpu.registers.get_pc_address() + 3);
         let next_word = {
-            (emulator.bus.read(emulator.cpu.registers.get_pc_address() + 1) as u16) |
-            ((emulator.bus.read(emulator.cpu.registers.get_pc_address() + 2) as u16) << 8)
+            (emulator.bus.read_external(emulator.cpu.registers.get_pc_address() + 1) as u16) |
+            ((emulator.bus.read_external(emulator.cpu.registers.get_pc_address() + 2) as u16) << 8)
         };
         let next_word_long = {
-            (emulator.bus.read(emulator.cpu.registers.get_pc_address() + 1) as u32) |
-            ((emulator.bus.read(emulator.cpu.registers.get_pc_address() + 2) as u32) << 8) |
-            ((emulator.bus.read(emulator.cpu.registers.get_pc_address() + 3) as u32) << 16)
+            (emulator.bus.read_external(emulator.cpu.registers.get_pc_address() + 1) as u32) |
+            ((emulator.bus.read_external(emulator.cpu.registers.get_pc_address() + 2) as u32) << 8) |
+            ((emulator.bus.read_external(emulator.cpu.registers.get_pc_address() + 3) as u32) << 16)
         };
         match opcode {
             // ADC
