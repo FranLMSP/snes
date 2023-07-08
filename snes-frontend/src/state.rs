@@ -78,6 +78,50 @@ impl MemoryMap {
     }
 }
 
+pub struct VRAMMap {
+    pub address_start: u16,
+    pub address_end: u16,
+    pub address_start_input: String,
+    pub address_end_input: String,
+}
+
+impl VRAMMap {
+    pub fn new() -> Self {
+        Self {
+            address_start: 0x0000,
+            address_end: 0x00FF,
+            address_start_input: String::from("0000"),
+            address_end_input: String::from("0100"),
+        }
+    }
+
+    fn validate_values(&mut self) {
+        if self.address_start > self.address_end {
+            self.address_start = self.address_end;
+        }
+        if self.address_end < self.address_start {
+            self.address_end = self.address_start;
+        }
+    }
+
+    pub fn set_values_from_inputs(&mut self) {
+        let address_regex = Regex::new(r"^(0x)?[0-9a-fA-F]{4,4}$").unwrap();
+
+        if !address_regex.is_match(&self.address_start_input) {
+            println!("Addr start didn't match");
+            self.address_start_input = String::from("0x0000");
+        }
+        if !address_regex.is_match(&self.address_end_input) {
+            println!("Addr end didn't match");
+            self.address_end_input = String::from("0x0000");
+        }
+
+        self.address_start = u16::from_str_radix(&self.address_start_input.trim_start_matches("0x"), 16).unwrap();
+        self.address_end = u16::from_str_radix(&self.address_end_input.trim_start_matches("0x"), 16).unwrap();
+        self.validate_values()
+    }
+}
+
 pub struct DebugOptions {
     pub is_enabled: bool,
     pub show_debug_window: bool,
@@ -134,19 +178,25 @@ impl BgDebug {
 
 pub struct PPUDebug {
     pub is_enabled: bool,
+    pub show_registers: bool,
+    pub show_vram: bool,
     pub backgrounds: [BgDebug; 4],
+    pub vram_map: VRAMMap,
 }
 
 impl PPUDebug {
     pub fn new() -> Self {
         Self {
             is_enabled: true,
+            show_registers: true,
+            show_vram: true,
             backgrounds: [
                 BgDebug::new(PPUBg::Bg1),
                 BgDebug::new(PPUBg::Bg2),
                 BgDebug::new(PPUBg::Bg3),
                 BgDebug::new(PPUBg::Bg4),
             ],
+            vram_map: VRAMMap::new(),
         }
     }
 }

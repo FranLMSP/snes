@@ -298,13 +298,28 @@ fn main() {
                                 .size([300.0, 400.0], Condition::FirstUseEver)
                                 .build(&ui, || {
                                     ui.text("Backgrounds:");
-
                                     for bgdebug in state.ppudebug.backgrounds.iter_mut() {
                                         ui.checkbox(
                                             format!("Show {:?}", bgdebug.background),
                                             &mut bgdebug.is_enabled,
                                         );
                                     }
+
+                                    ui.separator();
+
+                                    ui.text("Registers:");
+                                    ui.checkbox(
+                                        "Show PPU Registers",
+                                        &mut state.ppudebug.show_registers,
+                                    );
+
+                                    ui.separator();
+
+                                    ui.text("VRAM:");
+                                    ui.checkbox(
+                                        "Show PPU VRAM",
+                                        &mut state.ppudebug.show_vram,
+                                    );
                                 });
                             for bgdebug in state.ppudebug.backgrounds.iter_mut() {
                                 ppu_render::background_window(
@@ -313,6 +328,23 @@ fn main() {
                                     &ui,
                                     &mut renderer,
                                     &queue,
+                                )
+                            }
+
+                            if state.ppudebug.show_registers {
+                                ppu_render::registers_window(
+                                    &emulator.bus.ppu.registers,
+                                    &mut state.ppudebug.show_registers,
+                                    &ui,
+                                )
+                            }
+
+                            if state.ppudebug.show_vram {
+                                ppu_render::vram_window(
+                                    &emulator.bus.ppu.registers,
+                                    &mut state.ppudebug.vram_map,
+                                    &mut state.ppudebug.show_vram,
+                                    &ui,
                                 )
                             }
                         }

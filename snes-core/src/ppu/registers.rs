@@ -36,8 +36,6 @@ pub const M7B: u16          = 0x211C;  // Rotation/Scaling Parameter B (and Math
 pub const M7C: u16          = 0x211D;  // Rotation/Scaling Parameter C (W)
 pub const M7D: u16          = 0x211E;  // Rotation/Scaling Parameter D (W)
 
-pub const M7HOFS: u16       = 0x210D;  // BG1 Horizontal Scroll (X) (W)
-pub const M7VOFS: u16       = 0x210E;  // BG1 Vertical Scroll   (Y) (W)
 pub const M7X: u16          = 0x211F;  // Rotation/Scaling Center Coordinate X (W)
 pub const M7Y: u16          = 0x2120;  // Rotation/Scaling Center Coordinate Y (W)
 
@@ -154,6 +152,14 @@ impl PPURegisters {
             h_count: 0,
             v_count: 0,
         }
+    }
+
+    pub fn registers(&self) -> &[u8] {
+        &self.data
+    }
+
+    pub fn vram(&self) -> &[u8] {
+        &self.vram
     }
 
     fn _read(&self, address: u16) -> u8 {
