@@ -378,7 +378,7 @@ impl PPURegisters {
     }
 
     pub fn is_vblanking(&self) -> bool {
-        if self.h_count >= 1 && self.h_count <= 224 {
+        if self.v_count >= 1 && self.v_count <= 224 {
             return false
         }
         return true
@@ -577,17 +577,17 @@ mod ppu_registers_test {
     #[test]
     fn test_is_vblanking() {
         let mut registers = PPURegisters::new();
-        registers.h_count = 339;
+        registers.v_count = 339;
         assert_eq!(registers.is_vblanking(), true);
-        registers.h_count = 0;
+        registers.v_count = 0;
         assert_eq!(registers.is_vblanking(), true);
-        registers.h_count = 225;
+        registers.v_count = 225;
         assert_eq!(registers.is_vblanking(), true);
-        registers.h_count = 224;
+        registers.v_count = 224;
         assert_eq!(registers.is_vblanking(), false);
-        registers.h_count = 2;
+        registers.v_count = 2;
         assert_eq!(registers.is_vblanking(), false);
-        registers.h_count = 50;
+        registers.v_count = 50;
         assert_eq!(registers.is_vblanking(), false);
     }
 }

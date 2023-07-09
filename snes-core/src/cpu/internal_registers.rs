@@ -16,12 +16,23 @@ impl InternalRegisters {
         }
     }
 
+    fn get_index(address: u16) -> usize {
+        (address - INTERNAL_REGISTERS_ADDRESS) as usize
+    }
+
     fn _read(&self, address: u16) -> u8 {
-        self.registers[(address - INTERNAL_REGISTERS_ADDRESS) as usize]
+        let index = InternalRegisters::get_index(address);
+        if index >= self.registers.len() {
+            return 0xFF;
+        }
+        self.registers[index]
     }
 
     fn _write(&mut self, address: u16, value: u8) {
-        self.registers[(address - INTERNAL_REGISTERS_ADDRESS) as usize] = value
+        let index = InternalRegisters::get_index(address);
+        if index < self.registers.len() {
+            self.registers[index] = value
+        }
     }
 
     pub fn read_external(&self, address: u16, ppu_registers: &PPURegisters) -> u8 {
@@ -73,7 +84,7 @@ mod ppu_general_test {
         ppu.registers.h_count = 339;
         ppu.registers.v_count = 224;
         ppu.dot_cycle();
-        assert_eq!(registers.read_vblank_nmi(&mut ppu.registers), 0x80);
+        assert_eq!(registers.read_vblank_nmi_mut(&mut ppu.registers), 0x80);
         // vblank bit is reset after read
         ppu.dot_cycle();
         assert_eq!(registers.read_vblank_nmi(&mut ppu.registers), 0x00);

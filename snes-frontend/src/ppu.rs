@@ -155,6 +155,7 @@ pub fn registers_window(ppu_registers: &PPURegisters, show_registers: &mut bool,
             ui.text(format!("V: {}", ppu_registers.v_count));
             ui.text(format!("H: {}", ppu_registers.h_count));
             ui.text(format!("VBlanking: {}", ppu_registers.is_vblanking()));
+            ui.text(format!("NMI Flag:  {}", ppu_registers.vblank_nmi));
             ui.separator();
             ui.text("Registers:");
             for (index, register_value) in ppu_registers.registers().iter().enumerate() {

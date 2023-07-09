@@ -49,7 +49,7 @@ impl Bus {
                 0x0000..=0x1FFF => MemoryMap::WRAM,
                 0x2100..=0x21FF => MemoryMap::PPU,
                 0x4016..=0x4017 => MemoryMap::Joypad,
-                0x4200..=0x420F => MemoryMap::CPU,
+                0x4200..=0x42FF => MemoryMap::CPU,
                 _ => MemoryMap::Cartridge,
             },
             _ => MemoryMap::Cartridge,
