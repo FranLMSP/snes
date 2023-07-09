@@ -125,7 +125,8 @@ fn get_register_name(register: u16) -> &'static str {
 pub fn registers_window(ppu_registers: &PPURegisters, show_registers: &mut bool, ui: &imgui::Ui) {
     let window = imgui::Window::new("PPU Registers");
     window
-        .size([300.0, 400.0], imgui::Condition::FirstUseEver)
+        .position([250.0, 480.0], imgui::Condition::FirstUseEver)
+        .size([230.0, 310.0], imgui::Condition::FirstUseEver)
         .opened(show_registers)
         .build(ui, || {
             ui.text("Registers:");
@@ -140,7 +141,8 @@ pub fn registers_window(ppu_registers: &PPURegisters, show_registers: &mut bool,
 pub fn vram_window(ppu_registers: &PPURegisters, vram_debug: &mut VRAMMap, show_vram: &mut bool, ui: &imgui::Ui) {
     let window = imgui::Window::new("VRAM");
     window
-        .size([300.0, 400.0], imgui::Condition::FirstUseEver)
+        .size([450.0, 435.0], imgui::Condition::FirstUseEver)
+        .position([500.0, 530.0], imgui::Condition::FirstUseEver)
         .opened(show_vram)
         .build(ui, || {
                 let address_start_input = ui.input_text(

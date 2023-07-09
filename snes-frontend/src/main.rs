@@ -248,7 +248,8 @@ fn main() {
                     if state.debug_options.show_debug_window {
                         let window = imgui::Window::new("Debug window");
                         window
-                            .size([300.0, 100.0], Condition::FirstUseEver)
+                            .position([15.0, 885.0], imgui::Condition::FirstUseEver)
+                            .size([300.0, 300.0], Condition::FirstUseEver)
                             .opened(&mut state.debug_options.show_debug_window)
                             .build(&ui, || {
                                 ui.text("Controls:");
@@ -295,7 +296,8 @@ fn main() {
                         if state.ppudebug.is_enabled {
                             let window = imgui::Window::new("PPU Debugging options");
                             window
-                                .size([300.0, 400.0], Condition::FirstUseEver)
+                                .position([330.0, 885.0], imgui::Condition::FirstUseEver)
+                                .size([180.0, 280.0], Condition::FirstUseEver)
                                 .build(&ui, || {
                                     ui.text("Backgrounds:");
                                     for bgdebug in state.ppudebug.backgrounds.iter_mut() {
@@ -352,7 +354,8 @@ fn main() {
                         if state.debug_options.show_cpu_registers {
                             let window = imgui::Window::new("CPU Registers");
                             window
-                                .size([150.0, 200.0], Condition::FirstUseEver)
+                                .position([15.0, 480.0], Condition::FirstUseEver)
+                                .size([220.0, 310.0], Condition::FirstUseEver)
                                 .build(&ui, || {
                                     ui.text(format!("SP:       | {:#06X}",   emulator.cpu.registers.sp));
                                     ui.text(format!("X:        | {:#06X}",   emulator.cpu.registers.x));
@@ -376,18 +379,19 @@ fn main() {
                         if state.debug_options.show_cpu_disassembler {
                             let window = imgui::Window::new("CPU Disassembler");
                             window
-                                .size([150.0, 200.0], Condition::FirstUseEver)
+                                .position([15.0, 800.0], imgui::Condition::FirstUseEver)
+                                .size([300.0, 70.0], Condition::FirstUseEver)
                                 .build(&ui, || {
                                     ui.text("Upcoming instruction:");
                                     ui.text(cpu_debug::CPUDisassembler::get_next_instruction(&mut emulator));
-                                    ui.separator();
                                 });
                         }
 
                         if state.debug_options.memory_map.is_enabled {
                             let window = imgui::Window::new("Memory Map");
                             window
-                                .size([400.0, 400.0], Condition::FirstUseEver)
+                                .position([500.0, 30.0], Condition::FirstUseEver)
+                                .size([450.0, 480.0], Condition::FirstUseEver)
                                 .build(&ui, || {
                                     let page_start_input = ui.input_text(
                                         "Page start",
@@ -461,7 +465,8 @@ fn main() {
                         tex.write(&queue, &vec![0xAA; 400 * 400 * 4], 400, 400);
                         let game_window = imgui::Window::new("Game");
                         game_window
-                            .size([600.0, 600.0], Condition::FirstUseEver)
+                            .position([15.0, 30.0], Condition::FirstUseEver)
+                            .size([425.0, 440.0], Condition::FirstUseEver)
                             .collapsible(false)
                             .build(&ui, || {
                                 let game_image = imgui::Image::new(texture_id, [400.0, 400.0]);
