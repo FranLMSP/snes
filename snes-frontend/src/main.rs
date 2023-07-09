@@ -452,11 +452,13 @@ fn main() {
                     if !state.emulation.is_paused {
                         // We want to keep the emulator running
                         // as long as we are not at the end of the frame
-                        while !emulator.is_frame_ending {
+                        while !emulator.is_frame_ending() {
                             emulator.tick()
                         }
-                        // Reset the flag because otherwise the emulator will never continue running
-                        emulator.is_frame_ending = false
+                        // It takes some amount of cycles to get out of 0 v-count
+                        while !emulator.is_frame_starting() {
+                            emulator.tick()
+                        }
                     }
 
                     // Render emulator framebuffer

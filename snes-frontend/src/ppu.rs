@@ -129,6 +129,11 @@ pub fn registers_window(ppu_registers: &PPURegisters, show_registers: &mut bool,
         .size([230.0, 310.0], imgui::Condition::FirstUseEver)
         .opened(show_registers)
         .build(ui, || {
+            ui.text("H/V Counters:");
+            ui.text(format!("V: {}", ppu_registers.v_count));
+            ui.text(format!("H: {}", ppu_registers.h_count));
+            ui.text(format!("VBlanking: {}", ppu_registers.is_vblanking()));
+            ui.separator();
             ui.text("Registers:");
             for (index, register_value) in ppu_registers.registers().iter().enumerate() {
                 let register = (index as u16) + 0x2100;

@@ -7,7 +7,6 @@ pub struct Emulator {
     pub cpu: CPU,
     pub bus: Bus,
     pub rom: Box<dyn ROM>,
-    pub is_frame_ending: bool,
 }
 
 impl Emulator {
@@ -16,7 +15,6 @@ impl Emulator {
             cpu: CPU::new(),
             bus: Bus::new(),
             rom: Box::new(LoROM::new()),
-            is_frame_ending: false,
         }
     }
 
@@ -25,8 +23,14 @@ impl Emulator {
         self.bus.ppu.tick(self.cpu.cycles);
 
         self.cpu.cycles = 0;
+    }
 
-        self.is_frame_ending = true;
+    pub fn is_frame_ending(&self) -> bool {
+        self.bus.ppu.registers.v_count == 0
+    }
+
+    pub fn is_frame_starting(&self) -> bool {
+        self.bus.ppu.registers.v_count == 1
     }
 
     pub fn reset(&mut self) {
