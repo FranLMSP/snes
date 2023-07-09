@@ -25,12 +25,17 @@ impl Emulator {
         self.cpu.cycles = 0;
     }
 
-    pub fn is_frame_ending(&self) -> bool {
-        self.bus.ppu.registers.v_count == 0
-    }
-
-    pub fn is_frame_starting(&self) -> bool {
-        self.bus.ppu.registers.v_count == 1
+    pub fn loop_frame(&mut self) {
+        let mut frame_started = true;
+        loop {
+            self.tick();
+            if !frame_started && self.bus.ppu.registers.v_count == 260 {
+                break;
+            }
+            if self.bus.ppu.registers.v_count >= 261 {
+                frame_started = false;
+            }
+        }
     }
 
     pub fn reset(&mut self) {
