@@ -1,24 +1,23 @@
 // PPU Control
 pub const INIDISP: u16      = 0x2100;  // Display Control 1 (W)
 
-pub const TM: u16           = 0x212C;  // Main Screen Designation (W)
-pub const TS: u16           = 0x212D;  // Sub Screen Designation (W)
+// PPU Sprites
+pub const OBSEL: u16        = 0x2101;  // Object Size and Object Base (W)
 
-pub const SETINI: u16       = 0x2133;  // Display Control 2 (W)
+// OAM Read/Write
+pub const OAMADDL: u16      = 0x2102;  // OAM Address (L)
+pub const OAMADDH: u16      = 0x2103;  // OAM Address (H)
+pub const OAMDATA: u16      = 0x2104;  // OAM Data Write
 
 // PPU BG Control
 pub const BGMODE: u16       = 0x2105;  // BG Mode and BG Character Size (W)
-
 pub const MOSAIC: u16       = 0x2106;  // Mosaic Size and Mosaic Enable (W)
-
 pub const BG1SC: u16        = 0x2107;  // BG1 Screen Base and Screen Size (W)
 pub const BG2SC: u16        = 0x2108;  // BG2 Screen Base and Screen Size (W)
 pub const BG3SC: u16        = 0x2109;  // BG3 Screen Base and Screen Size (W)
 pub const BG4SC: u16        = 0x210A;  // BG4 Screen Base and Screen Size (W)
-
 pub const BG12NBA: u16      = 0x210B;  // BG Character Data Area Designation (W)
 pub const BG34NBA: u16      = 0x210C;  // BG Character Data Area Designation (W)
-
 pub const BG1HOFS: u16      = 0x210D;  // BG1 Horizontal Scroll (X) (W) and M7HOFS
 pub const BG1VOFS: u16      = 0x210E;  // BG1 Vertical Scroll   (Y) (W) and M7VOFS
 pub const BG2HOFS: u16      = 0x210F;  // BG2 Horizontal Scroll (X) (W)
@@ -28,57 +27,67 @@ pub const BG3VOFS: u16      = 0x2112;  // BG3 Vertical Scroll   (Y) (W)
 pub const BG4HOFS: u16      = 0x2113;  // BG4 Horizontal Scroll (X) (W)
 pub const BG4VOFS: u16      = 0x2114;  // BG4 Horizontal Scroll (X) (W)
 
-// PPU Rotating/Scaling
-pub const M7SEL: u16        = 0x211A;  // Rotation/Scaling Mode Settings (W)
-
-pub const M7A: u16          = 0x211B;  // Rotation/Scaling Parameter A (and Maths 16bit operand) (W)
-pub const M7B: u16          = 0x211C;  // Rotation/Scaling Parameter B (and Maths 8bit operand)  (W)
-pub const M7C: u16          = 0x211D;  // Rotation/Scaling Parameter C (W)
-pub const M7D: u16          = 0x211E;  // Rotation/Scaling Parameter D (W)
-
-pub const M7X: u16          = 0x211F;  // Rotation/Scaling Center Coordinate X (W)
-pub const M7Y: u16          = 0x2120;  // Rotation/Scaling Center Coordinate Y (W)
-
-// PPU Sprites
-pub const OBSEL: u16        = 0x2101;  // Object Size and Object Base (W)
-
-// PPU Window
-pub const WH0: u16          = 0x2126;  // Window 1 Left Position  (X1) (W)
-pub const WH1: u16          = 0x2127;  // Window 1 Right Position (X2) (W)
-pub const WH2: u16          = 0x2128;  // Window 2 Left Position  (X1) (W)
-pub const WH3: u16          = 0x2129;  // Window 2 Right Position (X2) (W)
-
-pub const W12SEL: u16       = 0x2123;  // Window BG1/BG2 Mask Settings (W)
-pub const W34SEL: u16       = 0x2124;  // Window BG3/BG4 Mask Settings (W)
-pub const WOBJSEL: u16      = 0x2125;  // Window OBJ/MATH Mask Settings (W)
-
-pub const WBGLOG: u16       = 0x212A;  // Window 1 Mask Logic (W)
-pub const WOBJLOG: u16      = 0x212B;  // Window 2 Mask Logic (W)
-
-pub const TMW: u16          = 0x212E;  // Window Area Main Screen Disable (W)
-pub const TSW: u16          = 0x212F;  // Window Area Sub Screen Disable (W)
-
-// PPU Interrupts
-pub const RDNMI: u16        = 0x4210;  // V-Blank NMI Flag
-
 // PPU VRAM Access
 pub const VMAIN: u16        = 0x2115; // VRAM Address Increment
-pub const VMAINC: u16       = VMAIN; // VRAM Address Increment
-
 pub const VMADDL: u16       = 0x2116;  // VRAM Address Low
 pub const VMADDH: u16       = 0x2117;  // VRAM Address High
 pub const VMDATAL: u16      = 0x2118;  // VRAM Write Low
 pub const VMDATAH: u16      = 0x2119;  // VRAM Write High
-pub const VMDATALW: u16     = VMDATAL;
-pub const VMDATAHW: u16     = VMDATAH;
+
+// PPU Rotating/Scaling
+pub const M7SEL: u16        = 0x211A;  // Rotation/Scaling Mode Settings (W)
+pub const M7A: u16          = 0x211B;  // Rotation/Scaling Parameter A (and Maths 16bit operand) (W)
+pub const M7B: u16          = 0x211C;  // Rotation/Scaling Parameter B (and Maths 8bit operand)  (W)
+pub const M7C: u16          = 0x211D;  // Rotation/Scaling Parameter C (W)
+pub const M7D: u16          = 0x211E;  // Rotation/Scaling Parameter D (W)
+pub const M7X: u16          = 0x211F;  // Rotation/Scaling Center Coordinate X (W)
+pub const M7Y: u16          = 0x2120;  // Rotation/Scaling Center Coordinate Y (W)
+
+// PPU CGRAM
+pub const CGADD: u16        = 0x2121;  // Palette CGRAM Address
+pub const CGDATA: u16       = 0x2122;  // Palette CGRAM Address
+
+// PPU Window
+pub const W12SEL: u16       = 0x2123;  // Window BG1/BG2 Mask Settings (W)
+pub const W34SEL: u16       = 0x2124;  // Window BG3/BG4 Mask Settings (W)
+pub const WOBJSEL: u16      = 0x2125;  // Window OBJ/MATH Mask Settings (W)
+pub const WH0: u16          = 0x2126;  // Window 1 Left Position  (X1) (W)
+pub const WH1: u16          = 0x2127;  // Window 1 Right Position (X2) (W)
+pub const WH2: u16          = 0x2128;  // Window 2 Left Position  (X1) (W)
+pub const WH3: u16          = 0x2129;  // Window 2 Right Position (X2) (W)
+pub const WBGLOG: u16       = 0x212A;  // Window 1 Mask Logic (W)
+pub const WOBJLOG: u16      = 0x212B;  // Window 2 Mask Logic (W)
+pub const TM: u16           = 0x212C;  // Main Screen Designation (W)
+pub const TS: u16           = 0x212D;  // Sub Screen Designation (W)
+pub const TMW: u16          = 0x212E;  // Window Area Main Screen Disable (W)
+pub const TSW: u16          = 0x212F;  // Window Area Sub Screen Disable (W)
+
+// PPU Color Math
+pub const CGWSEL: u16       = 0x2130;  // Color Math Control Register A
+pub const CGADSUB: u16      = 0x2131;  // Color Math Control Register B
+pub const COLDATA: u16      = 0x2132;  // Color Math Sub Screen Backdrop Color
+
+// Display Control
+pub const SETINI: u16       = 0x2133;  // Display Control 2 (W)
+
+// PPU Read-only ports
+pub const MPYL: u16         = 0x2134;  // Signed Multiply Result (lower 8bit)
+pub const MPYM: u16         = 0x2135;  // Signed Multiply Result (middle 8bit)
+pub const MPYH: u16         = 0x2136;  // Signed Multiply Result (upper 8bit)
+pub const SLHV: u16         = 0x2137;  // Latch H/V-Counter by Software (Read=Strobe)
+pub const RDOAM: u16        = 0x2138;  // OAM Data Read            (read-twice)
 pub const RDVRAML: u16      = 0x2139;  // VRAM Read Low
 pub const RDVRAMH: u16      = 0x213A;  // VRAM Read High
-pub const VMDATALR: u16     = RDVRAML;
-pub const VMDATAHR: u16     = RDVRAMH;
+pub const RDCGRAM: u16      = 0x213B;  // CGRAM Data Read (Palette)(read-twice)
+pub const OPHCT: u16        = 0x213C;  // Horizontal Counter Latch (read-twice)
+pub const OPVCT: u16        = 0x213D;  // Vertical Counter Latch   (read-twice)
+pub const STAT77: u16       = 0x213E;  // PPU1 Status and PPU1 Version Number
+pub const STAT78: u16       = 0x213F;  // PPU1 Status and PPU1 Version Number
 
 
 pub const MAX_BG_WIDTH: usize  = 16 * 64;
 pub const MAX_BG_HEIGHT: usize = 16 * 64;
+
 
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum TileSize {
@@ -136,7 +145,7 @@ pub enum Background {
 
 
 pub struct PPURegisters {
-    data: [u8; 256],
+    data: [u8; 64],
     vram: [u8; 0x10000],
     pub vblank_nmi: bool,
     pub h_count: u16,
@@ -146,7 +155,7 @@ pub struct PPURegisters {
 impl PPURegisters {
     pub fn new() -> Self {
         Self {
-            data: [0x00; 256],
+            data: [0x00; 64],
             vram: [0; 0x10000],
             vblank_nmi: false,
             h_count: 0,
@@ -163,11 +172,17 @@ impl PPURegisters {
     }
 
     fn _read(&self, address: u16) -> u8 {
-        self.data[(address as usize) - 0x2100]
+        match address {
+            0x2100..=0x213F => self.data[(address as usize) - 0x2100],
+            _ => 0xFF,
+        }
     }
 
     pub fn _write(&mut self, address: u16, value: u8) {
-        self.data[(address as usize) - 0x2100] = value;
+        match address {
+            0x2100..=0x213F => self.data[(address as usize) - 0x2100] = value,
+            _ => {},
+        };
     }
 
     pub fn read_external(&self, address: u16) -> u8 {
@@ -177,8 +192,8 @@ impl PPURegisters {
     pub fn read(&mut self, address: u16) -> u8 {
         let result = self._read(address);
         match address {
-            VMDATALR => self.handle_vram_addr_auto_increment(Some(result), None),
-            VMDATAHR => self.handle_vram_addr_auto_increment(None, Some(result)),
+            VMDATAL => self.handle_vram_addr_auto_increment(Some(result), None),
+            VMDATAH => self.handle_vram_addr_auto_increment(None, Some(result)),
             _ => {},
         };
         self._read(address)
@@ -186,15 +201,15 @@ impl PPURegisters {
 
     pub fn write(&mut self, address: u16, value: u8) {
         match address {
-            VMDATALW => {
+            VMDATAL => {
                 self._write(address, value);
                 self.handle_write_vram(Some(value), None);
             },
-            VMDATAHW => {
+            VMDATAH => {
                 self._write(address, value);
                 self.handle_write_vram(None, Some(value));
             },
-            VMDATALR | VMDATAHR => {},
+            RDVRAML | RDVRAMH => {},
             _ => self._write(address, value),
         };
     }
@@ -204,17 +219,17 @@ impl PPURegisters {
         let effective_address = (address & 0x7FFF) * 2;
         if let Some(byte) = byte_lo {
             self.vram[effective_address.wrapping_add(1) as usize] = byte;
-            self._write(VMDATALR, byte);
+            self._write(RDVRAML, byte);
         }
         if let Some(byte) = byte_hi {
             self.vram[effective_address as usize] = byte;
-            self._write(VMDATAHR, byte);
+            self._write(RDVRAMH, byte);
         }
         self.handle_vram_addr_auto_increment(byte_lo, byte_hi);
     }
 
     fn handle_vram_addr_auto_increment(&mut self, byte_lo: Option<u8>, byte_hi: Option<u8>) {
-        let register = self._read(VMAINC);
+        let register = self._read(VMAIN);
         let amount_to_increment = match register & 0b11 {
             0b00 => 1,
             0b01 => 32,
@@ -467,28 +482,28 @@ mod ppu_registers_test {
         let mut registers = PPURegisters::new();
         registers.write(VMADDL, 0x00);
         registers.write(VMADDH, 0x00);
-        registers.write(VMDATAHW, 0xAB);
-        registers.write(VMDATALW, 0xCD);
+        registers.write(VMDATAH, 0xAB);
+        registers.write(VMDATAL, 0xCD);
         assert_eq!(registers.vram[0x0000], 0xAB);
         assert_eq!(registers.vram[0x0001], 0xCD);
 
         registers.write(VMADDH, 0x12);
         registers.write(VMADDL, 0x34);
-        registers.write(VMDATAHW, 0xAB);
-        registers.write(VMDATALW, 0xCD);
+        registers.write(VMDATAH, 0xAB);
+        registers.write(VMDATAL, 0xCD);
         assert_eq!(registers.vram[0x2468], 0xAB);
         assert_eq!(registers.vram[0x2469], 0xCD);
-        assert_eq!(registers.read(VMDATAHR), 0xAB);
-        assert_eq!(registers.read(VMDATALR), 0xCD);
+        assert_eq!(registers.read(RDVRAMH), 0xAB);
+        assert_eq!(registers.read(RDVRAML), 0xCD);
 
         registers.write(VMADDH, 0xFF);
         registers.write(VMADDL, 0xFF);
-        registers.write(VMDATAHW, 0xAB);
-        registers.write(VMDATALW, 0xCD);
+        registers.write(VMDATAH, 0xAB);
+        registers.write(VMDATAL, 0xCD);
         assert_eq!(registers.vram[0xFFFE], 0xAB);
         assert_eq!(registers.vram[0xFFFF], 0xCD);
-        assert_eq!(registers.read(VMDATAHR), 0xAB);
-        assert_eq!(registers.read(VMDATALR), 0xCD);
+        assert_eq!(registers.read(RDVRAMH), 0xAB);
+        assert_eq!(registers.read(RDVRAML), 0xCD);
     }
 
     #[test]
@@ -499,18 +514,18 @@ mod ppu_registers_test {
         registers.write(VMADDH, 0x00);
 
         // Increment when low bit is written to
-        registers.write(VMAINC, 0x00);
+        registers.write(VMAIN, 0x00);
 
-        registers.write(VMDATAHW, 0xAA);
+        registers.write(VMDATAH, 0xAA);
         assert_eq!(registers.get_current_vram_address(), 0x0000);
-        registers.write(VMDATALW, 0xAA);
+        registers.write(VMDATAL, 0xAA);
         assert_eq!(registers.get_current_vram_address(), 0x0001);
 
         // Increment when hi bit is written to
-        registers.write(VMAINC, 0b1000_0000);
-        registers.write(VMDATAHW, 0xAA);
+        registers.write(VMAIN, 0b1000_0000);
+        registers.write(VMDATAH, 0xAA);
         assert_eq!(registers.get_current_vram_address(), 0x0002);
-        registers.write(VMDATALW, 0xAA);
+        registers.write(VMDATAL, 0xAA);
         assert_eq!(registers.get_current_vram_address(), 0x0002);
 
 
@@ -519,43 +534,43 @@ mod ppu_registers_test {
         registers.write(VMADDH, 0x00);
 
         // Increment when low bit is read from
-        registers.write(VMAINC, 0x00);
+        registers.write(VMAIN, 0x00);
 
-        registers.read(VMDATAHR);
+        registers.read(VMDATAH);
         assert_eq!(registers.get_current_vram_address(), 0x0000);
-        registers.read(VMDATALR);
+        registers.read(VMDATAL);
         assert_eq!(registers.get_current_vram_address(), 0x0001);
 
         // Increment when hi bit is read from
-        registers.write(VMAINC, 0b1000_0000);
-        registers.read(VMDATAHR);
+        registers.write(VMAIN, 0b1000_0000);
+        registers.read(VMDATAH);
         assert_eq!(registers.get_current_vram_address(), 0x0002);
-        registers.read(VMDATALR);
+        registers.read(VMDATAL);
         assert_eq!(registers.get_current_vram_address(), 0x0002);
 
         // Increment amounts
-        registers.write(VMAINC, 0b1000_0000);
+        registers.write(VMAIN, 0b1000_0000);
         registers.write(VMADDL, 0x00);
         registers.write(VMADDH, 0x00);
-        registers.write(VMDATAHW, 0xAA);
+        registers.write(VMDATAH, 0xAA);
         assert_eq!(registers.get_current_vram_address(), 1);
 
-        registers.write(VMAINC, 0b1000_0001);
+        registers.write(VMAIN, 0b1000_0001);
         registers.write(VMADDL, 0x00);
         registers.write(VMADDH, 0x00);
-        registers.write(VMDATAHW, 0xAA);
+        registers.write(VMDATAH, 0xAA);
         assert_eq!(registers.get_current_vram_address(), 32);
 
-        registers.write(VMAINC, 0b1000_0010);
+        registers.write(VMAIN, 0b1000_0010);
         registers.write(VMADDL, 0x00);
         registers.write(VMADDH, 0x00);
-        registers.write(VMDATAHW, 0xAA);
+        registers.write(VMDATAH, 0xAA);
         assert_eq!(registers.get_current_vram_address(), 128);
 
-        registers.write(VMAINC, 0b1000_0011);
+        registers.write(VMAIN, 0b1000_0011);
         registers.write(VMADDL, 0x00);
         registers.write(VMADDH, 0x00);
-        registers.write(VMDATAHW, 0xAA);
+        registers.write(VMDATAH, 0xAA);
         assert_eq!(registers.get_current_vram_address(), 128);
     }
 

@@ -1,9 +1,9 @@
 use crate::ppu::registers::PPURegisters;
-use crate::ppu::registers::{
-    RDNMI
-};
 
 pub const INTERNAL_REGISTERS_ADDRESS: u16 = 0x4200;
+
+// PPU Interrupts
+pub const RDNMI: u16        = 0x4210;  // V-Blank NMI Flag
 
 pub struct InternalRegisters {
     registers: [u8; 32],
