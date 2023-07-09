@@ -285,7 +285,7 @@ fn main() {
                                 );
                                 ui.checkbox(
                                     "Show CPU disassembler", 
-                                    &mut state.debug_options.show_cpu_registers,
+                                    &mut state.debug_options.show_cpu_disassembler,
                                 );
                             });
                     }
