@@ -162,7 +162,9 @@ pub struct BgDebug {
     pub background: PPUBg,
     pub is_enabled: bool,
     pub texture_id: Option<imgui::TextureId>,
+    pub char_texture_id: Option<imgui::TextureId>,
     pub framebuffer: Vec<u8>,
+    pub char_framebuffer: Vec<u8>,
 }
 
 impl BgDebug {
@@ -171,7 +173,10 @@ impl BgDebug {
             background: background,
             is_enabled: false,
             texture_id: None,
+            char_texture_id: None,
             framebuffer: vec![0x00; MAX_BG_WIDTH * MAX_BG_HEIGHT * 4],
+            // 8x8 pixels, 16x8 characters
+            char_framebuffer: vec![0x00; 8 * 8 * 16 * 8 * 4],
         }
     }
 }

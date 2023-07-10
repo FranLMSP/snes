@@ -15,7 +15,7 @@ use winit::{
 
 use snes_frontend::state::State;
 extern crate snes_core;
-use snes_core::emulator::Emulator;
+use snes_core::{emulator::Emulator, ppu::registers::{MAX_BG_WIDTH, MAX_BG_HEIGHT}};
 use snes_frontend::ppu as ppu_render;
 use snes_frontend::cpu as cpu_debug;
 
@@ -146,7 +146,10 @@ fn main() {
 
     for bgdebug in state.ppudebug.backgrounds.iter_mut() {
         bgdebug.texture_id = Some(
-            ppu_render::background_texture(&device, &mut renderer, bgdebug.background)
+            ppu_render::background_texture(&device, &mut renderer, bgdebug.background, MAX_BG_WIDTH as u32, MAX_BG_HEIGHT as u32, "Background")
+        );
+        bgdebug.char_texture_id = Some(
+            ppu_render::background_texture(&device, &mut renderer, bgdebug.background, 16 * 8, 8 * 8, "Charset")
         );
     }
     

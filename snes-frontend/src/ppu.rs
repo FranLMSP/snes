@@ -15,16 +15,19 @@ use super::state::{BgDebug, VRAMMap};
 pub fn background_texture(
     device: &Device,
     renderer: &mut Renderer,
-    background: PPUBg
+    background: PPUBg,
+    width: u32,
+    height: u32,
+    name: &str,
 ) -> TextureId {
     let texture = imgui_wgpu::Texture::new(
         device,
         renderer,
         imgui_wgpu::TextureConfig {
-            label: Some(&format!("Background {:?} texture", background)),
+            label: Some(&format!("{} {:?} texture", name, background)),
             size: wgpu::Extent3d {
-                width: MAX_BG_WIDTH as u32,
-                height: MAX_BG_HEIGHT as u32,
+                width: width,
+                height: height,
                 depth_or_array_layers: 1,
             },
             format: Some(wgpu::TextureFormat::Rgba8Unorm),
@@ -55,22 +58,84 @@ fn render_background(bgdebug: &mut BgDebug, registers: &PPURegisters) {
     }
 }
 
+fn render_background_char_2bpp(bgdebug: &mut BgDebug, registers: &PPURegisters) {
+    let vram_base_address = registers.get_bg_char_base_address(bgdebug.background) as usize;
+    let vram = registers.vram();
+    let width = 8 * 16;
+    let height = 8 * 8;
+    for x in 0..width {
+        for y in 0..height {
+            let current_pixel = x + (y * width);
+            let vram_address = vram_base_address + (current_pixel / 4);
+            let byte = vram[vram_address];
+            let pixels = [
+                (byte >> 6) & 0b11,
+                (byte >> 4) & 0b11,
+                (byte >> 2) & 0b11,
+                byte        & 0b11,
+            ];
+            let pixel_index = current_pixel.rem_euclid(4);
+            let effective_pixel = pixels[pixel_index];
+
+            let fb_index = current_pixel * 4;
+            let r = fb_index;
+            let g = fb_index + 1;
+            let b = fb_index + 2;
+            let a = fb_index + 3;
+
+            bgdebug.char_framebuffer[a] = 0xFF;
+            match effective_pixel {
+                0b00 => {
+                    bgdebug.char_framebuffer[r] = 0xFF;
+                    bgdebug.char_framebuffer[g] = 0xFF;
+                    bgdebug.char_framebuffer[b] = 0xFF;
+                },
+                0b01 => {
+                    bgdebug.char_framebuffer[r] = 0xAC;
+                    bgdebug.char_framebuffer[g] = 0xAC;
+                    bgdebug.char_framebuffer[b] = 0xAC;
+                },
+                0b10 => {
+                    bgdebug.char_framebuffer[r] = 0x56;
+                    bgdebug.char_framebuffer[g] = 0x56;
+                    bgdebug.char_framebuffer[b] = 0x56;
+                },
+                0b11 => {
+                    bgdebug.char_framebuffer[r] = 0x00;
+                    bgdebug.char_framebuffer[g] = 0x00;
+                    bgdebug.char_framebuffer[b] = 0x00;
+                },
+                _ => unreachable!(),
+            };
+        }
+    }
+}
+
 pub fn background_window(bgdebug: &mut BgDebug, registers: &PPURegisters, ui: &imgui::Ui, renderer: &mut Renderer, queue: &Queue) {
     if !bgdebug.is_enabled {
         return;
     }
     let texture_id = bgdebug.texture_id.unwrap();
+    let char_texture_id = bgdebug.char_texture_id.unwrap();
     render_background(bgdebug, registers);
+    render_background_char_2bpp(bgdebug, registers);
 
     let tex = renderer.textures.get_mut(texture_id).unwrap();
     tex.write(queue, &bgdebug.framebuffer, MAX_BG_WIDTH as u32, MAX_BG_HEIGHT as u32);
+    let char_tex = renderer.textures.get_mut(char_texture_id).unwrap();
+    char_tex.write(queue, &bgdebug.char_framebuffer, 16 * 8, 8 * 8);
     let bg_window = imgui::Window::new(format!("BG: {:?}", bgdebug.background));
     bg_window
         .size([MAX_BG_WIDTH as f32, MAX_BG_HEIGHT as f32], imgui::Condition::FirstUseEver)
         .opened(&mut bgdebug.is_enabled)
         .build(ui, || {
-            let game_image = imgui::Image::new(texture_id, [MAX_BG_WIDTH as f32, MAX_BG_HEIGHT as f32]);
-            game_image.build(&ui);
+            ui.text("Charset:");
+            let charset_image = imgui::Image::new(char_texture_id, [16.0 * 8.0, 8.0 * 8.0]);
+            charset_image.build(&ui);
+            ui.separator();
+            ui.text("Background:");
+            let bg_image = imgui::Image::new(texture_id, [MAX_BG_WIDTH as f32, MAX_BG_HEIGHT as f32]);
+            bg_image.build(&ui);
         });
 }
 
