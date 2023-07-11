@@ -61,21 +61,58 @@ fn render_background(bgdebug: &mut BgDebug, registers: &PPURegisters) {
 fn render_background_char_2bpp(bgdebug: &mut BgDebug, registers: &PPURegisters) {
     let vram_base_address = registers.get_bg_char_base_address(bgdebug.background) as usize;
     let vram = registers.vram();
-    let width = 8 * 16;
-    let height = 8 * 8;
-    for x in 0..width {
-        for y in 0..height {
+    let width: usize = 8 * 16;
+    let height: usize = 8 * 8;
+    for y in 0..height {
+        for x in 0..width {
+            let current_char = (x / 8) + ((y / 8) * 16);
+            let current_char_column = x.rem_euclid(8);
+            let current_char_row = y.rem_euclid(8);
+            // 8x8 pixels, 2 bitplanes, each word (16bit) holds 8 pixels
+            // so 1 char is 8 bytes x 2
+            let char_base_vram_address = current_char * 8 * 2;
+            let vram_address = vram_base_address + (
+                char_base_vram_address + (current_char_row * 2)
+            );
             let current_pixel = x + (y * width);
-            let vram_address = vram_base_address + (current_pixel / 4);
-            let byte = vram[vram_address];
+
+            let lsb_bitplane= vram[vram_address];
+            let msb_bitplane= vram[vram_address + 1];
             let pixels = [
-                (byte >> 6) & 0b11,
-                (byte >> 4) & 0b11,
-                (byte >> 2) & 0b11,
-                byte        & 0b11,
+                (
+                    (lsb_bitplane >> 7) |
+                    ((msb_bitplane >> 7) << 1)
+                ),
+                (
+                    ((lsb_bitplane >> 6) & 1) |
+                    (((msb_bitplane >> 6) & 1) << 1)
+                ),
+                (
+                    ((lsb_bitplane >> 5) & 1) |
+                    (((msb_bitplane >> 5) & 1) << 1)
+                ),
+                (
+                    ((lsb_bitplane >> 4) & 1) |
+                    (((msb_bitplane >> 4) & 1) << 1)
+                ),
+                (
+                    ((lsb_bitplane >> 3) & 1) |
+                    (((msb_bitplane >> 3) & 1) << 1)
+                ),
+                (
+                    ((lsb_bitplane >> 2) & 1) |
+                    (((msb_bitplane >> 2) & 1) << 1)
+                ),
+                (
+                    ((lsb_bitplane >> 1) & 1) |
+                    (((msb_bitplane >> 1) & 1) << 1)
+                ),
+                (
+                    (lsb_bitplane & 1) |
+                    ((msb_bitplane & 1) << 1)
+                ),
             ];
-            let pixel_index = current_pixel.rem_euclid(4);
-            let effective_pixel = pixels[pixel_index];
+            let effective_pixel = pixels[current_char_column];
 
             let fb_index = current_pixel * 4;
             let r = fb_index;
@@ -130,7 +167,7 @@ pub fn background_window(bgdebug: &mut BgDebug, registers: &PPURegisters, ui: &i
         .opened(&mut bgdebug.is_enabled)
         .build(ui, || {
             ui.text("Charset:");
-            let charset_image = imgui::Image::new(char_texture_id, [16.0 * 8.0, 8.0 * 8.0]);
+            let charset_image = imgui::Image::new(char_texture_id, [16.0 * 8.0 * 2.0, 8.0 * 8.0 * 2.0]);
             charset_image.build(&ui);
             ui.separator();
             ui.text("Background:");
