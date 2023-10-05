@@ -1,4 +1,4 @@
-use crate::common::flags::{Flags, ModeFlag};
+use crate::common::flags::Flags;
 
 pub struct Registers {
     pub sp: u16, // Stack pointer
@@ -10,26 +10,22 @@ pub struct Registers {
     pub pbr: u8, // Program bank register
     pub dbr: u8, // Data bank register
     pub pc: u16, // Program counter
-    pub exposed_bit_zero: ModeFlag,
     pub emulation_mode: bool,
-    pub carry: bool,
 }
 
 impl Registers {
     pub fn new() -> Self {
         Self {
-            sp: 0x01FC,
+            sp: 0x01FF,
             x: 0,
             y: 0,
             a: 0,
-            p: 0,
+            p: 0b00110100,
             d: 0,
             pbr: 0,
             dbr: 0,
             pc: 0,
-            exposed_bit_zero: ModeFlag::EmulationMode,
             emulation_mode: true,
-            carry: false,
         }
     }
 
@@ -50,19 +46,12 @@ impl Registers {
     }
 
     pub fn get_carry_flag(&self) -> bool {
-        match self.exposed_bit_zero {
-            ModeFlag::Carry => self.carry,
-            ModeFlag::EmulationMode => self.emulation_mode,
-        }
+        (self.p & 0b0000_0001) == 1
     }
 
     pub fn set_carry_flag(&mut self, val: bool) {
         self.p = self.p & 0b1111_1110;
         self.p = self.p | (val as u8);
-        match self.exposed_bit_zero {
-            ModeFlag::Carry => self.carry = val,
-            ModeFlag::EmulationMode => self.emulation_mode = val,
-        };
     }
 
     pub fn get_emulation_mode_flag(&self) -> bool {
@@ -191,26 +180,10 @@ impl Registers {
         self.d as u8
     }
 
-    pub fn is_emu_mode_flag_exposed(&self) -> bool {
-        match self.exposed_bit_zero {
-            ModeFlag::Carry => false,
-            ModeFlag::EmulationMode => true,
-        }
-    }
-
     pub fn exchange_carry_and_emulation(&mut self) {
-        match self.exposed_bit_zero {
-            ModeFlag::Carry => {
-                self.carry = self.get_carry_flag();
-                self.exposed_bit_zero = ModeFlag::EmulationMode;
-                self.set_emulation_mode_flag(self.emulation_mode);
-            },
-            ModeFlag::EmulationMode => {
-                self.emulation_mode = self.get_carry_flag();
-                self.exposed_bit_zero = ModeFlag::Carry;
-                self.set_carry_flag(self.carry);
-            },
-        }
+        let temp_carry_flag_value = self.get_carry_flag();
+        self.set_carry_flag(self.emulation_mode);
+        self.emulation_mode = temp_carry_flag_value;
     }
 
     pub fn set_flags(&mut self, flags: &[Flags]) {
@@ -232,11 +205,10 @@ impl Registers {
 
     pub fn reset_rep_byte(&mut self, byte: u8) {
         self.p = self.p & !byte;
-        // Avoid messing up exposed emu mode flag logic
-        let reset_carry_flag = (byte & 0x01) == 1;
-        if reset_carry_flag {
-            self.set_carry_flag(false);
-        }
+    }
+
+    pub fn set_sep_byte(&mut self, byte: u8) {
+        self.p = self.p | byte;
     }
 }
 
@@ -437,27 +409,16 @@ mod registers_tests {
     fn test_exchange_carry_and_emulation() {
         let mut registers = Registers::new();
         registers.emulation_mode = false;
-        registers.exposed_bit_zero = ModeFlag::Carry;
-        registers .set_flags(&[Flags::Carry(false)]);
-        registers.exposed_bit_zero = ModeFlag::EmulationMode;
-        registers .set_flags(&[Flags::EmulationMode(false)]);
-
-        registers.exposed_bit_zero = ModeFlag::Carry;
-        registers.set_carry_flag(true);
-        assert_eq!(registers.get_carry_flag(), true);
+        registers.set_flags(&[Flags::Carry(true)]);
         registers.exchange_carry_and_emulation();
         assert_eq!(registers.get_carry_flag(), false);
+        assert_eq!(registers.emulation_mode, true);
 
-        registers.exposed_bit_zero = ModeFlag::Carry;
-        registers .set_flags(&[Flags::Carry(false)]);
-        registers.exposed_bit_zero = ModeFlag::EmulationMode;
-        registers .set_flags(&[Flags::EmulationMode(false)]);
-
-        registers.exposed_bit_zero = ModeFlag::EmulationMode;
-        registers.set_emulation_mode_flag(true);
-        assert_eq!(registers.get_emulation_mode_flag(), true);
+        registers.emulation_mode = true;
+        registers.set_flags(&[Flags::Carry(false)]);
         registers.exchange_carry_and_emulation();
-        assert_eq!(registers.get_emulation_mode_flag(), false);
+        assert_eq!(registers.get_carry_flag(), true);
+        assert_eq!(registers.emulation_mode, false);
     }
 
     #[test]
@@ -494,5 +455,21 @@ mod registers_tests {
         registers.p = 0x86;
         registers.reset_rep_byte(0x38);
         assert_eq!(registers.p,  0b10000110);
+    }
+
+    #[test]
+    fn test_set_rep_byte() {
+        let mut registers = Registers::new();
+        registers.p = 0xFF;
+        registers.set_sep_byte(0b0000_0001);
+        assert_eq!(registers.p, 0xFF);
+
+        registers.p = 0b10101010;
+        registers.set_sep_byte(0b0000_0000);
+        assert_eq!(registers.p,  0b10101010);
+
+        registers.p = 0b10100000;
+        registers.set_sep_byte(0b0000_1111);
+        assert_eq!(registers.p,  0b10101111);
     }
 }

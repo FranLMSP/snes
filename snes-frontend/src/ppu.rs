@@ -71,13 +71,13 @@ fn render_background_char_2bpp(bgdebug: &mut BgDebug, registers: &PPURegisters) 
             // 8x8 pixels, 2 bitplanes, each word (16bit) holds 8 pixels
             // so 1 char is 8 bytes x 2
             let char_base_vram_address = current_char * 8 * 2;
-            let vram_address = vram_base_address + (
+            let effective_vram_address = vram_base_address + (
                 char_base_vram_address + (current_char_row * 2)
             );
             let current_pixel = x + (y * width);
 
-            let lsb_bitplane= vram[vram_address];
-            let msb_bitplane= vram[vram_address + 1];
+            let lsb_bitplane= vram[effective_vram_address];
+            let msb_bitplane= vram[effective_vram_address + 1];
             let pixels = [
                 (
                     (lsb_bitplane >> 7) |

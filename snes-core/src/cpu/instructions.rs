@@ -672,7 +672,7 @@ impl CPU {
                 IndexRegister::Y => self.registers.y = value,
             }
             self.registers.set_flags(&[
-                Flags::Negative(value >> 7 == 1),
+                Flags::Negative(value >> 15 == 1),
                 Flags::Zero(value == 0),
             ]);
         } else {
@@ -844,7 +844,8 @@ impl CPU {
     }
 
     fn sep(&mut self, bus: &mut Bus) {
-        self.registers.p = self.get_8bit_from_address(bus, AddressingMode::Immediate);
+        let byte = self.get_8bit_from_address(bus, AddressingMode::Immediate);
+        self.registers.set_sep_byte(byte);
         self.increment_cycles_sep();
     }
 
@@ -979,7 +980,7 @@ impl CPU {
     }
 
     fn txs(&mut self) {
-        if self.registers.is_16bit_mode() {
+        if self.registers.is_16bit_index() {
             self.registers.sp = self.registers.x;
             self.registers.set_negative_flag((self.registers.a >> 15) == 1);
             self.registers.set_zero_flag(self.registers.a == 0);
@@ -993,7 +994,7 @@ impl CPU {
     }
 
     fn txy(&mut self) {
-        if self.registers.is_16bit_mode() {
+        if self.registers.is_16bit_index() {
             self.registers.y = self.registers.x;
             self.registers.set_negative_flag((self.registers.x >> 15) == 1);
             self.registers.set_zero_flag(self.registers.x == 0);
@@ -1021,7 +1022,7 @@ impl CPU {
     }
 
     fn tyx(&mut self) {
-        if self.registers.is_16bit_mode() {
+        if self.registers.is_16bit_index() {
             self.registers.x = self.registers.y;
             self.registers.set_negative_flag((self.registers.y >> 15) == 1);
             self.registers.set_zero_flag(self.registers.y == 0);
@@ -1510,7 +1511,6 @@ impl CPU {
 #[cfg(test)]
 mod cpu_instructions_tests {
     use super::*;
-    use crate::common::flags::ModeFlag;
 
     #[test]
     fn test_adc() {
@@ -1623,7 +1623,6 @@ mod cpu_instructions_tests {
         let mut cpu = CPU::new();
         let mut bus = Bus::new();
         cpu.registers.emulation_mode = false;
-        cpu.registers.exposed_bit_zero = ModeFlag::Carry;
         cpu.registers.a   = 0b00000000_00000011;
         cpu.registers.pbr = 0x00;
         cpu.registers.pc  = 0x0000;
@@ -2077,7 +2076,6 @@ mod cpu_instructions_tests {
         cpu.registers.pbr = 0x00;
         cpu.registers.pc  = 0x0000;
         cpu.registers.emulation_mode = false;
-        cpu.registers.exposed_bit_zero = ModeFlag::Carry;
         cpu.registers.set_16bit_index(true);
         cpu.registers.set_overflow_flag(false);
         bus.write(0x000002, 0xB0);
@@ -2098,7 +2096,6 @@ mod cpu_instructions_tests {
         let mut cpu = CPU::new();
         let mut bus = Bus::new();
         cpu.registers.emulation_mode = false;
-        cpu.registers.exposed_bit_zero = ModeFlag::Carry;
         cpu.registers.y   = 0x01;
         cpu.registers.pbr = 0x00;
         cpu.registers.pc  = 0x0000;
@@ -2455,6 +2452,7 @@ mod cpu_instructions_tests {
         let mut cpu = CPU::new();
         let mut bus = Bus::new();
         cpu.registers.emulation_mode = false;
+        cpu.registers.set_16bit_index(true);
         cpu.registers.pc  = 0x0000;
         cpu.registers.x  = 0x1234;
         cpu.registers.sp  = 0x1FC;
@@ -2471,6 +2469,7 @@ mod cpu_instructions_tests {
         let mut cpu = CPU::new();
         let mut bus = Bus::new();
         cpu.registers.emulation_mode = false;
+        cpu.registers.set_16bit_index(true);
         cpu.registers.pc  = 0x0000;
         cpu.registers.y  = 0x1234;
         cpu.registers.sp  = 0x1FC;
@@ -2900,7 +2899,7 @@ mod cpu_instructions_tests {
         cpu.registers.pc = 0x0000;
         cpu.registers.a = 0x0000;
         cpu.registers.x = 0xF0F0;
-        cpu.registers.set_16bit_index(true);
+        cpu.registers.set_16bit_mode(true);
         cpu.txa();
         assert_eq!(cpu.registers.a, 0xF0F0);
         assert_eq!(cpu.registers.pc, 0x0001);
@@ -2942,7 +2941,7 @@ mod cpu_instructions_tests {
         cpu.registers.pc = 0x0000;
         cpu.registers.a = 0x0000;
         cpu.registers.y = 0xF0F0;
-        cpu.registers.set_16bit_index(true);
+        cpu.registers.set_16bit_mode(true);
         cpu.tya();
         assert_eq!(cpu.registers.a, 0xF0F0);
         assert_eq!(cpu.registers.pc, 0x0001);
@@ -2998,9 +2997,7 @@ mod cpu_instructions_tests {
     fn test_xce() {
         let mut cpu = CPU::new();
         cpu.registers.pc = 0x0000;
-        cpu.registers.exposed_bit_zero = ModeFlag::Carry;
         cpu.xce();
-        assert_eq!(cpu.registers.exposed_bit_zero, ModeFlag::EmulationMode);
         assert_eq!(cpu.registers.pc, 0x0001);
         assert_eq!(cpu.cycles, 2);
     }
