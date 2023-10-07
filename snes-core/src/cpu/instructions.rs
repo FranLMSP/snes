@@ -859,7 +859,7 @@ impl CPU {
     }
 
     fn stx(&mut self, bus: &mut Bus, addressing_mode: AddressingMode) {
-        if self.registers.is_16bit_mode() {
+        if self.registers.is_16bit_index() {
             self.set_16bit_to_address(bus, addressing_mode, self.registers.x);
         } else {
             self.set_8bit_to_address(bus, addressing_mode, self.registers.x as u8);
@@ -868,7 +868,7 @@ impl CPU {
     }
 
     fn sty(&mut self, bus: &mut Bus, addressing_mode: AddressingMode) {
-        if self.registers.is_16bit_mode() {
+        if self.registers.is_16bit_index() {
             self.set_16bit_to_address(bus, addressing_mode, self.registers.y);
         } else {
             self.set_8bit_to_address(bus, addressing_mode, self.registers.y as u8);

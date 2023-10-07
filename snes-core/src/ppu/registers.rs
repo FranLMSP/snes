@@ -146,7 +146,7 @@ pub enum Background {
 
 pub struct PPURegisters {
     data: [u8; 64],
-    vram: [u8; 0x10000],
+    vram: [u16; 0x10000],
     pub vblank_nmi: bool,
     pub h_count: u16,
     pub v_count: u16,
@@ -167,7 +167,7 @@ impl PPURegisters {
         &self.data
     }
 
-    pub fn vram(&self) -> &[u8] {
+    pub fn vram(&self) -> &[u16] {
         &self.vram
     }
 
@@ -215,14 +215,14 @@ impl PPURegisters {
     }
 
     fn handle_write_vram(&mut self, byte_lo: Option<u8>, byte_hi: Option<u8>) {
-        let address = ((self.read(VMADDH) as u16) << 8) | (self.read(VMADDL) as u16);
-        let effective_address = (address & 0x7FFF) * 2;
+        let address = (((self.read(VMADDH) as u16) << 8) | (self.read(VMADDL) as u16)) & 0x7FFF;
+        let current_word = self.vram[address as usize];
         if let Some(byte) = byte_lo {
-            self.vram[effective_address.wrapping_add(1) as usize] = byte;
+            self.vram[address as usize] = (current_word & 0xFF00) | (byte as u16);
             self._write(RDVRAML, byte);
         }
         if let Some(byte) = byte_hi {
-            self.vram[effective_address as usize] = byte;
+            self.vram[address as usize] = (current_word & 0x00FF) | ((byte as u16) << 8);
             self._write(RDVRAMH, byte);
         }
         self.handle_vram_addr_auto_increment(byte_lo, byte_hi);

@@ -70,14 +70,15 @@ fn render_background_char_2bpp(bgdebug: &mut BgDebug, registers: &PPURegisters) 
             let current_char_row = y.rem_euclid(8);
             // 8x8 pixels, 2 bitplanes, each word (16bit) holds 8 pixels
             // so 1 char is 8 bytes x 2
-            let char_base_vram_address = current_char * 8 * 2;
+            let char_base_vram_address = current_char * 8;
             let effective_vram_address = vram_base_address + (
-                char_base_vram_address + (current_char_row * 2)
+                char_base_vram_address + (current_char_row)
             );
             let current_pixel = x + (y * width);
 
-            let lsb_bitplane= vram[effective_vram_address];
-            let msb_bitplane= vram[effective_vram_address + 1];
+            let vram_word = vram[effective_vram_address];
+            let lsb_bitplane= vram_word as u8;
+            let msb_bitplane= (vram_word >> 8) as u8;
             let pixels = [
                 (
                     (lsb_bitplane >> 7) |
@@ -296,12 +297,12 @@ pub fn vram_window(ppu_registers: &PPURegisters, vram_debug: &mut VRAMMap, show_
                 let address_end = vram_debug.address_end;
                 let mut header = String::from("     | ");
                 for page in 0x00..=0x0F {
-                    header = format!("{}{:02X} ", header, page);
+                    header = format!("{}  {:02X} ", header, page);
                 }
                 ui.text(header);
                 let mut divider = String::from("-----|-");
                 for _ in 0x00..=0x0F {
-                    divider = format!("{}---", divider);
+                    divider = format!("{}-----", divider);
                 }
                 ui.text(divider);
                 let vector = (address_start..=address_end).collect::<Vec<u16>>();
@@ -309,7 +310,7 @@ pub fn vram_window(ppu_registers: &PPURegisters, vram_debug: &mut VRAMMap, show_
                 for row in chunks {
                     let mut address_row = format!("{:04X} | ", row[0]);
                     for address in row {
-                        address_row = format!("{}{:02X} ", address_row, ppu_registers.vram()[(*address) as usize]);
+                        address_row = format!("{}{:04X} ", address_row, ppu_registers.vram()[(*address) as usize]);
                     }
                     ui.text(address_row);
                 }
