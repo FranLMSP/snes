@@ -49,6 +49,10 @@ impl InternalRegisters {
         }
     }
 
+    pub fn read_dma(&self, address: u16) -> u8 {
+        self._read(address)
+    }
+
     pub fn write(&mut self, address: u16, value: u8) {
         self._write(address, value);
     }

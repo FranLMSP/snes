@@ -1,13 +1,17 @@
 use crate::ppu::PPU;
+use crate::cpu::dma;
 use crate::cpu::internal_registers::InternalRegisters;
 use crate::rom::ROM;
 use crate::rom::lo_rom::LoROM;
+
+use super::dma::DMATransferProps;
 
 pub struct Bus {
     wram: [u8; 0x10000],
     pub ppu: PPU,
     pub rom: Box<dyn ROM>,
     pub internal_registers: InternalRegisters,
+    pub is_dma_active: bool,
 }
 
 #[derive(PartialEq, Debug)]
@@ -26,6 +30,7 @@ impl Bus {
             ppu: PPU::new(),
             rom: Box::new(LoROM::new()),
             internal_registers: InternalRegisters::new(),
+            is_dma_active: false,
         }
     }
 
@@ -94,6 +99,29 @@ impl Bus {
             MemoryMap::CPU => self.internal_registers.write(address as u16, value),
             MemoryMap::Joypad => {},  // TODO: Placeholder
             MemoryMap::Cartridge => self.rom.write(address, value),
+        }
+    }
+
+    pub fn tick_dma(&mut self, cpu_cycles: usize) {
+        if !self.is_dma_active {
+            return;
+        }
+
+        let dma_select = self.internal_registers.read_dma(dma::MDMAEN);
+        let mut active_channels = [false; 8];
+        for i in 0..8 {
+            active_channels[i] = (dma_select & (1 << i)) != 0;
+        }
+
+        for (channel, is_active) in active_channels.iter().enumerate() {
+            if !is_active {
+                continue
+            }
+            let mut props = DMATransferProps::new_from_internal_registers(
+                &self.internal_registers,
+                channel as u8,
+            );
+            props.tick(self);
         }
     }
 }

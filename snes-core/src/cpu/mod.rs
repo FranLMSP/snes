@@ -2,6 +2,7 @@ pub mod cpu;
 pub use cpu::CPU;
 pub mod bus;
 pub mod registers;
+pub mod dma;
 pub mod instructions;
 pub mod vectors;
 pub mod cycles;
