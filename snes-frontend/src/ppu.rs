@@ -310,7 +310,7 @@ pub fn vram_window(ppu_registers: &PPURegisters, vram_debug: &mut VRAMMap, show_
                 for row in chunks {
                     let mut address_row = format!("{:04X} | ", row[0]);
                     for address in row {
-                        address_row = format!("{}{:04X} ", address_row, ppu_registers.vram()[(*address) as usize]);
+                        address_row = format!("{}{:04X} ", address_row, ppu_registers.vram()[((*address) & 0x7FFF) as usize]);
                     }
                     ui.text(address_row);
                 }

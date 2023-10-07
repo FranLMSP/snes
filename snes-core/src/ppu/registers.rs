@@ -192,8 +192,8 @@ impl PPURegisters {
     pub fn read(&mut self, address: u16) -> u8 {
         let result = self._read(address);
         match address {
-            VMDATAL => self.handle_vram_addr_auto_increment(Some(result), None),
-            VMDATAH => self.handle_vram_addr_auto_increment(None, Some(result)),
+            VMDATAH => self.handle_vram_addr_auto_increment(Some(result), None),
+            VMDATAL => self.handle_vram_addr_auto_increment(None, Some(result)),
             _ => {},
         };
         self._read(address)
@@ -201,11 +201,11 @@ impl PPURegisters {
 
     pub fn write(&mut self, address: u16, value: u8) {
         match address {
-            VMDATAL => {
+            VMDATAH => {
                 self._write(address, value);
                 self.handle_write_vram(Some(value), None);
             },
-            VMDATAH => {
+            VMDATAL => {
                 self._write(address, value);
                 self.handle_write_vram(None, Some(value));
             },
@@ -214,21 +214,21 @@ impl PPURegisters {
         };
     }
 
-    fn handle_write_vram(&mut self, byte_lo: Option<u8>, byte_hi: Option<u8>) {
+    fn handle_write_vram(&mut self, byte_hi: Option<u8>, byte_lo: Option<u8>) {
         let address = (((self.read(VMADDH) as u16) << 8) | (self.read(VMADDL) as u16)) & 0x7FFF;
         let current_word = self.vram[address as usize];
-        if let Some(byte) = byte_lo {
-            self.vram[address as usize] = (current_word & 0xFF00) | (byte as u16);
-            self._write(RDVRAML, byte);
-        }
         if let Some(byte) = byte_hi {
             self.vram[address as usize] = (current_word & 0x00FF) | ((byte as u16) << 8);
             self._write(RDVRAMH, byte);
         }
-        self.handle_vram_addr_auto_increment(byte_lo, byte_hi);
+        if let Some(byte) = byte_lo {
+            self.vram[address as usize] = (current_word & 0xFF00) | (byte as u16);
+            self._write(RDVRAML, byte);
+        }
+        self.handle_vram_addr_auto_increment(byte_hi, byte_lo);
     }
 
-    fn handle_vram_addr_auto_increment(&mut self, byte_lo: Option<u8>, byte_hi: Option<u8>) {
+    fn handle_vram_addr_auto_increment(&mut self, byte_hi: Option<u8>, byte_lo: Option<u8>) {
         let register = self._read(VMAIN);
         let amount_to_increment = match register & 0b11 {
             0b00 => 1,
@@ -240,13 +240,13 @@ impl PPURegisters {
         let increment_when_lo = (register >> 7) != 1;
         let increment_when_hi = !increment_when_lo;
         let current_value = self.get_current_vram_address();
-        if increment_when_lo {
-            if let Some(_) = byte_lo {
+        if increment_when_hi {
+            if let Some(_) = byte_hi {
                 self.set_current_vram_address(current_value.wrapping_add(amount_to_increment));
             }
         }
-        if increment_when_hi {
-            if let Some(_) = byte_hi {
+        if increment_when_lo {
+            if let Some(_) = byte_lo {
                 self.set_current_vram_address(current_value.wrapping_add(amount_to_increment));
             }
         }
