@@ -146,7 +146,7 @@ pub enum Background {
 
 pub struct PPURegisters {
     data: [u8; 64],
-    vram: [u16; 0x10000],
+    vram: [u16; 0x8000],
     pub vblank_nmi: bool,
     pub h_count: u16,
     pub v_count: u16,
@@ -156,7 +156,7 @@ impl PPURegisters {
     pub fn new() -> Self {
         Self {
             data: [0x00; 64],
-            vram: [0; 0x10000],
+            vram: [0; 0x8000],
             vblank_nmi: false,
             h_count: 0,
             v_count: 0,
@@ -484,24 +484,21 @@ mod ppu_registers_test {
         registers.write(VMADDH, 0x00);
         registers.write(VMDATAH, 0xAB);
         registers.write(VMDATAL, 0xCD);
-        assert_eq!(registers.vram[0x0000], 0xAB);
-        assert_eq!(registers.vram[0x0001], 0xCD);
+        assert_eq!(registers.vram[0x0000], 0xABCD);
 
         registers.write(VMADDH, 0x12);
         registers.write(VMADDL, 0x34);
         registers.write(VMDATAH, 0xAB);
         registers.write(VMDATAL, 0xCD);
-        assert_eq!(registers.vram[0x2468], 0xAB);
-        assert_eq!(registers.vram[0x2469], 0xCD);
+        assert_eq!(registers.vram[0x1234], 0xABCD);
         assert_eq!(registers.read(RDVRAMH), 0xAB);
         assert_eq!(registers.read(RDVRAML), 0xCD);
 
-        registers.write(VMADDH, 0xFF);
+        registers.write(VMADDH, 0x7F);
         registers.write(VMADDL, 0xFF);
         registers.write(VMDATAH, 0xAB);
         registers.write(VMDATAL, 0xCD);
-        assert_eq!(registers.vram[0xFFFE], 0xAB);
-        assert_eq!(registers.vram[0xFFFF], 0xCD);
+        assert_eq!(registers.vram[0x7FFF], 0xABCD);
         assert_eq!(registers.read(RDVRAMH), 0xAB);
         assert_eq!(registers.read(RDVRAML), 0xCD);
     }
