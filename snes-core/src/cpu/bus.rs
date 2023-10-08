@@ -1,17 +1,15 @@
 use crate::ppu::PPU;
-use crate::cpu::dma;
+use crate::cpu::dma::DMA;
 use crate::cpu::internal_registers::InternalRegisters;
 use crate::rom::ROM;
 use crate::rom::lo_rom::LoROM;
-
-use super::dma::DMATransferProps;
 
 pub struct Bus {
     wram: [u8; 0x10000],
     pub ppu: PPU,
     pub rom: Box<dyn ROM>,
     pub internal_registers: InternalRegisters,
-    pub is_dma_active: bool,
+    pub dma: DMA,
 }
 
 #[derive(PartialEq, Debug)]
@@ -19,6 +17,7 @@ pub enum MemoryMap {
     WRAM,
     PPU,
     CPU,
+    DMA,
     Joypad,
     Cartridge,
 }
@@ -30,7 +29,7 @@ impl Bus {
             ppu: PPU::new(),
             rom: Box::new(LoROM::new()),
             internal_registers: InternalRegisters::new(),
-            is_dma_active: false,
+            dma: DMA::new(),
         }
     }
 
@@ -55,6 +54,7 @@ impl Bus {
                 0x2100..=0x21FF => MemoryMap::PPU,
                 0x4016..=0x4017 => MemoryMap::Joypad,
                 0x4200..=0x42FF => MemoryMap::CPU,
+                0x4300..=0x5FFF => MemoryMap::DMA,
                 _ => MemoryMap::Cartridge,
             },
             _ => MemoryMap::Cartridge,
@@ -72,6 +72,7 @@ impl Bus {
                 address as u16,
                 &self.ppu.registers,
             ),
+            MemoryMap::DMA => self.dma.read(address as u16),
             MemoryMap::Joypad => 0x00,  // TODO: Placeholder
             MemoryMap::Cartridge => self.rom.read(address),
         }
@@ -86,6 +87,7 @@ impl Bus {
                 address as u16,
                 &mut self.ppu.registers,
             ),
+            MemoryMap::DMA => self.dma.read(address as u16),
             MemoryMap::Joypad => 0x00,  // TODO: Placeholder
             MemoryMap::Cartridge => self.rom.read(address),
         }
@@ -96,32 +98,14 @@ impl Bus {
         match section {
             MemoryMap::WRAM => self.write_wram(address, value),
             MemoryMap::PPU => self.ppu.registers.write(address as u16, value),
-            MemoryMap::CPU => self.internal_registers.write(address as u16, value),
+            MemoryMap::CPU => self.internal_registers.write(
+                address as u16,
+                value,
+                &mut self.dma,
+            ),
+            MemoryMap::DMA => self.dma.write(address as u16, value),
             MemoryMap::Joypad => {},  // TODO: Placeholder
             MemoryMap::Cartridge => self.rom.write(address, value),
-        }
-    }
-
-    pub fn tick_dma(&mut self, cpu_cycles: usize) {
-        if !self.is_dma_active {
-            return;
-        }
-
-        let dma_select = self.internal_registers.read_dma(dma::MDMAEN);
-        let mut active_channels = [false; 8];
-        for i in 0..8 {
-            active_channels[i] = (dma_select & (1 << i)) != 0;
-        }
-
-        for (channel, is_active) in active_channels.iter().enumerate() {
-            if !is_active {
-                continue
-            }
-            let mut props = DMATransferProps::new_from_internal_registers(
-                &self.internal_registers,
-                channel as u8,
-            );
-            props.tick(self);
         }
     }
 }

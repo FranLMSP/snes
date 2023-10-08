@@ -1,6 +1,3 @@
-use crate::cpu::internal_registers::InternalRegisters;
-use crate::cpu::bus::Bus;
-
 pub const MDMAEN: u16       = 0x420B;  // Select General Purpose DMA Channel(s) and Start Transfer (W)
 
 pub const DMAPX: u16        = 0x4300;  // DMA/HDMA Parameters (R/W)
@@ -63,16 +60,16 @@ pub struct DMATransferProps {
 }
 
 impl DMATransferProps {
-    fn read_register(internal_registers: &InternalRegisters, register: u16, channel_number: u8) -> u8 {
-        internal_registers.read_dma((register & 0xFF0F) | ((channel_number as u16) << 4))
+    fn read_channel_register(registers: &[u8], register: u16, channel_number: u8) -> u8 {
+        registers[(((register & 0xFF0F) | ((channel_number as u16) << 4)) - 0x4300) as usize]
     }
 
-    fn write_register(internal_registers: &mut InternalRegisters, register: u16, channel_number: u8, val: u8) {
-        internal_registers.write((register & 0xFF0F) | ((channel_number as u16) << 4), val);
+    fn write_channel_register(registers: &mut [u8], register: u16, channel_number: u8, val: u8) {
+        registers[(((register & 0xFF0F) | ((channel_number as u16) << 4)) - 0x4300) as usize] = val;
     }
 
-    pub fn new_from_internal_registers(
-        internal_registers: &InternalRegisters,
+    pub fn new_from_registers(
+        registers: &[u8],
         channel_number: u8,
     ) -> Self {
         let channel = match channel_number {
@@ -86,7 +83,7 @@ impl DMATransferProps {
             7 => DMAChannel::Channel7,
             _ => unreachable!(),
         };
-        let params = DMATransferProps::read_register(internal_registers, DMAPX, channel_number);
+        let params = DMATransferProps::read_channel_register(registers, DMAPX, channel_number);
         let direction = match params >> 7 == 1 {
             false => TransferDirection::AtoB,
             true => TransferDirection::BtoA,
@@ -113,13 +110,13 @@ impl DMATransferProps {
             _ => unreachable!(),
         };
         let a_bus_address =
-            (DMATransferProps::read_register(internal_registers, A1BX, channel_number) as u32) << 16 |
-            (DMATransferProps::read_register(internal_registers, A1TXH, channel_number) as u32) << 8 |
-             DMATransferProps::read_register(internal_registers, A1TXL, channel_number) as u32;
-        let b_bus_address = DMATransferProps::read_register(internal_registers, BBADX, channel_number);
+            (DMATransferProps::read_channel_register(registers, A1BX, channel_number) as u32) << 16 |
+            (DMATransferProps::read_channel_register(registers, A1TXH, channel_number) as u32) << 8 |
+             DMATransferProps::read_channel_register(registers, A1TXL, channel_number) as u32;
+        let b_bus_address = DMATransferProps::read_channel_register(registers, BBADX, channel_number);
         let number_of_bytes =
-            (DMATransferProps::read_register(internal_registers, DASXH, channel_number) as u16) << 8 |
-            DMATransferProps::read_register(internal_registers, DASXL, channel_number) as u16;
+            (DMATransferProps::read_channel_register(registers, DASXH, channel_number) as u16) << 8 |
+            DMATransferProps::read_channel_register(registers, DASXL, channel_number) as u16;
 
         Self {
             channel: channel,
@@ -134,78 +131,157 @@ impl DMATransferProps {
         }
     }
 
-    fn save_channel_state(&self, internal_registers: &mut InternalRegisters) {
+    fn save_channel_state(&self, registers: &mut [u8]) {
         // Update B Bus address
-        DMATransferProps::write_register(internal_registers, BBADX, self.channel_number, self.b_bus_address);
+        DMATransferProps::write_channel_register(registers, BBADX, self.channel_number, self.b_bus_address);
         // Update A Bus address
-        DMATransferProps::write_register(internal_registers, A1BX, self.channel_number, (self.a_bus_address >> 16) as u8);
-        DMATransferProps::write_register(internal_registers, A1TXH, self.channel_number, (self.a_bus_address >> 8) as u8);
-        DMATransferProps::write_register(internal_registers, A1BX, self.channel_number, self.a_bus_address as u8);
+        DMATransferProps::write_channel_register(registers, A1BX, self.channel_number, (self.a_bus_address >> 16) as u8);
+        DMATransferProps::write_channel_register(registers, A1TXH, self.channel_number, (self.a_bus_address >> 8) as u8);
+        DMATransferProps::write_channel_register(registers, A1BX, self.channel_number, self.a_bus_address as u8);
         // Update Byte count
-        DMATransferProps::write_register(internal_registers, DASXH, self.channel_number, (self.number_of_bytes >> 8) as u8);
-        DMATransferProps::write_register(internal_registers, DASXL, self.channel_number, self.number_of_bytes as u8);
+        DMATransferProps::write_channel_register(registers, DASXH, self.channel_number, (self.number_of_bytes >> 8) as u8);
+        DMATransferProps::write_channel_register(registers, DASXL, self.channel_number, self.number_of_bytes as u8);
     }
 
-    pub fn tick(&mut self, bus: &mut Bus) {
+    pub fn tick(&mut self, registers: &mut [u8]) -> Vec<(u32, u32)> {
         let source_address = match self.direction {
-            TransferDirection::AtoB => self.a_bus_address,
-            TransferDirection::BtoA => self.b_bus_address as u32,
-        };
-        let dest_address = match self.direction {
             TransferDirection::AtoB => self.a_bus_address,
             TransferDirection::BtoA => 0x002100 | (self.b_bus_address as u32),
         };
+        let dest_address = match self.direction {
+            TransferDirection::AtoB => 0x002100 | (self.b_bus_address as u32),
+            TransferDirection::BtoA => self.a_bus_address,
+        };
 
+        let mut pending_bus_writes = Vec::new();
         match self.transfer_format {
             TransferFormat::OneByteOneRegister => {
                 // Transfer 1 byte    xx                    ;eg. for WRAM (port 2180h)
-                let source_byte = bus.read(source_address);
-                bus.write(dest_address, source_byte)
+                pending_bus_writes.push((source_address, dest_address));
             },
             TransferFormat::TwoBytesTwoRegisters => {
                 // Transfer 2 bytes   xx, xx+1              ;eg. for VRAM (port 2118h/19h)
                 for index in 0..2 {
-                    let source_byte = bus.read(source_address.wrapping_add(index));
-                    bus.write(dest_address.wrapping_add(index), source_byte);
+                    pending_bus_writes.push((
+                        source_address.wrapping_add(index),
+                        dest_address.wrapping_add(index),
+                    ));
                 }
             },
             TransferFormat::TwoBytesOneRegister => {
                 // Transfer 2 bytes   xx, xx                ;eg. for OAM or CGRAM
                 for index in 0..2 {
-                    let source_byte = bus.read(source_address.wrapping_add(index));
-                    bus.write(dest_address, source_byte);
+                    pending_bus_writes.push((
+                        source_address.wrapping_add(index),
+                        dest_address,
+                    ));
                 }
             },
             TransferFormat::FourBytesTwoRegisters => {
                 // Transfer 4 bytes   xx, xx,   xx+1, xx+1  ;eg. for BGnxOFS, M7x
                 for index in 0..4 {
-                    let source_byte = bus.read(source_address.wrapping_add(index));
-                    bus.write(dest_address.wrapping_add(index / 2), source_byte);
+                    pending_bus_writes.push((
+                        source_address.wrapping_add(index),
+                        dest_address.wrapping_add(index / 2),
+                    ));
                 }
             },
             TransferFormat::FourBytesFourRegisters => {
                 // Transfer 4 bytes   xx, xx+1, xx+2, xx+3  ;eg. for BGnSC, Window, APU..
                 for index in 0..4 {
-                    let source_byte = bus.read(source_address.wrapping_add(index));
-                    bus.write(dest_address.wrapping_add(index), source_byte);
+                    pending_bus_writes.push((
+                        source_address.wrapping_add(index),
+                        dest_address.wrapping_add(index),
+                    ));
                 }
             },
             TransferFormat::FourBytesTwoRegistersSequential => {
                 // Transfer 4 bytes   xx, xx+1, xx,   xx+1  ;whatever purpose, VRAM maybe
                 for index in 0..4 {
-                    let source_byte = bus.read(source_address.wrapping_add(index));
-                    bus.write(dest_address.wrapping_add(index & 1), source_byte);
+                    pending_bus_writes.push((
+                        source_address.wrapping_add(index),
+                        dest_address.wrapping_add(index & 1),
+                    ));
                 }
             },
         };
 
-        self.number_of_bytes -= 1;
+        if self.number_of_bytes > 0 {
+            self.number_of_bytes -= 1;
+        }
         match self.auto_update_a_address {
-            AutoUpdateA::Increment => self.a_bus_address += self.a_bus_address,
-            AutoUpdateA::Decrement => self.a_bus_address -= self.a_bus_address,
+            AutoUpdateA::Increment => self.a_bus_address = self.a_bus_address.wrapping_add(1),
+            AutoUpdateA::Decrement => self.a_bus_address = self.a_bus_address.wrapping_sub(1),
             AutoUpdateA::Neither => {},
         }
 
-        self.save_channel_state(&mut bus.internal_registers);
+        self.save_channel_state(registers);
+        pending_bus_writes
+    }
+}
+
+
+pub struct DMA {
+    pub active_dma_transfers: Vec<DMATransferProps>,
+    registers: [u8; 0x1D00],
+}
+
+impl DMA {
+    pub fn new() -> Self {
+        Self {
+            active_dma_transfers: Vec::new(),
+            registers: [0; 0x1D00],
+        }
+    }
+
+    fn _read(&self, address: u16) -> u8 {
+        self.registers[(address - 0x4300) as usize]
+    }
+
+    fn _write(&mut self, address: u16, value: u8) {
+        self.registers[(address - 0x4300) as usize] = value;
+    }
+
+    pub fn prepare_dma_transfer(&mut self, dma_select: u8) {
+        self.active_dma_transfers = Vec::new();
+        let mut active_channels = [false; 8];
+        for i in 0..8 {
+            active_channels[i] = (dma_select & (1 << i)) != 0;
+        }
+
+        for (channel, is_active) in active_channels.iter().enumerate() {
+            if !is_active {
+                continue;
+            }
+            let props = DMATransferProps::new_from_registers(
+                &self.registers,
+                channel as u8,
+            );
+            self.active_dma_transfers.push(props);
+        }
+    }
+
+    pub fn read(&self, address: u16) -> u8 {
+        self._read(address)
+    }
+
+    pub fn write(&mut self, address: u16, value: u8) {
+        self._write(address, value);
+    }
+
+    pub fn is_active(&self) -> bool {
+        !self.active_dma_transfers.is_empty()
+    }
+
+    pub fn tick(&mut self) -> Vec<(u32, u32)> {
+        if !self.is_active() {
+            return vec![];
+        }
+
+        let pending_bus_writes = self.active_dma_transfers[0].tick(&mut self.registers);
+        if self.active_dma_transfers[0].number_of_bytes == 0 {
+            self.active_dma_transfers.remove(0);
+        }
+        pending_bus_writes
     }
 }

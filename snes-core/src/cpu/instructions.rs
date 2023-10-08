@@ -1,5 +1,6 @@
 use super::cpu::CPU;
 use crate::cpu::bus::Bus;
+use crate::cpu::dma;
 use crate::utils::addressing::{AddressingMode, IndexRegister};
 use crate::utils::alu;
 use crate::utils::num_trait::SnesNum;
@@ -1133,7 +1134,22 @@ impl CPU {
         self.increment_cycles_exchange();
     }
 
-    fn check_running_state(&mut self) -> bool {
+    fn check_running_state(&mut self, bus: &mut Bus) -> bool {
+        // Each byte in a DMA transfer takes 8 master cycles.
+        // And each CPU can take either 6, 8 or 12 master cycles depending
+        // on what's being read from memory. So this won't be accurate.
+        if bus.dma.is_active() {
+            let pending_bus_writes = bus.dma.tick();
+            for (src, dst) in pending_bus_writes {
+                let byte = bus.read(src);
+                bus.write(dst, byte);
+                self.increment_cycles_while_stopped();
+            }
+            if !bus.dma.is_active() {
+                bus.write(dma::MDMAEN as u32, 0x00)
+            }
+            return false;
+        }
         if self.is_stopped {
             self.increment_cycles_while_stopped();
             return false;
@@ -1147,7 +1163,7 @@ impl CPU {
     }
 
     pub fn tick(&mut self, bus: &mut Bus) {
-        if !self.check_running_state() {
+        if !self.check_running_state(bus) {
             return;
         }
         let opcode = bus.read(self.registers.get_pc_address());

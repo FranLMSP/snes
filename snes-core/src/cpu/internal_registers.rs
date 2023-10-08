@@ -1,4 +1,5 @@
 use crate::ppu::registers::PPURegisters;
+use crate::cpu::dma;
 
 pub const INTERNAL_REGISTERS_ADDRESS: u16 = 0x4200;
 
@@ -6,33 +7,22 @@ pub const INTERNAL_REGISTERS_ADDRESS: u16 = 0x4200;
 pub const RDNMI: u16        = 0x4210;  // V-Blank NMI Flag
 
 pub struct InternalRegisters {
-    registers: [u8; 32],
+    registers: [u8; 256],
 }
 
 impl InternalRegisters {
     pub fn new() -> Self {
         Self {
-            registers: [0; 32],
+            registers: [0; 256],
         }
-    }
-
-    fn get_index(address: u16) -> usize {
-        (address - INTERNAL_REGISTERS_ADDRESS) as usize
     }
 
     fn _read(&self, address: u16) -> u8 {
-        let index = InternalRegisters::get_index(address);
-        if index >= self.registers.len() {
-            return 0xFF;
-        }
-        self.registers[index]
+        self.registers[(address - 0x4200) as usize]
     }
 
     fn _write(&mut self, address: u16, value: u8) {
-        let index = InternalRegisters::get_index(address);
-        if index < self.registers.len() {
-            self.registers[index] = value
-        }
+        self.registers[(address - 0x4200) as usize] = value
     }
 
     pub fn read_external(&self, address: u16, ppu_registers: &PPURegisters) -> u8 {
@@ -53,8 +43,12 @@ impl InternalRegisters {
         self._read(address)
     }
 
-    pub fn write(&mut self, address: u16, value: u8) {
+    pub fn write(&mut self, address: u16, value: u8, dma: &mut dma::DMA) {
         self._write(address, value);
+        match address {
+            dma::MDMAEN => dma.prepare_dma_transfer(value),
+            _ => {},
+        }
     }
 
     fn read_vblank_nmi(&self, ppu_registers: &PPURegisters) -> u8 {
