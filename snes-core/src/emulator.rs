@@ -42,3 +42,9 @@ impl Emulator {
         self.cpu.reset_vector(&mut self.bus);
     }
 }
+
+impl Default for Emulator {
+    fn default() -> Self {
+        Self::new()
+    }
+}

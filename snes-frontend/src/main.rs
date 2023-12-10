@@ -1,14 +1,13 @@
 use eframe::egui;
+use snes_core::emulator::Emulator;
 
 pub mod ui;
 
-fn main() -> eframe::Result<()> {
-    let native_options = eframe::NativeOptions::default();
-    eframe::run_native("SNES Emulator", native_options, Box::new(|cc| Box::new(SnesEmulatorApp::new(cc))))
-}
 
 #[derive(Default)]
-struct SnesEmulatorApp {}
+struct SnesEmulatorApp {
+    emulator: Emulator,
+}
 
 impl SnesEmulatorApp {
     fn new(_cc: &eframe::CreationContext<'_>) -> Self {
@@ -21,6 +20,16 @@ impl eframe::App for SnesEmulatorApp {
         egui::CentralPanel::default().show(ctx, |ui| {
             ui::menu::build_menu_bar(ui);
             ui.separator();
+            // ui::game::build_game_window(ctx, ui);
         });
     }
+}
+
+fn main() -> eframe::Result<()> {
+    let native_options = eframe::NativeOptions::default();
+    eframe::run_native(
+        "SNES Emulator",
+        native_options,
+        Box::new(|cc| Box::new(SnesEmulatorApp::new(cc))),
+    )
 }
