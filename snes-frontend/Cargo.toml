@@ -7,3 +7,7 @@ edition = "2021"
 
 [dependencies]
 snes-core = { path = "../snes-core" }
+
+# Frontend stuff
+eframe = "0.24.1"
+env_logger = "0.10.1"
