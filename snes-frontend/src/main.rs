@@ -1,5 +1,7 @@
 use eframe::egui;
 
+pub mod ui;
+
 fn main() -> eframe::Result<()> {
     let native_options = eframe::NativeOptions::default();
     eframe::run_native("SNES Emulator", native_options, Box::new(|cc| Box::new(SnesEmulatorApp::new(cc))))
@@ -15,9 +17,10 @@ impl SnesEmulatorApp {
 }
 
 impl eframe::App for SnesEmulatorApp {
-   fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-       egui::CentralPanel::default().show(ctx, |ui| {
-           ui.heading("Hello World!");
-       });
-   }
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        egui::CentralPanel::default().show(ctx, |ui| {
+            ui::menu::build_menu_bar(ui);
+            ui.separator();
+        });
+    }
 }
