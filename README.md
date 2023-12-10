@@ -1,6 +1,8 @@
 # SNES
 Work in progress experimental SNES emulator written in Rust.
 
+![Emulator](screenshots/screenshot.png)
+
 ## Install dependencies
 For Debian-based distros, you will need to install these dependencies:
 ```
