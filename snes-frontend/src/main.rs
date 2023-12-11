@@ -1,12 +1,14 @@
 use eframe::egui;
 use snes_core::emulator::Emulator;
 
-pub mod ui;
+mod emu_ui;
+mod emu_state;
 
 
 #[derive(Default)]
 struct SnesEmulatorApp {
     emulator: Emulator,
+    state: emu_state::AppState,
 }
 
 impl SnesEmulatorApp {
@@ -18,10 +20,11 @@ impl SnesEmulatorApp {
 impl eframe::App for SnesEmulatorApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ctx, |ui| {
-            ui::menu::build_menu_bar(&mut self.emulator, ui);
+            emu_ui::menu::build_menu_bar(&mut self.emulator, ui, &mut self.state);
             ui.separator();
-            // ui::game::build_game_window(ctx, ui);
+            // ui::game::build_game_window(ctx);
         });
+        emu_ui::debug::build_debug_window(ctx, &mut self.state);
     }
 }
 

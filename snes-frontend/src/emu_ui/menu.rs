@@ -1,8 +1,10 @@
 use eframe::egui;
 use snes_core::emulator::Emulator;
 
+use crate::emu_state::AppState;
 
-pub fn build_menu_bar(emulator: &mut Emulator, ui: &mut egui::Ui) {
+
+pub fn build_menu_bar(emulator: &mut Emulator, ui: &mut egui::Ui, state: &mut AppState) {
     egui::menu::bar(ui, |ui| {
         ui.menu_button("Emulator", |ui| {
             if ui.button("Load ROM file").clicked() {
@@ -17,6 +19,7 @@ pub fn build_menu_bar(emulator: &mut Emulator, ui: &mut egui::Ui) {
         });
         ui.menu_button("Debug", |ui| {
             if ui.button("Show Debug Menu").clicked() {
+                state.debug_options.show_debug_options_window = true;
             }
         });
     });
