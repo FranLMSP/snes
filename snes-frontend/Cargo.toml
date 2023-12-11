@@ -12,3 +12,4 @@ snes-core = { path = "../snes-core" }
 eframe = "0.24.1"
 env_logger = "0.10.1"
 rfd = "0.12.1"
+regex = "1.10.2"
