@@ -18,7 +18,7 @@ impl SnesEmulatorApp {
 impl eframe::App for SnesEmulatorApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ctx, |ui| {
-            ui::menu::build_menu_bar(ui);
+            ui::menu::build_menu_bar(&mut self.emulator, ui);
             ui.separator();
             // ui::game::build_game_window(ctx, ui);
         });
