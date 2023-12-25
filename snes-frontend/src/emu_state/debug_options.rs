@@ -1,3 +1,17 @@
+pub struct MemoryMapControlOptions {
+    pub is_enabled: bool,
+    pub inputs: MemoryMapInputs,
+}
+
+impl MemoryMapControlOptions {
+    pub fn new() -> Self {
+        Self {
+            is_enabled: true,
+            inputs: MemoryMapInputs::new(),
+        }
+    }
+}
+
 pub struct MemoryMapInputs {
     pub page_start: String,
     pub page_end: String,
@@ -16,11 +30,25 @@ impl MemoryMapInputs {
     }
 }
 
+pub struct CPUDebugControlOptions {
+    pub is_enabled: bool,
+    pub show_registers: bool,
+}
+
+impl CPUDebugControlOptions {
+    pub fn new() -> Self {
+        Self {
+            is_enabled: true,
+            show_registers: true,
+        }
+    }
+}
+
 pub struct DebugOptions {
     pub enable_debugging: bool,
     pub show_debug_options_window: bool,
-    pub show_memory_map: bool,
-    pub memory_map_inputs: MemoryMapInputs,
+    pub memory_map_conrtrol_options: MemoryMapControlOptions,
+    pub cpu_debug_control_options: CPUDebugControlOptions,
 }
 
 impl DebugOptions {
@@ -28,8 +56,8 @@ impl DebugOptions {
         Self {
             enable_debugging: true,
             show_debug_options_window: true,
-            show_memory_map: true,
-            memory_map_inputs: MemoryMapInputs::new(),
+            memory_map_conrtrol_options: MemoryMapControlOptions::new(),
+            cpu_debug_control_options: CPUDebugControlOptions::new(),
         }
     }
 }

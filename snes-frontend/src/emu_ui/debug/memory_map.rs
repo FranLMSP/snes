@@ -2,24 +2,24 @@ use eframe::egui;
 use regex::Regex;
 use snes_core::emulator::Emulator;
 
-use crate::emu_state::{AppState, debug_options::MemoryMapInputs};
+use crate::emu_state::debug_options::{MemoryMapInputs, MemoryMapControlOptions};
 
 
-pub fn build_memory_map_window(ctx: &egui::Context, app_state: &mut AppState, emulator: &Emulator) {
-    if !app_state.debug_options.show_memory_map {
+pub fn build_memory_map_window(ctx: &egui::Context, memory_map_control_options: &mut MemoryMapControlOptions, emulator: &Emulator) {
+    if !memory_map_control_options.is_enabled {
         return
     }
 
     egui::Window::new("Memory Map")
         .min_size([400.0, 400.0])
-        .open(&mut app_state.debug_options.show_memory_map)
+        .open(&mut memory_map_control_options.is_enabled)
         .show(ctx, |ui| {
-            build_inputs(ui, &mut app_state.debug_options.memory_map_inputs);
+            build_inputs(ui, &mut memory_map_control_options.inputs);
             ui.separator();
             egui::ScrollArea::both().show(ui, |ui| {
                 build_memory_map_text(
                     ui,
-                    &app_state.debug_options.memory_map_inputs,
+                    &memory_map_control_options.inputs,
                     emulator,
                 );
             });
@@ -88,4 +88,3 @@ fn build_memory_map_text(ui: &mut egui::Ui, input_values: &MemoryMapInputs, emul
         ui.monospace(address_row);
     }
 }
-
