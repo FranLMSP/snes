@@ -1,7 +1,7 @@
 use eframe::egui;
 use snes_core::ppu::registers::PPURegisters;
 
-use crate::emu_state::debug_options::{PPUDebugControlOptions, BgDebug};
+use crate::emu_state::debug_options::PPUDebugControlOptions;
 use crate::emu_ui::debug::common::sanitize_input;
 
 

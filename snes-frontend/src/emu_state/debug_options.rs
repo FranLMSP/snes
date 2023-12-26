@@ -81,7 +81,7 @@ impl BgDebug {
     pub fn new(background: PPUBg) -> Self {
         Self {
             is_enabled: false,
-            background: background,
+            background,
             bg_framebuffer: vec![0x00; MAX_BG_WIDTH * MAX_BG_HEIGHT * 4], 
             // 8x8 pixels, 16x8 characters
             char_framebuffer: vec![0x00; 8 * 8 * 16 * 8 * 4],
