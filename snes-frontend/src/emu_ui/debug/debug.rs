@@ -6,6 +6,7 @@ use crate::emu_state::emulation::EmulationState;
 
 use super::memory_map::build_memory_map_window;
 use super::cpu::build_cpu_debug_controls;
+use super::ppu::build_ppu_debug_controls;
 
 
 pub fn build_all_debug_options(ctx: &egui::Context, debug_options: &mut DebugOptions, emulation_state: &mut EmulationState, emulator: &mut Emulator) {
@@ -17,6 +18,7 @@ pub fn build_all_debug_options(ctx: &egui::Context, debug_options: &mut DebugOpt
 
     build_memory_map_window(ctx, &mut debug_options.memory_map_conrtrol_options, emulator);
     build_cpu_debug_controls(ctx, &mut debug_options.cpu_debug_control_options, emulation_state, emulator);
+    build_ppu_debug_controls(ctx, &mut debug_options.ppu_debug_control_options, &emulator.bus.ppu.registers);
 }
 
 
@@ -40,6 +42,12 @@ fn build_debug_options_window(ctx: &egui::Context, debug_options: &mut DebugOpti
                 "Show CPU Debug Controls"
             ).clicked() {
                 debug_options.cpu_debug_control_options.is_enabled = !debug_options.cpu_debug_control_options.is_enabled;
+            }
+            if ui.selectable_label(
+                debug_options.ppu_debug_control_options.is_enabled,
+                "Show PPU Debug Controls"
+            ).clicked() {
+                debug_options.ppu_debug_control_options.is_enabled = !debug_options.ppu_debug_control_options.is_enabled;
             }
         });
 }
