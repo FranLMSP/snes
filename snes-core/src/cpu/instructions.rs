@@ -1,6 +1,7 @@
 use super::cpu::CPU;
 use crate::cpu::bus::Bus;
 use crate::cpu::dma;
+use crate::cpu::cycles;
 use crate::utils::addressing::{AddressingMode, IndexRegister};
 use crate::utils::alu;
 use crate::utils::num_trait::SnesNum;
@@ -96,7 +97,8 @@ impl CPU {
             self.registers.set_low_a(result as u8);
             self.registers.set_flags(&affected_flags);
         }
-        self.increment_cycles_arithmetic(addressing_mode);
+        let (bytes, cycles) = cycles::increment_cycles_arithmetic(&self.registers, addressing_mode);
+        self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 
     fn sbc(&mut self, bus: &mut Bus, addressing_mode: AddressingMode) {
@@ -121,7 +123,8 @@ impl CPU {
             self.registers.set_low_a(result as u8);
             self.registers.set_flags(&affected_flags);
         }
-        self.increment_cycles_arithmetic(addressing_mode);
+        let (bytes, cycles) = cycles::increment_cycles_arithmetic(&self.registers, addressing_mode);
+        self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 
     fn do_dec<T: SnesNum>(&mut self, target: T) -> T {
@@ -145,7 +148,8 @@ impl CPU {
             let result = self.do_dec(value).to_u32() as u8;
             self.set_8bit_to_address(bus, addressing_mode, result);
         }
-        self.increment_cycles_inc_dec(addressing_mode);
+        let (bytes, cycles) = cycles::increment_cycles_inc_dec(&self.registers, addressing_mode);
+        self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 
     fn dex(&mut self) {
@@ -155,7 +159,8 @@ impl CPU {
             let result = self.do_dec(self.registers.x).to_u32() as u8;
             self.registers.set_low_x(result);
         }
-        self.increment_cycles_inc_dec_index();
+        let (bytes, cycles) = cycles::increment_cycles_inc_dec_index();
+        self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 
     fn dey(&mut self) {
@@ -165,7 +170,8 @@ impl CPU {
             let result = self.do_dec(self.registers.y).to_u32() as u8;
             self.registers.set_low_y(result);
         }
-        self.increment_cycles_inc_dec_index();
+        let (bytes, cycles) = cycles::increment_cycles_inc_dec_index();
+        self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 
     fn do_inc<T: SnesNum>(&mut self, target: T) -> T {
@@ -189,7 +195,8 @@ impl CPU {
             let result = self.do_inc(value).to_u32() as u8;
             self.set_8bit_to_address(bus, addressing_mode, result);
         }
-        self.increment_cycles_inc_dec(addressing_mode);
+        let (bytes, cycles) = cycles::increment_cycles_inc_dec(&self.registers, addressing_mode);
+        self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 
     fn inx(&mut self) {
@@ -199,7 +206,8 @@ impl CPU {
             let result = self.do_inc(self.registers.x).to_u32() as u8;
             self.registers.set_low_x(result);
         }
-        self.increment_cycles_inc_dec_index();
+        let (bytes, cycles) = cycles::increment_cycles_inc_dec_index();
+        self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 
     fn iny(&mut self) {
@@ -209,7 +217,8 @@ impl CPU {
             let result = self.do_inc(self.registers.y).to_u32() as u8;
             self.registers.set_low_y(result);
         }
-        self.increment_cycles_inc_dec_index();
+        let (bytes, cycles) = cycles::increment_cycles_inc_dec_index();
+        self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 
     fn do_comp<T: SnesNum>(&mut self, target: T, value: T) {
@@ -232,7 +241,8 @@ impl CPU {
             let value = self.get_8bit_from_address(bus, addressing_mode);
             self.do_comp(target as u8, value);
         }
-        self.increment_cycles_arithmetic(addressing_mode);
+        let (bytes, cycles) = cycles::increment_cycles_arithmetic(&self.registers, addressing_mode);
+        self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 
     fn cpx(&mut self, bus: &mut Bus, addressing_mode: AddressingMode) {
@@ -245,7 +255,8 @@ impl CPU {
             let value = self.get_8bit_from_address(bus, addressing_mode);
             self.do_comp(target as u8, value);
         }
-        self.increment_cycles_comp_index(addressing_mode);
+        let (bytes, cycles) = cycles::increment_cycles_comp_index(&self.registers, addressing_mode);
+        self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 
     fn cpy(&mut self, bus: &mut Bus, addressing_mode: AddressingMode) {
@@ -258,7 +269,8 @@ impl CPU {
             let value = self.get_8bit_from_address(bus, addressing_mode);
             self.do_comp(target as u8, value);
         }
-        self.increment_cycles_comp_index(addressing_mode);
+        let (bytes, cycles) = cycles::increment_cycles_comp_index(&self.registers, addressing_mode);
+        self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 
     fn and(&mut self, bus: &mut Bus, addressing_mode: AddressingMode) {
@@ -274,7 +286,8 @@ impl CPU {
             self.registers.set_low_a(result);
             self.registers.set_flags(&affected_flags);
         }
-        self.increment_cycles_bitwise(addressing_mode);
+        let (bytes, cycles) = cycles::increment_cycles_bitwise(&self.registers, addressing_mode);
+        self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 
     fn ora(&mut self, bus: &mut Bus, addressing_mode: AddressingMode) {
@@ -290,7 +303,8 @@ impl CPU {
             self.registers.set_low_a(result);
             self.registers.set_flags(&affected_flags);
         }
-        self.increment_cycles_bitwise(addressing_mode);
+        let (bytes, cycles) = cycles::increment_cycles_bitwise(&self.registers, addressing_mode);
+        self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 
     fn eor(&mut self, bus: &mut Bus, addressing_mode: AddressingMode) {
@@ -306,7 +320,8 @@ impl CPU {
             self.registers.set_low_a(result);
             self.registers.set_flags(&affected_flags);
         }
-        self.increment_cycles_bitwise(addressing_mode);
+        let (bytes, cycles) = cycles::increment_cycles_bitwise(&self.registers, addressing_mode);
+        self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 
     fn asl(&mut self, bus: &mut Bus, addressing_mode: AddressingMode) {
@@ -326,7 +341,8 @@ impl CPU {
             self.set_8bit_to_address(bus, addressing_mode, result);
             self.registers.set_flags(&affected_flags);
         }
-        self.increment_cycles_shift(addressing_mode);
+        let (bytes, cycles) = cycles::increment_cycles_shift(&self.registers, addressing_mode);
+        self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 
     fn lsr(&mut self, bus: &mut Bus, addressing_mode: AddressingMode) {
@@ -346,7 +362,8 @@ impl CPU {
             self.set_8bit_to_address(bus, addressing_mode, result);
             self.registers.set_flags(&affected_flags);
         }
-        self.increment_cycles_shift(addressing_mode);
+        let (bytes, cycles) = cycles::increment_cycles_shift(&self.registers, addressing_mode);
+        self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 
     fn do_bit<T: SnesNum>(&mut self, accumulator: T, value: T, addressing_mode: AddressingMode) {
@@ -370,7 +387,8 @@ impl CPU {
             let value = self.get_8bit_from_address(bus, addressing_mode);
             self.do_bit(self.registers.a as u8, value, addressing_mode);
         }
-        self.increment_cycles_bit(addressing_mode);
+        let (bytes, cycles) = cycles::increment_cycles_bit(&self.registers, addressing_mode);
+        self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 
     fn do_branch(&mut self, nearlabel: u8) -> bool {
@@ -389,63 +407,77 @@ impl CPU {
 
     fn bcc(&mut self, bus: &mut Bus) {
         let nearlabel = bus.read(self.registers.get_pc_address().wrapping_add(1));
-        self.increment_cycles_branch();
+        let (bytes, cycles) = cycles::increment_cycles_branch();
+        self.registers.increment_pc(bytes); self.cycles += cycles;
         if !self.registers.get_carry_flag() {
             let page_boundary_crossed = self.do_branch(nearlabel);
-            self.increment_cycles_branch_taken(page_boundary_crossed);
+            let (bytes, cycles) = cycles::increment_cycles_branch_taken(page_boundary_crossed);
+            self.registers.increment_pc(bytes); self.cycles += cycles;
         }
     }
 
     fn bcs(&mut self, bus: &mut Bus) {
         let nearlabel = bus.read(self.registers.get_pc_address().wrapping_add(1));
-        self.increment_cycles_branch();
+        let (bytes, cycles) = cycles::increment_cycles_branch();
+        self.registers.increment_pc(bytes); self.cycles += cycles;
         if self.registers.get_carry_flag() {
             let page_boundary_crossed = self.do_branch(nearlabel);
-            self.increment_cycles_branch_taken(page_boundary_crossed);
+            let (bytes, cycles) = cycles::increment_cycles_branch_taken(page_boundary_crossed);
+            self.registers.increment_pc(bytes); self.cycles += cycles;
         }
     }
 
     fn beq(&mut self, bus: &mut Bus) {
         let nearlabel = bus.read(self.registers.get_pc_address().wrapping_add(1));
-        self.increment_cycles_branch();
+        let (bytes, cycles) = cycles::increment_cycles_branch();
+        self.registers.increment_pc(bytes); self.cycles += cycles;
         if self.registers.get_zero_flag() {
             let page_boundary_crossed = self.do_branch(nearlabel);
-            self.increment_cycles_branch_taken(page_boundary_crossed);
+            let (bytes, cycles) = cycles::increment_cycles_branch_taken(page_boundary_crossed);
+            self.registers.increment_pc(bytes); self.cycles += cycles;
         }
     }
 
     fn bne(&mut self, bus: &mut Bus) {
         let nearlabel = bus.read(self.registers.get_pc_address().wrapping_add(1));
-        self.increment_cycles_branch();
+        let (bytes, cycles) = cycles::increment_cycles_branch();
+        self.registers.increment_pc(bytes); self.cycles += cycles;
         if !self.registers.get_zero_flag() {
             let page_boundary_crossed = self.do_branch(nearlabel);
-            self.increment_cycles_branch_taken(page_boundary_crossed);
+            let (bytes, cycles) = cycles::increment_cycles_branch_taken(page_boundary_crossed);
+            self.registers.increment_pc(bytes); self.cycles += cycles;
         }
     }
 
     fn bmi(&mut self, bus: &mut Bus) {
         let nearlabel = bus.read(self.registers.get_pc_address().wrapping_add(1));
-        self.increment_cycles_branch();
+        let (bytes, cycles) = cycles::increment_cycles_branch();
+        self.registers.increment_pc(bytes); self.cycles += cycles;
         if self.registers.get_negative_flag() {
             let page_boundary_crossed = self.do_branch(nearlabel);
-            self.increment_cycles_branch_taken(page_boundary_crossed);
+            let (bytes, cycles) = cycles::increment_cycles_branch_taken(page_boundary_crossed);
+            self.registers.increment_pc(bytes); self.cycles += cycles;
         }
     }
 
     fn bpl(&mut self, bus: &mut Bus) {
         let nearlabel = bus.read(self.registers.get_pc_address().wrapping_add(1));
-        self.increment_cycles_branch();
+        let (bytes, cycles) = cycles::increment_cycles_branch();
+        self.registers.increment_pc(bytes); self.cycles += cycles;
         if !self.registers.get_negative_flag() {
             let page_boundary_crossed = self.do_branch(nearlabel);
-            self.increment_cycles_branch_taken(page_boundary_crossed);
+            let (bytes, cycles) = cycles::increment_cycles_branch_taken(page_boundary_crossed);
+            self.registers.increment_pc(bytes); self.cycles += cycles;
         }
     }
 
     fn bra(&mut self, bus: &mut Bus) {
         let nearlabel = bus.read(self.registers.get_pc_address().wrapping_add(1));
-        self.increment_cycles_branch();
+        let (bytes, cycles) = cycles::increment_cycles_branch();
+        self.registers.increment_pc(bytes); self.cycles += cycles;
         let page_boundary_crossed = self.do_branch(nearlabel);
-        self.increment_cycles_branch_taken(page_boundary_crossed);
+        let (bytes, cycles) = cycles::increment_cycles_branch_taken(page_boundary_crossed);
+        self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 
     fn brl(&mut self, bus: &mut Bus) {
@@ -458,49 +490,59 @@ impl CPU {
         } else {
             self.registers.increment_pc(label);
         }
-        self.increment_cycles_branch_long();
+        let (bytes, cycles) = cycles::increment_cycles_branch_long();
+        self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 
     fn bvc(&mut self, bus: &mut Bus) {
         let nearlabel = bus.read(self.registers.get_pc_address().wrapping_add(1));
-        self.increment_cycles_branch();
+        let (bytes, cycles) = cycles::increment_cycles_branch();
+        self.registers.increment_pc(bytes); self.cycles += cycles;
         if !self.registers.get_overflow_flag() {
             let page_boundary_crossed = self.do_branch(nearlabel);
-            self.increment_cycles_branch_taken(page_boundary_crossed);
+            let (bytes, cycles) = cycles::increment_cycles_branch_taken(page_boundary_crossed);
+            self.registers.increment_pc(bytes); self.cycles += cycles;
         }
     }
 
     fn bvs(&mut self, bus: &mut Bus) {
         let nearlabel = bus.read(self.registers.get_pc_address().wrapping_add(1));
-        self.increment_cycles_branch();
+        let (bytes, cycles) = cycles::increment_cycles_branch();
+        self.registers.increment_pc(bytes); self.cycles += cycles;
         if self.registers.get_overflow_flag() {
             let page_boundary_crossed = self.do_branch(nearlabel);
-            self.increment_cycles_branch_taken(page_boundary_crossed);
+            let (bytes, cycles) = cycles::increment_cycles_branch_taken(page_boundary_crossed);
+            self.registers.increment_pc(bytes); self.cycles += cycles;
         }
     }
 
     fn clc(&mut self) {
         self.registers.set_carry_flag(false);
-        self.increment_cycles_clear();
+        let (bytes, cycles) = cycles::increment_cycles_clear();
+        self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 
     fn cld(&mut self) {
         self.registers.set_decimal_mode_flag(false);
-        self.increment_cycles_clear();
+        let (bytes, cycles) = cycles::increment_cycles_clear();
+        self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 
     fn cli(&mut self) {
         self.registers.set_irq_disable_flag(false);
-        self.increment_cycles_clear();
+        let (bytes, cycles) = cycles::increment_cycles_clear();
+        self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 
     fn clv(&mut self) {
         self.registers.set_overflow_flag(false);
-        self.increment_cycles_clear();
+        let (bytes, cycles) = cycles::increment_cycles_clear();
+        self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 
     fn nop(&mut self) {
-        self.increment_cycles_nop();
+        let (bytes, cycles) = cycles::increment_cycles_nop();
+        self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 
     fn jmp(&mut self, bus: &mut Bus, addressing_mode: AddressingMode) {
@@ -514,7 +556,8 @@ impl CPU {
         if is_long {
             self.registers.pbr = (effective_address >> 16) as u8;
         }
-        self.increment_cycles_jmp(addressing_mode);
+        let (bytes, cycles) = cycles::increment_cycles_jmp(addressing_mode);
+        self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 
     pub fn do_push(&mut self, bus: &mut Bus, bytes: &[u8]) {
@@ -531,7 +574,8 @@ impl CPU {
         self.do_push(bus, &[self.registers.p]);
         self.registers.set_decimal_mode_flag(false);
         self.registers.set_irq_disable_flag(true);
-        self.increment_cycles_brk();
+        let (bytes, cycles) = cycles::increment_cycles_brk(self.registers.emulation_mode);
+        self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 
     fn cop(&mut self, bus: &mut Bus) {
@@ -540,25 +584,29 @@ impl CPU {
         self.do_push(bus, &[self.registers.p]);
         self.registers.set_decimal_mode_flag(false);
         self.registers.set_irq_disable_flag(true);
-        self.increment_cycles_brk();
+        let (bytes, cycles) = cycles::increment_cycles_brk(self.registers.emulation_mode);
+        self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 
     fn pea(&mut self, bus: &mut Bus) {
         let address = self.get_effective_address(bus, AddressingMode::Absolute);
         self.do_push(bus, &[(address >> 8) as u8, address as u8]);
-        self.increment_cycles_pea();
+        let (bytes, cycles) = cycles::increment_cycles_pea();
+        self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 
     fn pei(&mut self, bus: &mut Bus) {
         let address = self.get_effective_address(bus, AddressingMode::DirectPageIndirect);
         self.do_push(bus, &[(address >> 8) as u8, address as u8]);
-        self.increment_cycles_pei();
+        let (bytes, cycles) = cycles::increment_cycles_pei(&self.registers);
+        self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 
     fn per(&mut self, bus: &mut Bus) {
         let label = self.get_effective_address(bus, AddressingMode::Absolute) as u16;
         let is_negative = (label>> 15) == 1;
-        self.increment_cycles_per();
+        let (bytes, cycles) = cycles::increment_cycles_per();
+        self.registers.increment_pc(bytes); self.cycles += cycles;
         let address = match is_negative {
             true => self.registers.pc.wrapping_sub(!label + 1),
             false=> self.registers.pc.wrapping_add(label),
@@ -573,28 +621,33 @@ impl CPU {
         } else {
             self.do_push(bus, &[value as u8]);
         }
-        self.increment_cycles_pha();
+        let (bytes, cycles) = cycles::increment_cycles_pha(self.registers.is_16bit_mode());
+        self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 
     fn phb(&mut self, bus: &mut Bus) {
         self.do_push(bus, &[self.registers.dbr]);
-        self.increment_cycles_phb();
+        let (bytes, cycles) = cycles::increment_cycles_phb();
+        self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 
     fn phd(&mut self, bus: &mut Bus) {
         let value = self.registers.d;
         self.do_push(bus, &[(value >> 8) as u8, value as u8]);
-        self.increment_cycles_phd();
+        let (bytes, cycles) = cycles::increment_cycles_phd();
+        self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 
     pub fn phk(&mut self, bus: &mut Bus) {
         self.do_push(bus, &[self.registers.pbr]);
-        self.increment_cycles_phk();
+        let (bytes, cycles) = cycles::increment_cycles_phk();
+        self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 
     pub fn php(&mut self, bus: &mut Bus) {
         self.do_push(bus, &[self.registers.p]);
-        self.increment_cycles_php();
+        let (bytes, cycles) = cycles::increment_cycles_php();
+        self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 
     fn phx(&mut self, bus: &mut Bus) {
@@ -604,7 +657,8 @@ impl CPU {
         } else {
             self.do_push(bus, &[value as u8]);
         }
-        self.increment_cycles_push_index();
+        let (bytes, cycles) = cycles::increment_cycles_push_index(self.registers.is_16bit_index());
+        self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 
     fn phy(&mut self, bus: &mut Bus) {
@@ -614,7 +668,8 @@ impl CPU {
         } else {
             self.do_push(bus, &[value as u8]);
         }
-        self.increment_cycles_push_index();
+        let (bytes, cycles) = cycles::increment_cycles_push_index(self.registers.is_16bit_index());
+        self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 
     fn jsr(&mut self, bus: &mut Bus, addressing_mode: AddressingMode) {
@@ -625,7 +680,8 @@ impl CPU {
             _  => false,
         };
         // We need to push the *next* instruction onto the stack
-        self.increment_cycles_jsr(addressing_mode);
+        let (bytes, cycles) = cycles::increment_cycles_jsr(addressing_mode);
+        self.registers.increment_pc(bytes); self.cycles += cycles;
         let value = self.registers.get_pc_address();
         if is_long {
             self.do_push(bus, &[
@@ -662,7 +718,8 @@ impl CPU {
             self.registers.set_low_a(value);
             self.do_bit(self.registers.a as u8, value, addressing_mode);
         }
-        self.increment_cycles_lda(addressing_mode);
+        let (bytes, cycles) = cycles::increment_cycles_lda(&self.registers, addressing_mode);
+        self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 
     fn do_ld_index(&mut self, bus: &mut Bus, index: IndexRegister, addressing_mode: AddressingMode) {
@@ -687,7 +744,8 @@ impl CPU {
                 Flags::Zero(value == 0),
             ]);
         }
-        self.increment_cycles_ld_index(addressing_mode);
+        let (bytes, cycles) = cycles::increment_cycles_ld_index(&self.registers, addressing_mode);
+        self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 
     fn ldx(&mut self, bus: &mut Bus, addressing_mode: AddressingMode) {
@@ -726,24 +784,28 @@ impl CPU {
             let bytes = self.do_pull(bus, 1);
             self.registers.set_low_a(bytes[0]);
         }
-        self.increment_cycles_pla();
+        let (bytes, cycles) = cycles::increment_cycles_pla(self.registers.is_16bit_mode());
+        self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 
     fn plb(&mut self, bus: &mut Bus) {
         self.registers.dbr = self.do_pull(bus, 1)[0];
-        self.increment_cycles_plb();
+        let (bytes, cycles) = cycles::increment_cycles_plb();
+        self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 
     fn pld(&mut self, bus: &mut Bus) {
         let bytes = self.do_pull(bus, 2);
         self.registers.d = (bytes[0] as u16) | ((bytes[1] as u16) << 8);
-        self.increment_cycles_pld();
+        let (bytes, cycles) = cycles::increment_cycles_pld();
+        self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 
     fn plp(&mut self, bus: &mut Bus) {
         let bytes = self.do_pull(bus, 1);
         self.registers.p = bytes[0];
-        self.increment_cycles_plp();
+        let (bytes, cycles) = cycles::increment_cycles_plp();
+        self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 
     fn plx(&mut self, bus: &mut Bus) {
@@ -754,7 +816,8 @@ impl CPU {
             let bytes = self.do_pull(bus, 1);
             self.registers.set_low_x(bytes[0]);
         }
-        self.increment_cycles_pl_index();
+        let (bytes, cycles) = cycles::increment_cycles_pl_index(self.registers.is_16bit_index());
+        self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 
     fn ply(&mut self, bus: &mut Bus) {
@@ -765,13 +828,15 @@ impl CPU {
             let bytes = self.do_pull(bus, 1);
             self.registers.set_low_y(bytes[0]);
         }
-        self.increment_cycles_pl_index();
+        let (bytes, cycles) = cycles::increment_cycles_pl_index(self.registers.is_16bit_index());
+        self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 
     fn rep(&mut self, bus: &mut Bus) {
         let byte = self.get_8bit_from_address(bus, AddressingMode::Immediate);
         self.registers.reset_rep_byte(byte);
-        self.increment_cycles_rep();
+        let (bytes, cycles) = cycles::increment_cycles_rep();
+        self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 
     fn rol(&mut self, bus: &mut Bus, addressing_mode: AddressingMode) {
@@ -791,7 +856,8 @@ impl CPU {
             self.set_8bit_to_address(bus, addressing_mode, result);
             self.registers.set_flags(&affected_flags);
         }
-        self.increment_cycles_shift(addressing_mode);
+        let (bytes, cycles) = cycles::increment_cycles_shift(&self.registers, addressing_mode);
+        self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 
     fn ror(&mut self, bus: &mut Bus, addressing_mode: AddressingMode) {
@@ -811,7 +877,8 @@ impl CPU {
             self.set_8bit_to_address(bus, addressing_mode, result);
             self.registers.set_flags(&affected_flags);
         }
-        self.increment_cycles_shift(addressing_mode);
+        let (bytes, cycles) = cycles::increment_cycles_shift(&self.registers, addressing_mode);
+        self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 
     fn rtl(&mut self, bus: &mut Bus) {
@@ -819,35 +886,41 @@ impl CPU {
         // Low byte of PC is pulled first, then high byte and then PBR
         self.registers.pc = (bytes[0] as u16) | ((bytes[1] as u16) << 8);
         self.registers.pbr = bytes[2];
-        self.increment_cycles_return_subroutine();
+        let (bytes, cycles) = cycles::increment_cycles_return_subroutine();
+        self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 
     fn rts(&mut self, bus: &mut Bus) {
         let bytes = self.do_pull(bus, 2);
         // Low byte of PC is pulled first, then high byte
         self.registers.pc = (bytes[0] as u16) | ((bytes[1] as u16) << 8);
-        self.increment_cycles_return_subroutine();
+        let (bytes, cycles) = cycles::increment_cycles_return_subroutine();
+        self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 
     fn sec(&mut self) {
         self.registers.set_carry_flag(true);
-        self.increment_cycles_set_flag();
+        let (bytes, cycles) = cycles::increment_cycles_set_flag();
+        self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 
     fn sed(&mut self) {
         self.registers.set_decimal_mode_flag(true);
-        self.increment_cycles_set_flag();
+        let (bytes, cycles) = cycles::increment_cycles_set_flag();
+        self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 
     fn sei(&mut self) {
         self.registers.set_irq_disable_flag(true);
-        self.increment_cycles_set_flag();
+        let (bytes, cycles) = cycles::increment_cycles_set_flag();
+        self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 
     fn sep(&mut self, bus: &mut Bus) {
         let byte = self.get_8bit_from_address(bus, AddressingMode::Immediate);
         self.registers.set_sep_byte(byte);
-        self.increment_cycles_sep();
+        let (bytes, cycles) = cycles::increment_cycles_sep();
+        self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 
     fn sta(&mut self, bus: &mut Bus, addressing_mode: AddressingMode) {
@@ -856,7 +929,8 @@ impl CPU {
         } else {
             self.set_8bit_to_address(bus, addressing_mode, self.registers.a as u8);
         }
-        self.increment_cycles_sta(addressing_mode);
+        let (bytes, cycles) = cycles::increment_cycles_sta(&self.registers, addressing_mode);
+        self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 
     fn stx(&mut self, bus: &mut Bus, addressing_mode: AddressingMode) {
@@ -865,7 +939,8 @@ impl CPU {
         } else {
             self.set_8bit_to_address(bus, addressing_mode, self.registers.x as u8);
         }
-        self.increment_cycles_st_index(addressing_mode);
+        let (bytes, cycles) = cycles::increment_cycles_st_index(&self.registers, addressing_mode);
+        self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 
     fn sty(&mut self, bus: &mut Bus, addressing_mode: AddressingMode) {
@@ -874,7 +949,8 @@ impl CPU {
         } else {
             self.set_8bit_to_address(bus, addressing_mode, self.registers.y as u8);
         }
-        self.increment_cycles_st_index(addressing_mode);
+        let (bytes, cycles) = cycles::increment_cycles_st_index(&self.registers, addressing_mode);
+        self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 
     fn stz(&mut self, bus: &mut Bus, addressing_mode: AddressingMode) {
@@ -883,12 +959,14 @@ impl CPU {
         } else {
             self.set_8bit_to_address(bus, addressing_mode, 0);
         }
-        self.increment_cycles_st_index(addressing_mode);
+        let (bytes, cycles) = cycles::increment_cycles_st_index(&self.registers, addressing_mode);
+        self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 
     fn stp(&mut self) {
         self.is_stopped = true;
-        self.increment_cycles_stp();
+        let (bytes, cycles) = cycles::increment_cycles_stp();
+        self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 
     fn tax(&mut self) {
@@ -902,7 +980,8 @@ impl CPU {
             self.registers.set_negative_flag((result >> 7) == 1);
             self.registers.set_zero_flag(result == 0);
         }
-        self.increment_cycles_transfer();
+        let (bytes, cycles) = cycles::increment_cycles_transfer();
+        self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 
     fn tay(&mut self) {
@@ -916,7 +995,8 @@ impl CPU {
             self.registers.set_negative_flag((result >> 7) == 1);
             self.registers.set_zero_flag(result == 0);
         }
-        self.increment_cycles_transfer();
+        let (bytes, cycles) = cycles::increment_cycles_transfer();
+        self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 
     fn tcd(&mut self) {
@@ -924,7 +1004,8 @@ impl CPU {
         self.registers.d = result;
         self.registers.set_negative_flag((result >> 7) == 1);
         self.registers.set_zero_flag(result == 0);
-        self.increment_cycles_transfer();
+        let (bytes, cycles) = cycles::increment_cycles_transfer();
+        self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 
     fn tcs(&mut self) {
@@ -932,7 +1013,8 @@ impl CPU {
         self.registers.sp = result;
         self.registers.set_negative_flag((result >> 7) == 1);
         self.registers.set_zero_flag(result == 0);
-        self.increment_cycles_transfer();
+        let (bytes, cycles) = cycles::increment_cycles_transfer();
+        self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 
     fn tdc(&mut self) {
@@ -940,7 +1022,8 @@ impl CPU {
         self.registers.a = result;
         self.registers.set_negative_flag((result >> 7) == 1);
         self.registers.set_zero_flag(result == 0);
-        self.increment_cycles_transfer();
+        let (bytes, cycles) = cycles::increment_cycles_transfer();
+        self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 
     fn tsc(&mut self) {
@@ -948,7 +1031,8 @@ impl CPU {
         self.registers.a = result;
         self.registers.set_negative_flag((result >> 7) == 1);
         self.registers.set_zero_flag(result == 0);
-        self.increment_cycles_transfer();
+        let (bytes, cycles) = cycles::increment_cycles_transfer();
+        self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 
     fn tsx(&mut self) {
@@ -963,7 +1047,8 @@ impl CPU {
             self.registers.set_negative_flag((result >> 7) == 1);
             self.registers.set_zero_flag(result == 0);
         }
-        self.increment_cycles_transfer();
+        let (bytes, cycles) = cycles::increment_cycles_transfer();
+        self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 
     fn txa(&mut self) {
@@ -977,7 +1062,8 @@ impl CPU {
             self.registers.set_negative_flag((result >> 7) == 1);
             self.registers.set_zero_flag(result == 0);
         }
-        self.increment_cycles_transfer();
+        let (bytes, cycles) = cycles::increment_cycles_transfer();
+        self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 
     fn txs(&mut self) {
@@ -991,7 +1077,8 @@ impl CPU {
             self.registers.set_negative_flag((result >> 7) == 1);
             self.registers.set_zero_flag(result == 0);
         }
-        self.increment_cycles_transfer();
+        let (bytes, cycles) = cycles::increment_cycles_transfer();
+        self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 
     fn txy(&mut self) {
@@ -1005,7 +1092,8 @@ impl CPU {
             self.registers.set_negative_flag((result >> 7) == 1);
             self.registers.set_zero_flag(result == 0);
         }
-        self.increment_cycles_transfer();
+        let (bytes, cycles) = cycles::increment_cycles_transfer();
+        self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 
     fn tya(&mut self) {
@@ -1019,7 +1107,8 @@ impl CPU {
             self.registers.set_negative_flag((result >> 7) == 1);
             self.registers.set_zero_flag(result == 0);
         }
-        self.increment_cycles_transfer();
+        let (bytes, cycles) = cycles::increment_cycles_transfer();
+        self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 
     fn tyx(&mut self) {
@@ -1033,14 +1122,16 @@ impl CPU {
             self.registers.set_negative_flag((result >> 7) == 1);
             self.registers.set_zero_flag(result == 0);
         }
-        self.increment_cycles_transfer();
+        let (bytes, cycles) = cycles::increment_cycles_transfer();
+        self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 
     fn xba(&mut self) {
         self.registers.a = (self.registers.a << 8) | (self.registers.a >> 8);
         self.registers.set_negative_flag(((self.registers.a as u8) >> 7) == 1);
         self.registers.set_zero_flag((self.registers.a as u8) == 0);
-        self.increment_cycles_xba();
+        let (bytes, cycles) = cycles::increment_cycles_xba();
+        self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 
     fn do_move(&mut self, bus: &mut Bus, is_next: bool) {
@@ -1067,7 +1158,8 @@ impl CPU {
             }
             count += 1;
         }
-        self.increment_cycles_move(count);
+        let (bytes, cycles) = cycles::increment_cycles_move(count);
+        self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 
     fn mvn(&mut self, bus: &mut Bus) {
@@ -1085,7 +1177,8 @@ impl CPU {
         if !self.registers.emulation_mode {
             self.registers.pbr = self.do_pull(bus, 1)[0];
         }
-        self.increment_cycles_return_interrupt();
+        let (bytes, cycles) = cycles::increment_cycles_return_interrupt(self.registers.emulation_mode);
+        self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 
     fn trb(&mut self, bus: &mut Bus, addressing_mode: AddressingMode) {
@@ -1100,7 +1193,8 @@ impl CPU {
             self.set_8bit_to_address(bus, addressing_mode, result);
             self.registers.set_zero_flag(result == 0);
         }
-        self.increment_cycles_test(addressing_mode);
+        let (bytes, cycles) = cycles::increment_cycles_test(&self.registers, addressing_mode);
+        self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 
     fn tsb(&mut self, bus: &mut Bus, addressing_mode: AddressingMode) {
@@ -1115,23 +1209,27 @@ impl CPU {
             self.set_8bit_to_address(bus, addressing_mode, result);
             self.registers.set_zero_flag(result == 0);
         }
-        self.increment_cycles_test(addressing_mode);
+        let (bytes, cycles) = cycles::increment_cycles_test(&self.registers, addressing_mode);
+        self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 
     fn wai(&mut self) {
         self.is_waiting_interrupt = true;
-        self.increment_cycles_stp();
+        let (bytes, cycles) = cycles::increment_cycles_stp();
+        self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 
 
     fn wdm(&mut self) {
-        self.increment_cycles_wdm();
+        let (bytes, cycles) = cycles::increment_cycles_wdm();
+        self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 
 
     fn xce(&mut self) {
         self.registers.exchange_carry_and_emulation();
-        self.increment_cycles_exchange();
+        let (bytes, cycles) = cycles::increment_cycles_exchange();
+        self.registers.increment_pc(bytes); self.cycles += cycles;
     }
 
     fn check_running_state(&mut self, bus: &mut Bus) -> bool {
@@ -1143,7 +1241,8 @@ impl CPU {
             for (src, dst) in pending_bus_writes {
                 let byte = bus.read(src);
                 bus.write(dst, byte);
-                self.increment_cycles_while_stopped();
+                let (bytes, cycles) = cycles::increment_cycles_while_stopped();
+                self.registers.increment_pc(bytes); self.cycles += cycles;
             }
             if !bus.dma.is_active() {
                 bus.write(dma::MDMAEN as u32, 0x00)
@@ -1151,12 +1250,14 @@ impl CPU {
             return false;
         }
         if self.is_stopped {
-            self.increment_cycles_while_stopped();
+            let (bytes, cycles) = cycles::increment_cycles_while_stopped();
+            self.registers.increment_pc(bytes); self.cycles += cycles;
             return false;
         }
         if self.is_waiting_interrupt {
             // TODO: check for interrupts here
-            self.increment_cycles_while_stopped();
+            let (bytes, cycles) = cycles::increment_cycles_while_stopped();
+            self.registers.increment_pc(bytes); self.cycles += cycles;
             return false;
         }
         return true;
