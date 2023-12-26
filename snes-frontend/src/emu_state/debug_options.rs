@@ -1,3 +1,9 @@
+use snes_core::ppu::registers::{
+    Background as PPUBg,
+    MAX_BG_WIDTH,
+    MAX_BG_HEIGHT,
+};
+
 pub struct DebugOptions {
     pub enable_debugging: bool,
     pub show_debug_options_window: bool,
@@ -64,11 +70,31 @@ impl CPUDebugControlOptions {
     }
 }
 
+pub struct BgDebug {
+    pub is_enabled: bool,
+    pub background: PPUBg,
+    pub bg_framebuffer: Vec<u8>,
+    pub char_framebuffer: Vec<u8>,
+}
+
+impl BgDebug {
+    pub fn new(background: PPUBg) -> Self {
+        Self {
+            is_enabled: false,
+            background: background,
+            bg_framebuffer: vec![0x00; MAX_BG_WIDTH * MAX_BG_HEIGHT * 4], 
+            // 8x8 pixels, 16x8 characters
+            char_framebuffer: vec![0x00; 8 * 8 * 16 * 8 * 4],
+        }
+    }
+}
+
 pub struct PPUDebugControlOptions {
     pub is_enabled: bool,
     pub show_registers: bool,
     pub show_vram: bool,
     pub vram_inputs: VramInputs,
+    pub backgrounds: [BgDebug; 4],
 }
 
 impl PPUDebugControlOptions {
@@ -78,6 +104,12 @@ impl PPUDebugControlOptions {
             show_registers: true,
             show_vram: true,
             vram_inputs: VramInputs::new(),
+            backgrounds: [
+                BgDebug::new(PPUBg::Bg1),
+                BgDebug::new(PPUBg::Bg2),
+                BgDebug::new(PPUBg::Bg3),
+                BgDebug::new(PPUBg::Bg4),
+            ],
         }
     }
 }

@@ -1,7 +1,7 @@
 use eframe::egui;
 use snes_core::ppu::registers::PPURegisters;
 
-use crate::emu_state::debug_options::PPUDebugControlOptions;
+use crate::emu_state::debug_options::{PPUDebugControlOptions, BgDebug};
 use crate::emu_ui::debug::common::sanitize_input;
 
 
@@ -32,6 +32,14 @@ pub fn build_ppu_debug_controls(ctx: &egui::Context, ppu_debug_options: &mut PPU
             });
             ui.monospace("Backgrounds:");
             ui.horizontal(|ui| {
+                for bgdebug in ppu_debug_options.backgrounds.iter_mut() {
+                    if ui.selectable_label(
+                        bgdebug.is_enabled,
+                        format!("Show {:?}", bgdebug.background),
+                    ).clicked() {
+                        bgdebug.is_enabled = !bgdebug.is_enabled;
+                    }
+                }
             });
         });
 
