@@ -6,6 +6,7 @@ pub mod adc;
 pub mod and;
 pub mod asl;
 pub mod bcc;
+pub mod bcs;
 pub mod decoder_common;
 pub mod branch_common;
 
