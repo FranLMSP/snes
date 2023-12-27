@@ -5,13 +5,14 @@ use crate::utils::addressing::AddressingMode;
 pub mod adc;
 pub mod and;
 pub mod asl;
+pub mod decoder_common;
 
 pub trait CPUInstruction {
-    fn execute(&self, registers: &mut Registers, bus: &mut Bus, addressing_mode: AddressingMode);
+    fn execute(&self, registers: &mut Registers, bus: &mut Bus);
 }
 
 pub trait Decode {
-    fn mnemonic(&self, registers: &Registers, bus: &Bus) -> String;
+    fn mnemonic(&self, registers: &Registers, bus: &Bus, opcode: u8) -> String;
 }
 
 pub fn read_8bit_from_address(registers: &Registers, bus: &mut Bus, addressing_mode: AddressingMode) -> u8 {

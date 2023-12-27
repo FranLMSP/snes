@@ -2,58 +2,51 @@ use crate::{cpu::{bus::Bus, registers::Registers}, utils::{alu, addressing::Addr
 
 use crate::cpu::cycles;
 use super::{CPUInstruction, Decode};
+use super::decoder_common;
 
-pub const OPCODE: u8 = 0x0A;
+static INSTR_NAME: &'static str = "ASL";
 
-fn mnemonic_8bit(registers: &Registers, bus: &Bus) -> String {
-    let next_byte = bus.read_external(registers.get_pc_address() + 1);
-    format!("{:02X} {:02X} __ __ | ASL #${:02X}", OPCODE, next_byte, next_byte)
+pub struct ASL8 {
+    addressing_mode: AddressingMode,
 }
-
-fn mnemonic_16bit(registers: &Registers, bus: &Bus) -> String {
-    let next_byte = bus.read_external(registers.get_pc_address() + 1);
-    let next_second_byte = bus.read_external(registers.get_pc_address() + 2);
-    let word = (next_byte as u16) | ((next_byte as u16) << 8);
-    format!("{:02X} {:02X} {:02X} __ | AND #${:04X}", OPCODE, next_byte, next_second_byte, word)
-}
-
-pub struct ASL8 {}
 
 impl CPUInstruction for ASL8 {
-    fn execute(&self, registers: &mut Registers, _bus: &mut Bus, addressing_mode: AddressingMode) {
+    fn execute(&self, registers: &mut Registers, _bus: &mut Bus) {
         let (result, affected_flags) = alu::asl(
             registers.a as u8,
         );
         registers.set_low_a(result);
         registers.set_flags(&affected_flags);
-        let (bytes, cycles) = cycles::increment_cycles_bitwise(&registers, addressing_mode);
+        let (bytes, cycles) = cycles::increment_cycles_bitwise(&registers, self.addressing_mode);
         registers.increment_pc(bytes); registers.cycles += cycles;
     }
 }
 
 impl Decode for ASL8 {
-    fn mnemonic(&self, registers: &Registers, bus: &Bus) -> String {
-        mnemonic_8bit(registers, bus)
+    fn mnemonic(&self, registers: &Registers, bus: &Bus, opcode: u8) -> String {
+        decoder_common::mnemonic_arithmetic(false, opcode, INSTR_NAME, self.addressing_mode, registers, bus)
     }
 }
 
-pub struct ASL16 {}
+pub struct ASL16 {
+    addressing_mode: AddressingMode,
+}
 
 impl CPUInstruction for ASL16 {
-    fn execute(&self, registers: &mut Registers, _bus: &mut Bus, addressing_mode: AddressingMode) {
+    fn execute(&self, registers: &mut Registers, _bus: &mut Bus) {
         let (result, affected_flags) = alu::asl(
             registers.a,
         );
         registers.a = result;
         registers.set_flags(&affected_flags);
-        let (bytes, cycles) = cycles::increment_cycles_bitwise(&registers, addressing_mode);
+        let (bytes, cycles) = cycles::increment_cycles_bitwise(&registers, self.addressing_mode);
         registers.increment_pc(bytes); registers.cycles += cycles;
     }
 }
 
 impl Decode for ASL16 {
-    fn mnemonic(&self, registers: &Registers, bus: &Bus) -> String {
-        mnemonic_16bit(registers, bus)
+    fn mnemonic(&self, registers: &Registers, bus: &Bus, opcode: u8) -> String {
+        decoder_common::mnemonic_arithmetic(true, opcode, INSTR_NAME, self.addressing_mode, registers, bus)
     }
 }
 
@@ -71,8 +64,8 @@ mod cpu_instructions_tests {
         registers.pbr = 0x00;
         registers.pc  = 0x0000;
         registers.set_memory_select_flag(true);
-        let instruction = ASL8{};
-        instruction.execute(&mut registers, &mut bus, AddressingMode::Immediate);
+        let instruction = ASL8{addressing_mode: AddressingMode::Immediate};
+        instruction.execute(&mut registers, &mut bus);
         assert_eq!(registers.a, 0b10100000);
         assert_eq!(registers.pc, 0x02);
         assert_eq!(registers.cycles, 2);
@@ -90,8 +83,8 @@ mod cpu_instructions_tests {
         registers.pbr = 0x00;
         registers.pc  = 0x0000;
         registers.set_memory_select_flag(false);
-        let instruction = ASL16{};
-        instruction.execute(&mut registers, &mut bus, AddressingMode::Immediate);
+        let instruction = ASL16{addressing_mode: AddressingMode::Immediate};
+        instruction.execute(&mut registers, &mut bus);
         assert_eq!(registers.a, 0b10100000_00000000);
         assert_eq!(registers.pc, 0x03);
         assert_eq!(registers.cycles, 3);
