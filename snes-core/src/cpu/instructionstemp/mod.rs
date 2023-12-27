@@ -3,6 +3,7 @@ use crate::cpu::registers::Registers;
 use crate::utils::addressing::AddressingMode;
 
 pub mod adc;
+pub mod and;
 
 pub trait CPUInstruction {
     fn execute(&self, registers: &mut Registers, bus: &mut Bus, addressing_mode: AddressingMode);
