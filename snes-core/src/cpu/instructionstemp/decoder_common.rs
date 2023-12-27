@@ -111,3 +111,8 @@ pub fn mnemonic_stack_relative_indirect_indexed(opcode: u8, instr_name: &str, in
     let next_byte = bus.read_external(registers.get_pc_address() + 1);
     format!("{:02X} {:02X} __ __ | {} (${:02X}, S), {}", opcode, next_byte, instr_name, next_byte, index)
 }
+
+pub fn mnemonic_branch_nearlabel(opcode: u8, instr_name: &str, registers: &Registers, bus: &Bus) -> String {
+    let nearlabel = bus.read_external(registers.get_pc_address() + 1);
+    format!("{:02X} {:02X} __ __ | {} ${:02X}", opcode, nearlabel, instr_name, nearlabel)
+}

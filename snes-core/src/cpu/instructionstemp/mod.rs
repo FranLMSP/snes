@@ -5,7 +5,9 @@ use crate::utils::addressing::AddressingMode;
 pub mod adc;
 pub mod and;
 pub mod asl;
+pub mod bcc;
 pub mod decoder_common;
+pub mod branch_common;
 
 pub trait CPUInstruction {
     fn execute(&self, registers: &mut Registers, bus: &mut Bus);
