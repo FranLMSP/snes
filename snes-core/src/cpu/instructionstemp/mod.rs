@@ -8,6 +8,7 @@ pub mod asl;
 pub mod bcc;
 pub mod bcs;
 pub mod beq;
+pub mod bne;
 pub mod decoder_common;
 pub mod branch_common;
 
