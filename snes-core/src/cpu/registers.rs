@@ -11,6 +11,7 @@ pub struct Registers {
     pub dbr: u8, // Data bank register
     pub pc: u16, // Program counter
     pub emulation_mode: bool,
+    pub cycles: usize,
 }
 
 impl Registers {
@@ -26,6 +27,7 @@ impl Registers {
             dbr: 0,
             pc: 0,
             emulation_mode: true,
+            cycles: 0,
         }
     }
 
