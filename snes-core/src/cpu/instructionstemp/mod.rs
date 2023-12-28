@@ -16,6 +16,8 @@ pub mod brk;
 pub mod brl;
 pub mod bvc;
 pub mod bvs;
+pub mod bit;
+pub mod bit_common;
 pub mod decoder_common;
 pub mod branch_common;
 pub mod push_common;
