@@ -116,3 +116,7 @@ pub fn mnemonic_branch_nearlabel(opcode: u8, instr_name: &str, registers: &Regis
     let nearlabel = bus.read_external(registers.get_pc_address() + 1);
     format!("{:02X} {:02X} __ __ | {} ${:02X}", opcode, nearlabel, instr_name, nearlabel)
 }
+
+pub fn mnemonic_single_byte_instr(opcode: u8, instr_name: &str) -> String {
+    format!("{:02X} __ __ __ | {}", opcode, instr_name)
+}

@@ -1,6 +1,5 @@
 use crate::cpu::{bus::Bus, registers::Registers};
 
-use crate::cpu::cycles;
 use super::{CPUInstruction, Decode};
 use super::decoder_common;
 use super::branch_common;
@@ -11,14 +10,7 @@ pub struct BNE {}
 
 impl CPUInstruction for BNE {
     fn execute(&self, registers: &mut Registers, bus: &mut Bus) {
-        let nearlabel = bus.read(registers.get_pc_address().wrapping_add(1));
-        let (bytes, cycles) = cycles::increment_cycles_branch();
-        registers.increment_pc(bytes); registers.cycles += cycles;
-        if !registers.get_zero_flag() {
-            let page_boundary_crossed = branch_common::do_branch(nearlabel, registers);
-            let (bytes, cycles) = cycles::increment_cycles_branch_taken(page_boundary_crossed);
-            registers.increment_pc(bytes); registers.cycles += cycles;
-        }
+        branch_common::do_branch_instr(registers, bus, !registers.get_zero_flag());
     }
 }
 
@@ -34,7 +26,7 @@ mod cpu_instructions_tests {
     use super::*;
 
     #[test]
-    fn test_beq() {
+    fn test() {
         let instruction = BNE{};
         // test with positive nearlabel
         // branch not taken

@@ -9,8 +9,16 @@ pub mod bcc;
 pub mod bcs;
 pub mod beq;
 pub mod bne;
+pub mod bmi;
+pub mod bpl;
+pub mod bra;
+pub mod brk;
+pub mod brl;
+pub mod bvc;
+pub mod bvs;
 pub mod decoder_common;
 pub mod branch_common;
+pub mod push_common;
 
 pub trait CPUInstruction {
     fn execute(&self, registers: &mut Registers, bus: &mut Bus);
