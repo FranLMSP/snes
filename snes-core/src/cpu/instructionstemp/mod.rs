@@ -21,10 +21,12 @@ pub mod clc;
 pub mod cld;
 pub mod cli;
 pub mod clv;
+pub mod cmp;
 pub mod bit_common;
 pub mod decoder_common;
 pub mod branch_common;
 pub mod push_common;
+pub mod comp_common;
 
 pub trait CPUInstruction {
     fn execute(&self, registers: &mut Registers, bus: &mut Bus);
