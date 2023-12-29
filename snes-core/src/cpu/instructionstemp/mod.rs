@@ -28,6 +28,7 @@ pub mod cpy;
 pub mod dec;
 pub mod dex;
 pub mod dey;
+pub mod eor;
 pub mod bit_common;
 pub mod dec_common;
 pub mod decoder_common;
