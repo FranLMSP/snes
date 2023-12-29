@@ -74,6 +74,5 @@ mod cpu_instructions_tests {
         assert_eq!(registers.pc, 0xBBCC);
         assert_eq!(registers.sp, 0x1F9);
         assert_eq!(registers.cycles, 8);
-        assert!(false)
     }
 }
