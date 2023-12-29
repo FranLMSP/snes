@@ -32,6 +32,8 @@ pub mod eor;
 pub mod inc;
 pub mod inx;
 pub mod iny;
+pub mod jmp;
+pub mod jsr;
 pub mod bit_common;
 pub mod dec_common;
 pub mod decoder_common;
@@ -45,6 +47,16 @@ pub trait CPUInstruction {
 
 pub trait Decode {
     fn mnemonic(&self, registers: &Registers, bus: &Bus, opcode: u8) -> String;
+}
+
+pub fn get_effective_address(registers: &Registers, bus: &mut Bus, addressing_mode: AddressingMode) -> u32 {
+    addressing_mode.effective_address(
+        bus,
+        registers.get_pc_address(),
+        registers.d,
+        registers.sp,
+        registers.x, registers.y,
+    )
 }
 
 pub fn read_8bit_from_address(registers: &Registers, bus: &mut Bus, addressing_mode: AddressingMode) -> u8 {
