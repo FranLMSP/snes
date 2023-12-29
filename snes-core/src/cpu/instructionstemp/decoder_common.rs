@@ -120,3 +120,9 @@ pub fn mnemonic_branch_nearlabel(opcode: u8, instr_name: &str, registers: &Regis
 pub fn mnemonic_single_byte_instr(opcode: u8, instr_name: &str) -> String {
     format!("{:02X} __ __ __ | {}", opcode, instr_name)
 }
+
+pub fn mnemonic_move(opcode: u8, instr_name: &str, registers: &Registers, bus: &Bus) -> String {
+    let next_byte = bus.read_external(registers.get_pc_address() + 1);
+    let next_second_byte = bus.read_external(registers.get_pc_address() + 2);
+    format!("{:02X} {:02X} {:02X} __ | {} {:02X},{:02X}", opcode, next_byte, next_second_byte, instr_name, next_second_byte, next_byte)
+}

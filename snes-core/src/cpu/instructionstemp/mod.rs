@@ -38,12 +38,15 @@ pub mod lda;
 pub mod ldx;
 pub mod ldy;
 pub mod lsr;
+pub mod mvn;
+pub mod mvp;
 pub mod bit_common;
 pub mod dec_common;
 pub mod decoder_common;
 pub mod branch_common;
 pub mod push_common;
 pub mod comp_common;
+pub mod move_common;
 
 pub trait CPUInstruction {
     fn execute(&self, registers: &mut Registers, bus: &mut Bus);
