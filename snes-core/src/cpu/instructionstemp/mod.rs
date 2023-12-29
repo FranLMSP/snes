@@ -37,6 +37,7 @@ pub mod jsr;
 pub mod lda;
 pub mod ldx;
 pub mod ldy;
+pub mod lsr;
 pub mod bit_common;
 pub mod dec_common;
 pub mod decoder_common;
