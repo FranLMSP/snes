@@ -35,6 +35,8 @@ pub mod iny;
 pub mod jmp;
 pub mod jsr;
 pub mod lda;
+pub mod ldx;
+pub mod ldy;
 pub mod bit_common;
 pub mod dec_common;
 pub mod decoder_common;
