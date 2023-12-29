@@ -23,6 +23,8 @@ pub mod cli;
 pub mod clv;
 pub mod cmp;
 pub mod cop;
+pub mod cpx;
+pub mod cpy;
 pub mod bit_common;
 pub mod decoder_common;
 pub mod branch_common;
