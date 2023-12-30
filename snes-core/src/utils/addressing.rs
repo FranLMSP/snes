@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use crate::cpu::bus::Bus;
 
 /// OPCODE #const
@@ -112,6 +114,16 @@ pub fn stack_relative_indirect_indexed(bus: &mut Bus, pc_addr: u32, stack_pointe
 #[derive(Copy, Clone, PartialEq)]
 pub enum IndexRegister {
     X, Y,
+}
+
+impl Display for IndexRegister {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let name = match self {
+            IndexRegister::X => "X",
+            IndexRegister::Y => "Y",
+        };
+        write!(f, "{}", name)
+    }
 }
 
 #[derive(Copy, Clone)]

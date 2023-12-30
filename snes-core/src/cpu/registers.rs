@@ -11,6 +11,9 @@ pub struct Registers {
     pub dbr: u8, // Data bank register
     pub pc: u16, // Program counter
     pub emulation_mode: bool,
+    pub is_cpu_stopped: bool,
+    pub is_cpu_waiting_interrupt: bool,
+    pub cycles: usize,
 }
 
 impl Registers {
@@ -26,6 +29,9 @@ impl Registers {
             dbr: 0,
             pc: 0,
             emulation_mode: true,
+            is_cpu_stopped: false,
+            is_cpu_waiting_interrupt: false,
+            cycles: 0,
         }
     }
 

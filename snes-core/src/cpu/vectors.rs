@@ -1,4 +1,4 @@
-use super::cpu::CPU;
+use super::{cpu::CPU, instructions::{phk::PHK, CPUInstruction, php::PHP, push_common}};
 use crate::cpu::bus::Bus;
 
 #[derive(Copy, Clone)]
@@ -35,7 +35,7 @@ impl CPU {
         let base_address = Vector::Reset.get_base_address();
         let reset_vector = CPU::get_vector(base_address, bus);
         self.registers.pc = reset_vector;
-        self.is_stopped = false;
+        self.registers.is_cpu_stopped = false;
     }
 
     fn get_vector_from_interrupts(&self) -> Option<Vector> {
@@ -47,13 +47,14 @@ impl CPU {
 
     fn push_emulation_interrupt(&mut self, bus: &mut Bus) {
         if !self.registers.emulation_mode {
-            self.phk(bus);
+            PHK{}.execute(&mut self.registers, bus);
         }
-        self.do_push(bus, &[
+        let values = [
             (self.registers.pc >> 8) as u8,
             self.registers.pc as u8,
-        ]);
-        self.php(bus);
+        ];
+        push_common::do_push(&mut self.registers, bus, &values);
+        PHP{}.execute(&mut self.registers, bus);
     }
 
     pub fn handle_interrupts(&mut self, bus: &mut Bus) {
@@ -75,9 +76,9 @@ mod cpu_vectors_tests {
     fn test_reset_vector() {
         let mut cpu = CPU::new();
         let mut bus = Bus::new();
-        cpu.is_stopped = true;
+        cpu.registers.is_cpu_stopped = true;
         // TODO: test that the PC register got the right vector
         cpu.reset_vector(&mut bus);
-        assert_eq!(cpu.is_stopped, false);
+        assert_eq!(cpu.registers.is_cpu_stopped, false);
     }
 }

@@ -20,9 +20,9 @@ impl Emulator {
 
     pub fn tick(&mut self) {
         self.cpu.tick(&mut self.bus);
-        self.bus.ppu.tick(self.cpu.cycles);
+        self.bus.ppu.tick(self.cpu.registers.cycles);
 
-        self.cpu.cycles = 0;
+        self.cpu.registers.cycles = 0;
     }
 
     pub fn loop_frame(&mut self) {
