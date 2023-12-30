@@ -13,8 +13,8 @@ pub struct LSR {
 impl LSR {
     fn determine_instruction(&self, registers: &Registers) -> Box<dyn CPUInstruction> {
         match registers.is_16bit_mode() {
-            true => Box::new(LSR{addressing_mode: self.addressing_mode}),
-            false => Box::new(LSR{addressing_mode: self.addressing_mode}),
+            true => Box::new(LSR16{addressing_mode: self.addressing_mode}),
+            false => Box::new(LSR8{addressing_mode: self.addressing_mode}),
         }
     }
 }

@@ -16,8 +16,8 @@ pub struct LDX {
 impl LDX {
     fn determine_instruction(&self, registers: &Registers) -> Box<dyn CPUInstruction> {
         match registers.is_16bit_index() {
-            true => Box::new(LDX{addressing_mode: self.addressing_mode}),
-            false => Box::new(LDX{addressing_mode: self.addressing_mode}),
+            true => Box::new(LDX16{addressing_mode: self.addressing_mode}),
+            false => Box::new(LDX8{addressing_mode: self.addressing_mode}),
         }
     }
 }
