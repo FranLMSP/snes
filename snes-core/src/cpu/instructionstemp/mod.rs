@@ -58,6 +58,7 @@ pub mod pld;
 pub mod plp;
 pub mod plx;
 pub mod ply;
+pub mod rep;
 pub mod bit_common;
 pub mod dec_common;
 pub mod decoder_common;
