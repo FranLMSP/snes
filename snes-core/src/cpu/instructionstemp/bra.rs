@@ -1,6 +1,6 @@
 use crate::cpu::{bus::Bus, registers::Registers};
 
-use super::{CPUInstruction, Decode};
+use super::CPUInstruction;
 use super::decoder_common;
 use super::branch_common;
 use crate::cpu::cycles;
@@ -18,9 +18,7 @@ impl CPUInstruction for BRA {
         let (bytes, cycles) = cycles::increment_cycles_branch_taken(page_boundary_crossed);
         registers.increment_pc(bytes); registers.cycles += cycles;
     }
-}
 
-impl Decode for BRA {
     fn mnemonic(&self, registers: &Registers, bus: &Bus, opcode: u8) -> String {
         decoder_common::mnemonic_branch_nearlabel(opcode, INSTR_NAME, registers, bus)
     }

@@ -1,10 +1,33 @@
 use crate::cpu::{bus::Bus, registers::Registers};
 
 use crate::cpu::cycles;
-use super::{CPUInstruction, Decode, dec_common};
+use super::{CPUInstruction, dec_common};
 use super::decoder_common;
 
 static INSTR_NAME: &'static str = "INY";
+
+pub struct INY {}
+
+impl INY {
+    fn determine_instruction(&self, registers: &Registers) -> Box<dyn CPUInstruction> {
+        match registers.is_16bit_index() {
+            true => Box::new(INY16{}),
+            false => Box::new(INY8{}),
+        }
+    }
+}
+
+impl CPUInstruction for INY {
+    fn execute(&self, registers: &mut Registers, bus: &mut Bus) {
+        let instruction = self.determine_instruction(registers);
+        instruction.execute(registers, bus);
+    }
+
+    fn mnemonic(&self, registers: &Registers, bus: &Bus, opcode: u8) -> String {
+        let instruction = self.determine_instruction(registers);
+        instruction.mnemonic(registers, bus, opcode)
+    }
+}
 
 pub struct INY8 {}
 
@@ -18,9 +41,7 @@ impl CPUInstruction for INY8 {
         let (bytes, cycles) = cycles::increment_cycles_inc_dec_index();
         registers.increment_pc(bytes); registers.cycles += cycles;
     }
-}
 
-impl Decode for INY8 {
     fn mnemonic(&self, _registers: &Registers, _bus: &Bus, opcode: u8) -> String {
         decoder_common::mnemonic_single_byte_instr(opcode, INSTR_NAME)
     }
@@ -38,9 +59,7 @@ impl CPUInstruction for INY16 {
         let (bytes, cycles) = cycles::increment_cycles_inc_dec_index();
         registers.increment_pc(bytes); registers.cycles += cycles;
     }
-}
 
-impl Decode for INY16 {
     fn mnemonic(&self, _registers: &Registers, _bus: &Bus, opcode: u8) -> String {
         decoder_common::mnemonic_single_byte_instr(opcode, INSTR_NAME)
     }

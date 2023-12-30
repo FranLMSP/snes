@@ -1,10 +1,35 @@
 use crate::{cpu::{bus::Bus, registers::Registers}, utils::addressing::AddressingMode};
 
 use crate::cpu::cycles;
-use super::{CPUInstruction, Decode, write_8bit_to_address, write_16bit_to_address, read_8bit_from_address, read_16bit_from_address, dec_common};
+use super::{CPUInstruction, dec_common, read_write_common::{read_8bit_from_address, write_8bit_to_address, read_16bit_from_address, write_16bit_to_address}};
 use super::decoder_common;
 
 static INSTR_NAME: &'static str = "DEC";
+
+pub struct DEC {
+    pub addressing_mode: AddressingMode,
+}
+
+impl DEC {
+    fn determine_instruction(&self, registers: &Registers) -> Box<dyn CPUInstruction> {
+        match registers.is_16bit_mode() {
+            true => Box::new(DEC16{addressing_mode: self.addressing_mode}),
+            false => Box::new(DEC8{addressing_mode: self.addressing_mode}),
+        }
+    }
+}
+
+impl CPUInstruction for DEC {
+    fn execute(&self, registers: &mut Registers, bus: &mut Bus) {
+        let instruction = self.determine_instruction(registers);
+        instruction.execute(registers, bus);
+    }
+
+    fn mnemonic(&self, registers: &Registers, bus: &Bus, opcode: u8) -> String {
+        let instruction = self.determine_instruction(registers);
+        instruction.mnemonic(registers, bus, opcode)
+    }
+}
 
 pub struct DEC8 {
     addressing_mode: AddressingMode,
@@ -20,9 +45,7 @@ impl CPUInstruction for DEC8 {
         let (bytes, cycles) = cycles::increment_cycles_inc_dec(&registers, self.addressing_mode);
         registers.increment_pc(bytes); registers.cycles += cycles;
     }
-}
 
-impl Decode for DEC8 {
     fn mnemonic(&self, registers: &Registers, bus: &Bus, opcode: u8) -> String {
         decoder_common::mnemonic_arithmetic(false, opcode, INSTR_NAME, self.addressing_mode, registers, bus)
     }
@@ -42,9 +65,7 @@ impl CPUInstruction for DEC16 {
         let (bytes, cycles) = cycles::increment_cycles_inc_dec(&registers, self.addressing_mode);
         registers.increment_pc(bytes); registers.cycles += cycles;
     }
-}
 
-impl Decode for DEC16 {
     fn mnemonic(&self, registers: &Registers, bus: &Bus, opcode: u8) -> String {
         decoder_common::mnemonic_arithmetic(true, opcode, INSTR_NAME, self.addressing_mode, registers, bus)
     }

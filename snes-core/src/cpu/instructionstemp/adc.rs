@@ -1,10 +1,42 @@
 use crate::{cpu::{bus::Bus, registers::Registers}, utils::{alu, addressing::AddressingMode}};
 
 use crate::cpu::cycles;
-use super::{CPUInstruction, Decode, read_8bit_from_address, read_16bit_from_address};
+use super::{CPUInstruction, read_write_common::{read_8bit_from_address, read_16bit_from_address}};
 use super::decoder_common;
 
 static INSTR_NAME: &'static str = "ADC";
+
+pub struct ADC {
+    pub addressing_mode: AddressingMode,
+}
+
+impl ADC {
+    fn determine_instruction(&self, registers: &Registers) -> Box<dyn CPUInstruction> {
+        let is_decimal_mode = registers.get_decimal_mode_flag();
+        match registers.is_16bit_mode() {
+            true => match is_decimal_mode {
+                true => Box::new(ADC16BCD{addressing_mode: self.addressing_mode}),
+                false => Box::new(ADC16BIN{addressing_mode: self.addressing_mode}),
+            }
+            false => match is_decimal_mode {
+                true => Box::new(ADC8BCD{addressing_mode: self.addressing_mode}),
+                false => Box::new(ADC8BIN{addressing_mode: self.addressing_mode}),
+            }
+        }
+    }
+}
+
+impl CPUInstruction for ADC {
+    fn execute(&self, registers: &mut Registers, bus: &mut Bus) {
+        let instruction = self.determine_instruction(registers);
+        instruction.execute(registers, bus);
+    }
+
+    fn mnemonic(&self, registers: &Registers, bus: &Bus, opcode: u8) -> String {
+        let instruction = self.determine_instruction(registers);
+        instruction.mnemonic(registers, bus, opcode)
+    }
+}
 
 pub struct ADC8BIN {
     addressing_mode: AddressingMode,
@@ -22,9 +54,7 @@ impl CPUInstruction for ADC8BIN {
         let (bytes, cycles) = cycles::increment_cycles_arithmetic(&registers, self.addressing_mode);
         registers.increment_pc(bytes); registers.cycles += cycles;
     }
-}
 
-impl Decode for ADC8BIN {
     fn mnemonic(&self, registers: &Registers, bus: &Bus, opcode: u8) -> String {
         decoder_common::mnemonic_arithmetic(false, opcode, INSTR_NAME, self.addressing_mode, registers, bus)
     }
@@ -46,9 +76,7 @@ impl CPUInstruction for ADC16BIN {
         let (bytes, cycles) = cycles::increment_cycles_arithmetic(&registers, self.addressing_mode);
         registers.increment_pc(bytes); registers.cycles += cycles;
     }
-}
 
-impl Decode for ADC16BIN {
     fn mnemonic(&self, registers: &Registers, bus: &Bus, opcode: u8) -> String {
         decoder_common::mnemonic_arithmetic(true, opcode, INSTR_NAME, self.addressing_mode, registers, bus)
     }
@@ -70,9 +98,7 @@ impl CPUInstruction for ADC8BCD {
         let (bytes, cycles) = cycles::increment_cycles_arithmetic(&registers, self.addressing_mode);
         registers.increment_pc(bytes); registers.cycles += cycles;
     }
-}
 
-impl Decode for ADC8BCD {
     fn mnemonic(&self, registers: &Registers, bus: &Bus, opcode: u8) -> String {
         decoder_common::mnemonic_arithmetic(false, opcode, INSTR_NAME, self.addressing_mode, registers, bus)
     }
@@ -94,9 +120,7 @@ impl CPUInstruction for ADC16BCD {
         let (bytes, cycles) = cycles::increment_cycles_arithmetic(&registers, self.addressing_mode);
         registers.increment_pc(bytes); registers.cycles += cycles;
     }
-}
 
-impl Decode for ADC16BCD {
     fn mnemonic(&self, registers: &Registers, bus: &Bus, opcode: u8) -> String {
         decoder_common::mnemonic_arithmetic(true, opcode, INSTR_NAME, self.addressing_mode, registers, bus)
     }

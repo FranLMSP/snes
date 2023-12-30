@@ -1,10 +1,33 @@
 use crate::cpu::cycles;
 use crate::cpu::{bus::Bus, registers::Registers};
 
-use super::{CPUInstruction, Decode};
+use super::CPUInstruction;
 use super::decoder_common;
 
 static INSTR_NAME: &'static str = "TXA";
+
+pub struct TXA {}
+
+impl TXA {
+    fn determine_instruction(&self, registers: &Registers) -> Box<dyn CPUInstruction> {
+        match registers.is_16bit_mode() {
+            true => Box::new(TXA16{}),
+            false => Box::new(TXA8{}),
+        }
+    }
+}
+
+impl CPUInstruction for TXA {
+    fn execute(&self, registers: &mut Registers, bus: &mut Bus) {
+        let instruction = self.determine_instruction(registers);
+        instruction.execute(registers, bus);
+    }
+
+    fn mnemonic(&self, registers: &Registers, bus: &Bus, opcode: u8) -> String {
+        let instruction = self.determine_instruction(registers);
+        instruction.mnemonic(registers, bus, opcode)
+    }
+}
 
 pub struct TXA8 {}
 
@@ -17,9 +40,7 @@ impl CPUInstruction for TXA8 {
         let (bytes, cycles) = cycles::increment_cycles_transfer();
         registers.increment_pc(bytes); registers.cycles += cycles;
     }
-}
 
-impl Decode for TXA8 {
     fn mnemonic(&self, _registers: &Registers, _bus: &Bus, opcode: u8) -> String {
         decoder_common::mnemonic_single_byte_instr(opcode, INSTR_NAME)
     }
@@ -36,9 +57,7 @@ impl CPUInstruction for TXA16 {
         let (bytes, cycles) = cycles::increment_cycles_transfer();
         registers.increment_pc(bytes); registers.cycles += cycles;
     }
-}
 
-impl Decode for TXA16 {
     fn mnemonic(&self, _registers: &Registers, _bus: &Bus, opcode: u8) -> String {
         decoder_common::mnemonic_single_byte_instr(opcode, INSTR_NAME)
     }

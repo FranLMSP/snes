@@ -2,7 +2,8 @@ use crate::cpu::{bus::Bus, registers::Registers};
 
 use crate::cpu::cycles;
 use crate::utils::addressing::AddressingMode;
-use super::{CPUInstruction, Decode, get_effective_address, push_common};
+use super::read_write_common::get_effective_address;
+use super::{CPUInstruction, push_common};
 use super::decoder_common;
 
 static INSTR_NAME: &'static str = "PER";
@@ -21,9 +22,7 @@ impl CPUInstruction for PER {
         };
         push_common::do_push(registers, bus, &[(address >> 8) as u8, address as u8]);
     }
-}
 
-impl Decode for PER {
     fn mnemonic(&self, registers: &Registers, bus: &Bus, opcode: u8) -> String {
         decoder_common::mnemonic_absolute(opcode, INSTR_NAME, registers, bus)
     }

@@ -1,6 +1,6 @@
 use crate::cpu::{bus::Bus, registers::Registers};
 
-use super::{CPUInstruction, Decode};
+use super::CPUInstruction;
 use super::decoder_common;
 use crate::cpu::cycles;
 
@@ -22,9 +22,7 @@ impl CPUInstruction for BRL {
         let (bytes, cycles) = cycles::increment_cycles_branch_long();
         registers.increment_pc(bytes); registers.cycles += cycles;
     }
-}
 
-impl Decode for BRL {
     fn mnemonic(&self, registers: &Registers, bus: &Bus, opcode: u8) -> String {
         decoder_common::mnemonic_absolute(opcode, INSTR_NAME, registers, bus)
     }

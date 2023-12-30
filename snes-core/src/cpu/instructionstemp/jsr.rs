@@ -1,14 +1,15 @@
 use crate::cpu::{bus::Bus, registers::Registers};
 use crate::utils::addressing::AddressingMode;
 
-use super::{CPUInstruction, Decode, get_effective_address, push_common};
+use super::read_write_common::get_effective_address;
+use super::{CPUInstruction, push_common};
 use super::decoder_common;
 use crate::cpu::cycles;
 
 static INSTR_NAME: &'static str = "JSR";
 
 pub struct JSR {
-    addressing_mode: AddressingMode,
+    pub addressing_mode: AddressingMode,
 }
 
 impl CPUInstruction for JSR {
@@ -40,9 +41,7 @@ impl CPUInstruction for JSR {
             registers.pbr = (effective_address >> 16) as u8;
         }
     }
-}
 
-impl Decode for JSR {
     fn mnemonic(&self, registers: &Registers, bus: &Bus, opcode: u8) -> String {
         decoder_common::mnemonic_arithmetic(true, opcode, INSTR_NAME, self.addressing_mode, registers, bus)
     }

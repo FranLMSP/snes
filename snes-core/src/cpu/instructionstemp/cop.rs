@@ -1,6 +1,6 @@
 use crate::cpu::{bus::Bus, registers::Registers};
 
-use super::{CPUInstruction, Decode};
+use super::CPUInstruction;
 use super::decoder_common;
 use super::push_common;
 use crate::cpu::cycles;
@@ -19,9 +19,7 @@ impl CPUInstruction for COP {
         let (bytes, cycles) = cycles::increment_cycles_brk(registers.emulation_mode);
         registers.increment_pc(bytes); registers.cycles += cycles;
     }
-}
 
-impl Decode for COP {
     fn mnemonic(&self, _registers: &Registers, _bus: &Bus, opcode: u8) -> String {
         decoder_common::mnemonic_single_byte_instr(opcode, INSTR_NAME)
     }

@@ -1,7 +1,7 @@
 use crate::cpu::{bus::Bus, registers::Registers};
 
 use crate::cpu::cycles;
-use super::{CPUInstruction, Decode, pull_common};
+use super::{CPUInstruction, pull_common};
 use super::decoder_common;
 
 static INSTR_NAME: &'static str = "PLY";
@@ -20,9 +20,7 @@ impl CPUInstruction for PLY {
         let (bytes, cycles) = cycles::increment_cycles_pl_index(registers.is_16bit_index());
         registers.increment_pc(bytes); registers.cycles += cycles;
     }
-}
 
-impl Decode for PLY {
     fn mnemonic(&self, _registers: &Registers, _bus: &Bus, opcode: u8) -> String {
         decoder_common::mnemonic_single_byte_instr(opcode, INSTR_NAME)
     }

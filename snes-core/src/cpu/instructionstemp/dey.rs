@@ -1,10 +1,33 @@
 use crate::cpu::{bus::Bus, registers::Registers};
 
 use crate::cpu::cycles;
-use super::{CPUInstruction, Decode, dec_common};
+use super::{CPUInstruction, dec_common};
 use super::decoder_common;
 
 static INSTR_NAME: &'static str = "DEY";
+
+pub struct DEY {}
+
+impl DEY {
+    fn determine_instruction(&self, registers: &Registers) -> Box<dyn CPUInstruction> {
+        match registers.is_16bit_index() {
+            true => Box::new(DEY16{}),
+            false => Box::new(DEY8{}),
+        }
+    }
+}
+
+impl CPUInstruction for DEY {
+    fn execute(&self, registers: &mut Registers, bus: &mut Bus) {
+        let instruction = self.determine_instruction(registers);
+        instruction.execute(registers, bus);
+    }
+
+    fn mnemonic(&self, registers: &Registers, bus: &Bus, opcode: u8) -> String {
+        let instruction = self.determine_instruction(registers);
+        instruction.mnemonic(registers, bus, opcode)
+    }
+}
 
 pub struct DEY8 {}
 
@@ -18,9 +41,7 @@ impl CPUInstruction for DEY8 {
         let (bytes, cycles) = cycles::increment_cycles_inc_dec_index();
         registers.increment_pc(bytes); registers.cycles += cycles;
     }
-}
 
-impl Decode for DEY8 {
     fn mnemonic(&self, _registers: &Registers, _bus: &Bus, opcode: u8) -> String {
         decoder_common::mnemonic_single_byte_instr(opcode, INSTR_NAME)
     }
@@ -38,9 +59,7 @@ impl CPUInstruction for DEY16 {
         let (bytes, cycles) = cycles::increment_cycles_inc_dec_index();
         registers.increment_pc(bytes); registers.cycles += cycles;
     }
-}
 
-impl Decode for DEY16 {
     fn mnemonic(&self, _registers: &Registers, _bus: &Bus, opcode: u8) -> String {
         decoder_common::mnemonic_single_byte_instr(opcode, INSTR_NAME)
     }

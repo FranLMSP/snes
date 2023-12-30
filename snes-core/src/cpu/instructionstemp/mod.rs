@@ -1,6 +1,5 @@
 use crate::cpu::bus::Bus;
 use crate::cpu::registers::Registers;
-use crate::utils::addressing::AddressingMode;
 
 pub mod adc;
 pub mod and;
@@ -100,77 +99,10 @@ pub mod push_common;
 pub mod pull_common;
 pub mod comp_common;
 pub mod move_common;
+pub mod read_write_common;
+pub mod mapper;
 
 pub trait CPUInstruction {
     fn execute(&self, registers: &mut Registers, bus: &mut Bus);
-}
-
-pub trait Decode {
     fn mnemonic(&self, registers: &Registers, bus: &Bus, opcode: u8) -> String;
-}
-
-pub fn get_effective_address(registers: &Registers, bus: &mut Bus, addressing_mode: AddressingMode) -> u32 {
-    addressing_mode.effective_address(
-        bus,
-        registers.get_pc_address(),
-        registers.d,
-        registers.sp,
-        registers.x, registers.y,
-    )
-}
-
-pub fn read_8bit_from_address(registers: &Registers, bus: &mut Bus, addressing_mode: AddressingMode) -> u8 {
-    match addressing_mode {
-        AddressingMode::Accumulator => registers.a as u8,
-        _ => addressing_mode.value_8bit(
-            bus,
-            registers.get_pc_address(),
-            registers.d,
-            registers.sp,
-            registers.x,
-            registers.y,
-        )
-    }
-}
-
-pub fn read_16bit_from_address(registers: &Registers, bus: &mut Bus, addressing_mode: AddressingMode) -> u16 {
-    match addressing_mode {
-        AddressingMode::Accumulator => registers.a,
-        _ => addressing_mode.value_16bit(
-            bus,
-            registers.get_pc_address(),
-            registers.d,
-            registers.sp,
-            registers.x,
-            registers.y,
-        )
-    }
-}
-
-pub fn write_8bit_to_address(registers: &mut Registers, bus: &mut Bus, addressing_mode: AddressingMode, value: u8) {
-    match addressing_mode {
-        AddressingMode::Accumulator => registers.set_low_a(value),
-        _ => addressing_mode.store_8bit(
-            bus,
-            registers.get_pc_address(),
-            registers.d,
-            registers.sp,
-            registers.x, registers.y,
-            value,
-        ),
-    };
-}
-
-pub fn write_16bit_to_address(registers: &mut Registers, bus: &mut Bus, addressing_mode: AddressingMode, value: u16) {
-    match addressing_mode {
-        AddressingMode::Accumulator => registers.a = value,
-        _ => addressing_mode.store_16bit(
-            bus,
-            registers.get_pc_address(),
-            registers.d,
-            registers.sp,
-            registers.x, registers.y,
-            value,
-        ),
-    };
 }

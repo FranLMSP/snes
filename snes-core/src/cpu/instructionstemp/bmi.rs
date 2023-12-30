@@ -1,6 +1,6 @@
 use crate::cpu::{bus::Bus, registers::Registers};
 
-use super::{CPUInstruction, Decode};
+use super::CPUInstruction;
 use super::decoder_common;
 use super::branch_common;
 
@@ -12,9 +12,7 @@ impl CPUInstruction for BMI {
     fn execute(&self, registers: &mut Registers, bus: &mut Bus) {
         branch_common::do_branch_instr(registers, bus, registers.get_negative_flag());
     }
-}
 
-impl Decode for BMI {
     fn mnemonic(&self, registers: &Registers, bus: &Bus, opcode: u8) -> String {
         decoder_common::mnemonic_branch_nearlabel(opcode, INSTR_NAME, registers, bus)
     }

@@ -1,14 +1,15 @@
 use crate::cpu::{bus::Bus, registers::Registers};
 use crate::utils::addressing::AddressingMode;
 
-use super::{CPUInstruction, Decode, get_effective_address};
+use super::read_write_common::get_effective_address;
+use super::CPUInstruction;
 use super::decoder_common;
 use crate::cpu::cycles;
 
 static INSTR_NAME: &'static str = "JMP";
 
 pub struct JMP {
-    addressing_mode: AddressingMode,
+    pub addressing_mode: AddressingMode,
 }
 
 impl CPUInstruction for JMP {
@@ -26,9 +27,7 @@ impl CPUInstruction for JMP {
         let (bytes, cycles) = cycles::increment_cycles_jmp(self.addressing_mode);
         registers.increment_pc(bytes); registers.cycles += cycles;
     }
-}
 
-impl Decode for JMP {
     fn mnemonic(&self, registers: &Registers, bus: &Bus, opcode: u8) -> String {
         decoder_common::mnemonic_arithmetic(true, opcode, INSTR_NAME, self.addressing_mode, registers, bus)
     }

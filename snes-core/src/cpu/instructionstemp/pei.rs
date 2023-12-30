@@ -2,7 +2,8 @@ use crate::cpu::{bus::Bus, registers::Registers};
 
 use crate::cpu::cycles;
 use crate::utils::addressing::AddressingMode;
-use super::{CPUInstruction, Decode, get_effective_address, push_common};
+use super::read_write_common::get_effective_address;
+use super::{CPUInstruction, push_common};
 use super::decoder_common;
 
 static INSTR_NAME: &'static str = "PEI";
@@ -16,9 +17,7 @@ impl CPUInstruction for PEI {
         let (bytes, cycles) = cycles::increment_cycles_pei(registers);
         registers.increment_pc(bytes); registers.cycles += cycles;
     }
-}
 
-impl Decode for PEI {
     fn mnemonic(&self, registers: &Registers, bus: &Bus, opcode: u8) -> String {
         decoder_common::mnemonic_direct_page_indirect(opcode, INSTR_NAME, registers, bus)
     }

@@ -2,7 +2,8 @@ use crate::cpu::{bus::Bus, registers::Registers};
 
 use crate::cpu::cycles;
 use crate::utils::addressing::AddressingMode;
-use super::{CPUInstruction, Decode, read_8bit_from_address};
+use super::read_write_common::read_8bit_from_address;
+use super::CPUInstruction;
 use super::decoder_common;
 
 static INSTR_NAME: &'static str = "REP";
@@ -16,9 +17,7 @@ impl CPUInstruction for REP {
         let (bytes, cycles) = cycles::increment_cycles_rep();
         registers.increment_pc(bytes); registers.cycles += cycles;
     }
-}
 
-impl Decode for REP {
     fn mnemonic(&self, registers: &Registers, bus: &Bus, opcode: u8) -> String {
         decoder_common::mnemonic_8bit_immediate(opcode, INSTR_NAME, registers, bus)
     }

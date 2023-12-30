@@ -1,10 +1,35 @@
 use crate::{cpu::{bus::Bus, registers::Registers}, utils::{alu, addressing::AddressingMode}};
 
 use crate::cpu::cycles;
-use super::{CPUInstruction, Decode, read_8bit_from_address, read_16bit_from_address};
+use super::{CPUInstruction, read_write_common::{read_8bit_from_address, read_16bit_from_address}};
 use super::decoder_common;
 
 static INSTR_NAME: &'static str = "EOR";
+
+pub struct EOR {
+    pub addressing_mode: AddressingMode,
+}
+
+impl EOR {
+    fn determine_instruction(&self, registers: &Registers) -> Box<dyn CPUInstruction> {
+        match registers.is_16bit_mode() {
+            true => Box::new(EOR16{addressing_mode: self.addressing_mode}),
+            false => Box::new(EOR8{addressing_mode: self.addressing_mode}),
+        }
+    }
+}
+
+impl CPUInstruction for EOR {
+    fn execute(&self, registers: &mut Registers, bus: &mut Bus) {
+        let instruction = self.determine_instruction(registers);
+        instruction.execute(registers, bus);
+    }
+
+    fn mnemonic(&self, registers: &Registers, bus: &Bus, opcode: u8) -> String {
+        let instruction = self.determine_instruction(registers);
+        instruction.mnemonic(registers, bus, opcode)
+    }
+}
 
 pub struct EOR8 {
     addressing_mode: AddressingMode,
@@ -19,9 +44,7 @@ impl CPUInstruction for EOR8 {
         let (bytes, cycles) = cycles::increment_cycles_bitwise(&registers, self.addressing_mode);
         registers.increment_pc(bytes); registers.cycles += cycles;
     }
-}
 
-impl Decode for EOR8 {
     fn mnemonic(&self, registers: &Registers, bus: &Bus, opcode: u8) -> String {
         decoder_common::mnemonic_arithmetic(false, opcode, INSTR_NAME, self.addressing_mode, registers, bus)
     }
@@ -40,9 +63,7 @@ impl CPUInstruction for EOR16 {
         let (bytes, cycles) = cycles::increment_cycles_bitwise(&registers, self.addressing_mode);
         registers.increment_pc(bytes); registers.cycles += cycles;
     }
-}
 
-impl Decode for EOR16 {
     fn mnemonic(&self, registers: &Registers, bus: &Bus, opcode: u8) -> String {
         decoder_common::mnemonic_arithmetic(true, opcode, INSTR_NAME, self.addressing_mode, registers, bus)
     }
