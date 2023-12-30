@@ -64,6 +64,7 @@ pub mod ror;
 pub mod rti;
 pub mod rtl;
 pub mod rts;
+pub mod sbc;
 pub mod bit_common;
 pub mod dec_common;
 pub mod decoder_common;
