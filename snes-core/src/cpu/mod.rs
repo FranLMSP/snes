@@ -7,4 +7,3 @@ pub mod instructions;
 pub mod vectors;
 pub mod cycles;
 pub mod internal_registers;
-pub mod instructionstemp;
