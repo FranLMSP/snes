@@ -27,6 +27,7 @@ impl DebugOptions {
 pub struct MemoryMapControlOptions {
     pub is_enabled: bool,
     pub inputs: MemoryMapInputs,
+    pub inputs_result: MemoryMapInputs,
 }
 
 impl MemoryMapControlOptions {
@@ -34,6 +35,7 @@ impl MemoryMapControlOptions {
         Self {
             is_enabled: true,
             inputs: MemoryMapInputs::new(),
+            inputs_result: MemoryMapInputs::new(),
         }
     }
 }
@@ -59,6 +61,7 @@ impl MemoryMapInputs {
 pub struct CPUDebugControlOptions {
     pub is_enabled: bool,
     pub show_registers: bool,
+    pub show_upcoming_instruction: bool,
 }
 
 impl CPUDebugControlOptions {
@@ -66,6 +69,7 @@ impl CPUDebugControlOptions {
         Self {
             is_enabled: true,
             show_registers: true,
+            show_upcoming_instruction: true,
         }
     }
 }

@@ -14,19 +14,23 @@ pub fn build_memory_map_window(ctx: &egui::Context, memory_map_control_options: 
         .min_size([400.0, 400.0])
         .open(&mut memory_map_control_options.is_enabled)
         .show(ctx, |ui| {
-            build_inputs(ui, &mut memory_map_control_options.inputs);
+            build_inputs(
+                ui,
+                &mut memory_map_control_options.inputs,
+                &mut memory_map_control_options.inputs_result,
+            );
             ui.separator();
             egui::ScrollArea::both().show(ui, |ui| {
                 build_memory_map_text(
                     ui,
-                    &memory_map_control_options.inputs,
+                    &memory_map_control_options.inputs_result,
                     emulator,
                 );
             });
         });
 }
 
-fn build_inputs(ui: &mut egui::Ui, input_values: &mut MemoryMapInputs) {
+fn build_inputs(ui: &mut egui::Ui, input_values: &mut MemoryMapInputs, input_result: &mut MemoryMapInputs) {
     ui.horizontal(|ui| {
         ui.label("Page Start: ");
         ui.text_edit_singleline(&mut input_values.page_start);
@@ -48,6 +52,10 @@ fn build_inputs(ui: &mut egui::Ui, input_values: &mut MemoryMapInputs) {
         sanitize_input(&mut input_values.page_end, true);
         sanitize_input(&mut input_values.address_start, false);
         sanitize_input(&mut input_values.address_end, false);
+        input_result.page_start = format!("{}", input_values.page_start);
+        input_result.page_end = format!("{}", input_values.page_end);
+        input_result.address_start = format!("{}", input_values.address_start);
+        input_result.address_end = format!("{}", input_values.address_end);
     }
 }
 

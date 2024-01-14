@@ -10,7 +10,7 @@ pub fn build_menu_bar(emulator: &mut Emulator, ui: &mut egui::Ui, state: &mut Ap
             if ui.button("Load ROM file").clicked() {
                 if let Some(path) = rfd::FileDialog::new().pick_file() {
                     let picked_path = path.display().to_string();
-                    match emulator.rom.load(&picked_path) {
+                    match emulator.bus.rom.load(&picked_path) {
                         Ok(_) => println!("Loaded ROM"),
                         Err(err) => println!("Error loading the ROM: {}", err),
                     }

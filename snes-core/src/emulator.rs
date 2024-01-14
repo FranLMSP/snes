@@ -1,12 +1,9 @@
 use crate::cpu::CPU;
 use crate::cpu::bus::Bus;
-use crate::rom::ROM;
-use crate::rom::lo_rom::LoROM;
 
 pub struct Emulator {
     pub cpu: CPU,
     pub bus: Bus,
-    pub rom: Box<dyn ROM>,
 }
 
 impl Emulator {
@@ -14,7 +11,6 @@ impl Emulator {
         Self {
             cpu: CPU::new(),
             bus: Bus::new(),
-            rom: Box::new(LoROM::new()),
         }
     }
 
