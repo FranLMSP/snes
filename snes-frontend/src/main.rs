@@ -24,6 +24,9 @@ impl eframe::App for SnesEmulatorApp {
             ui.separator();
             // ui::game::build_game_window(ctx);
         });
+        if !self.state.emulation_state.is_paused {
+            self.emulator.loop_frame();
+        }
         emu_ui::debug::build_all_debug_options(ctx, &mut self.state.debug_options, &mut self.state.emulation_state, &mut self.emulator);
     }
 }
