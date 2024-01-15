@@ -1,3 +1,4 @@
+use eframe::epaint::TextureHandle;
 use snes_core::ppu::registers::{
     Background as PPUBg,
     MAX_BG_WIDTH,
@@ -79,6 +80,8 @@ pub struct BgDebug {
     pub background: PPUBg,
     pub bg_framebuffer: Vec<u8>,
     pub char_framebuffer: Vec<u8>,
+    pub bg_texture: Option<TextureHandle>,
+    pub char_texture: Option<TextureHandle>,
 }
 
 impl BgDebug {
@@ -89,6 +92,8 @@ impl BgDebug {
             bg_framebuffer: vec![0x00; MAX_BG_WIDTH * MAX_BG_HEIGHT * 4], 
             // 8x8 pixels, 16x8 characters
             char_framebuffer: vec![0x00; 8 * 8 * 16 * 8 * 4],
+            bg_texture: None,
+            char_texture: None,
         }
     }
 }

@@ -7,6 +7,7 @@ use crate::emu_state::emulation::EmulationState;
 use super::memory_map::build_memory_map_window;
 use super::cpu::build_cpu_debug_controls;
 use super::ppu::build_ppu_debug_controls;
+use super::ppu_graphics::build_bg_preview_windows;
 
 
 pub fn build_all_debug_options(ctx: &egui::Context, debug_options: &mut DebugOptions, emulation_state: &mut EmulationState, emulator: &mut Emulator) {
@@ -19,6 +20,7 @@ pub fn build_all_debug_options(ctx: &egui::Context, debug_options: &mut DebugOpt
     build_memory_map_window(ctx, &mut debug_options.memory_map_conrtrol_options, emulator);
     build_cpu_debug_controls(ctx, &mut debug_options.cpu_debug_control_options, emulation_state, emulator);
     build_ppu_debug_controls(ctx, &mut debug_options.ppu_debug_control_options, &emulator.bus.ppu.registers);
+    build_bg_preview_windows(ctx, &mut debug_options.ppu_debug_control_options.backgrounds, &emulator.bus.ppu.registers);
 }
 
 
