@@ -4,7 +4,7 @@ use crate::cpu::cycles;
 use super::{CPUInstruction, pull_common};
 use super::decoder_common;
 
-static INSTR_NAME: &'static str = "RTS";
+static INSTR_NAME: &str = "RTS";
 
 pub struct RTS {}
 

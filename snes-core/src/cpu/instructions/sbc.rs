@@ -4,7 +4,7 @@ use crate::cpu::cycles;
 use super::{CPUInstruction, read_write_common::{read_8bit_from_address, read_16bit_from_address}};
 use super::decoder_common;
 
-static INSTR_NAME: &'static str = "SBC";
+static INSTR_NAME: &str = "SBC";
 
 pub struct SBC {
     pub addressing_mode: AddressingMode,
@@ -51,7 +51,7 @@ impl CPUInstruction for SBC8BIN {
         );
         registers.set_low_a(result);
         registers.set_flags(&affected_flags);
-        let (bytes, cycles) = cycles::increment_cycles_arithmetic(&registers, self.addressing_mode);
+        let (bytes, cycles) = cycles::increment_cycles_arithmetic(registers, self.addressing_mode);
         registers.increment_pc(bytes); registers.cycles += cycles;
     }
 
@@ -73,7 +73,7 @@ impl CPUInstruction for SBC16BIN {
         );
         registers.a = result;
         registers.set_flags(&affected_flags);
-        let (bytes, cycles) = cycles::increment_cycles_arithmetic(&registers, self.addressing_mode);
+        let (bytes, cycles) = cycles::increment_cycles_arithmetic(registers, self.addressing_mode);
         registers.increment_pc(bytes); registers.cycles += cycles;
     }
 
@@ -95,7 +95,7 @@ impl CPUInstruction for SBC8BCD {
         );
         registers.set_low_a(result);
         registers.set_flags(&affected_flags);
-        let (bytes, cycles) = cycles::increment_cycles_arithmetic(&registers, self.addressing_mode);
+        let (bytes, cycles) = cycles::increment_cycles_arithmetic(registers, self.addressing_mode);
         registers.increment_pc(bytes); registers.cycles += cycles;
     }
 
@@ -117,7 +117,7 @@ impl CPUInstruction for SBC16BCD {
         );
         registers.a = result;
         registers.set_flags(&affected_flags);
-        let (bytes, cycles) = cycles::increment_cycles_arithmetic(&registers, self.addressing_mode);
+        let (bytes, cycles) = cycles::increment_cycles_arithmetic(registers, self.addressing_mode);
         registers.increment_pc(bytes); registers.cycles += cycles;
     }
 

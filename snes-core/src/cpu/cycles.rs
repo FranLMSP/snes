@@ -53,9 +53,8 @@ fn common_conditions(cpu_registers: &Registers, addressing_mode: AddressingMode,
             Condition::MemorySelectFlag => {
                 if cpu_registers.is_16bit_mode() {
                     cycles += 1;
-                    match addressing_mode {
-                        A::Immediate => bytes += 1,
-                        _ => {},
+                    if let A::Immediate = addressing_mode {
+                        bytes += 1
                     }
                 }
             },

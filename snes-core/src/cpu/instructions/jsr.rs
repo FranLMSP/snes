@@ -6,7 +6,7 @@ use super::{CPUInstruction, push_common};
 use super::decoder_common;
 use crate::cpu::cycles;
 
-static INSTR_NAME: &'static str = "JSR";
+static INSTR_NAME: &str = "JSR";
 
 pub struct JSR {
     pub addressing_mode: AddressingMode,
@@ -15,11 +15,7 @@ pub struct JSR {
 impl CPUInstruction for JSR {
     fn execute(&self, registers: &mut Registers, bus: &mut Bus) {
         let effective_address = get_effective_address(registers, bus, self.addressing_mode);
-        let is_long = match self.addressing_mode {
-            AddressingMode::AbsoluteLong |
-            AddressingMode::AbsoluteIndirectLong => true,
-            _  => false,
-        };
+        let is_long = matches!(self.addressing_mode, AddressingMode::AbsoluteLong | AddressingMode::AbsoluteIndirectLong);
         // We need to push the *next* instruction onto the stack
         let (bytes, cycles) = cycles::increment_cycles_jsr(self.addressing_mode);
         registers.increment_pc(bytes); registers.cycles += cycles;

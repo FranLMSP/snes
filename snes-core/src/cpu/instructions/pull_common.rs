@@ -13,7 +13,7 @@ pub fn do_pull(registers: &mut Registers, bus: &mut Bus, count: usize) -> Vec<u8
         bytes.push(byte);
     }
     registers.set_zero_flag(is_zero);
-    if bytes.len() > 0 {
+    if !bytes.is_empty() {
         // Low byte is pulled first, so we need to check
         // for the last byte that we pull
         registers.set_negative_flag((bytes[bytes.len() - 1] >> 7) == 1);

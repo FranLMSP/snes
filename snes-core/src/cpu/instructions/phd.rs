@@ -4,7 +4,7 @@ use crate::cpu::cycles;
 use super::{CPUInstruction, push_common};
 use super::decoder_common;
 
-static INSTR_NAME: &'static str = "PHD";
+static INSTR_NAME: &str = "PHD";
 
 pub struct PHD {}
 

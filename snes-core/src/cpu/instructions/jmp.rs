@@ -6,7 +6,7 @@ use super::CPUInstruction;
 use super::decoder_common;
 use crate::cpu::cycles;
 
-static INSTR_NAME: &'static str = "JMP";
+static INSTR_NAME: &str = "JMP";
 
 pub struct JMP {
     pub addressing_mode: AddressingMode,
@@ -14,12 +14,8 @@ pub struct JMP {
 
 impl CPUInstruction for JMP {
     fn execute(&self, registers: &mut Registers, bus: &mut Bus) {
-        let effective_address = get_effective_address(&registers, bus, self.addressing_mode);
-        let is_long = match self.addressing_mode {
-            AddressingMode::AbsoluteLong |
-            AddressingMode::AbsoluteIndirectLong => true,
-            _  => false,
-        };
+        let effective_address = get_effective_address(registers, bus, self.addressing_mode);
+        let is_long = matches!(self.addressing_mode, AddressingMode::AbsoluteLong | AddressingMode::AbsoluteIndirectLong);
         registers.pc = effective_address as u16;
         if is_long {
             registers.pbr = (effective_address >> 16) as u8;

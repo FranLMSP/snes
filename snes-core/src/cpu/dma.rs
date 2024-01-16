@@ -47,7 +47,7 @@ pub enum TransferFormat {
     FourBytesFourRegisters, // Write once
 }
 
-pub struct DMATransferProps {
+#[allow(dead_code)] pub struct DMATransferProps {
     channel: DMAChannel,
     channel_number: u8,
     direction: TransferDirection,
@@ -119,15 +119,15 @@ impl DMATransferProps {
             DMATransferProps::read_channel_register(registers, DASXL, channel_number) as u16;
 
         Self {
-            channel: channel,
-            channel_number: channel_number,
-            direction: direction,
-            addressing_mode: addressing_mode,
-            auto_update_a_address: auto_update_a_address,
-            transfer_format: transfer_format,
-            a_bus_address: a_bus_address,
-            b_bus_address: b_bus_address,
-            number_of_bytes: number_of_bytes,
+            channel,
+            channel_number,
+            direction,
+            addressing_mode,
+            auto_update_a_address,
+            transfer_format,
+            a_bus_address,
+            b_bus_address,
+            number_of_bytes,
         }
     }
 
@@ -245,8 +245,8 @@ impl DMA {
     pub fn prepare_dma_transfer(&mut self, dma_select: u8) {
         self.active_dma_transfers = Vec::new();
         let mut active_channels = [false; 8];
-        for i in 0..8 {
-            active_channels[i] = (dma_select & (1 << i)) != 0;
+        for (i, active_channel) in active_channels.iter_mut().enumerate() {
+            *active_channel = (dma_select & (1 << i)) != 0;
         }
 
         for (channel, is_active) in active_channels.iter().enumerate() {
@@ -283,5 +283,11 @@ impl DMA {
             self.active_dma_transfers.remove(0);
         }
         pending_bus_writes
+    }
+}
+
+impl Default for DMA {
+    fn default() -> Self {
+        Self::new()
     }
 }

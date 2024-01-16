@@ -7,7 +7,7 @@ use super::read_write_common::{read_8bit_from_address, read_16bit_from_address};
 use super::{CPUInstruction, bit_common};
 use super::decoder_common;
 
-static INSTR_NAME: &'static str = "LDA";
+static INSTR_NAME: &str = "LDA";
 
 pub struct LDA {
     pub addressing_mode: AddressingMode,
@@ -47,7 +47,7 @@ impl CPUInstruction for LDA8 {
         ]);
         registers.set_low_a(value);
         bit_common::do_bit(registers, registers.a as u8, value, self.addressing_mode);
-        let (bytes, cycles) = cycles::increment_cycles_lda(&registers, self.addressing_mode);
+        let (bytes, cycles) = cycles::increment_cycles_lda(registers, self.addressing_mode);
         registers.increment_pc(bytes); registers.cycles += cycles;
     }
 
@@ -68,7 +68,7 @@ impl CPUInstruction for LDA16 {
             Flags::Negative(value >> 15 == 1),
             Flags::Zero(value == 0),
         ]);
-        let (bytes, cycles) = cycles::increment_cycles_lda(&registers, self.addressing_mode);
+        let (bytes, cycles) = cycles::increment_cycles_lda(registers, self.addressing_mode);
         registers.increment_pc(bytes); registers.cycles += cycles;
     }
 

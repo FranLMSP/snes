@@ -4,7 +4,7 @@ use crate::cpu::cycles;
 use super::{CPUInstruction, read_write_common::{read_8bit_from_address, write_8bit_to_address, read_16bit_from_address, write_16bit_to_address}};
 use super::decoder_common;
 
-static INSTR_NAME: &'static str = "ROR";
+static INSTR_NAME: &str = "ROR";
 
 pub struct ROR {
     pub addressing_mode: AddressingMode,
@@ -85,8 +85,8 @@ mod cpu_instructions_tests {
         registers.pc  = 0x0000;
         let instruction = ROR8{addressing_mode: AddressingMode::Accumulator};
         instruction.execute(&mut registers, &mut bus);
-        assert_eq!(registers.get_carry_flag(), false);
-        assert_eq!(registers.get_zero_flag(), false);
+        assert!(!registers.get_carry_flag());
+        assert!(!registers.get_zero_flag());
         assert_eq!(registers.a, 0b1000_0000);
         assert_eq!(registers.pc, 0x0001);
         assert_eq!(registers.cycles, 2);
@@ -103,8 +103,8 @@ mod cpu_instructions_tests {
         registers.pc  = 0x0000;
         let instruction = ROR16{addressing_mode: AddressingMode::Accumulator};
         instruction.execute(&mut registers, &mut bus);
-        assert_eq!(registers.get_negative_flag(), true);
-        assert_eq!(registers.get_zero_flag(), false);
+        assert!(registers.get_negative_flag());
+        assert!(!registers.get_zero_flag());
         assert_eq!(registers.a, 0b10000000_00000000);
         assert_eq!(registers.pc, 0x0001);
         assert_eq!(registers.cycles, 4);

@@ -45,6 +45,12 @@ impl PPU {
     }
 }
 
+impl Default for PPU {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 
 #[cfg(test)]
 mod ppu_general_test {

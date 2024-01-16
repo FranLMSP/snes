@@ -4,7 +4,7 @@ use crate::cpu::cycles;
 use super::CPUInstruction;
 use super::decoder_common;
 
-static INSTR_NAME: &'static str = "XCE";
+static INSTR_NAME: &str = "XCE";
 
 pub struct XCE {}
 

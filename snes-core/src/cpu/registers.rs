@@ -56,8 +56,8 @@ impl Registers {
     }
 
     pub fn set_carry_flag(&mut self, val: bool) {
-        self.p = self.p & 0b1111_1110;
-        self.p = self.p | (val as u8);
+        self.p &= 0b1111_1110;
+        self.p |= val as u8;
     }
 
     pub fn get_emulation_mode_flag(&self) -> bool {
@@ -73,8 +73,8 @@ impl Registers {
     }
 
     pub fn set_zero_flag(&mut self, val: bool) {
-        self.p = self.p & 0b1111_1101;
-        self.p = self.p | ((val as u8) << 1);
+        self.p &= 0b1111_1101;
+        self.p |= (val as u8) << 1;
     }
 
     pub fn get_irq_disable_flag(&self) -> bool {
@@ -82,8 +82,8 @@ impl Registers {
     }
 
     pub fn set_irq_disable_flag(&mut self, val: bool) {
-        self.p = self.p & 0b1111_1011;
-        self.p = self.p | ((val as u8) << 2);
+        self.p &= 0b1111_1011;
+        self.p |= (val as u8) << 2;
     }
 
     pub fn get_decimal_mode_flag(&self) -> bool {
@@ -91,8 +91,8 @@ impl Registers {
     }
 
     pub fn set_decimal_mode_flag(&mut self, val: bool) {
-        self.p = self.p & 0b1111_0111;
-        self.p = self.p | ((val as u8) << 3);
+        self.p &= 0b1111_0111;
+        self.p |= (val as u8) << 3;
     }
 
     pub fn get_index_register_select_flag(&self) -> bool {
@@ -100,8 +100,8 @@ impl Registers {
     }
 
     pub fn set_index_register_select_flag(&mut self, val: bool) {
-        self.p = self.p & 0b1110_1111;
-        self.p = self.p | ((val as u8) << 4);
+        self.p &= 0b1110_1111;
+        self.p |= (val as u8) << 4;
     }
 
     pub fn get_break_instruction_flag(&self) -> bool {
@@ -109,8 +109,8 @@ impl Registers {
     }
 
     pub fn set_break_instruction_flag(&mut self, val: bool) {
-        self.p = self.p & 0b1110_1111;
-        self.p = self.p | ((val as u8) << 4);
+        self.p &= 0b1110_1111;
+        self.p |= (val as u8) << 4;
     }
 
     pub fn get_memory_select_flag(&self) -> bool {
@@ -118,8 +118,8 @@ impl Registers {
     }
 
     pub fn set_memory_select_flag(&mut self, val: bool) {
-        self.p = self.p & 0b1101_1111;
-        self.p = self.p | ((val as u8) << 5);
+        self.p &= 0b1101_1111;
+        self.p |= (val as u8) << 5;
     }
 
     pub fn get_overflow_flag(&self) -> bool {
@@ -127,8 +127,8 @@ impl Registers {
     }
 
     pub fn set_overflow_flag(&mut self, val: bool) {
-        self.p = self.p & 0b1011_1111;
-        self.p = self.p | ((val as u8) << 6);
+        self.p &= 0b1011_1111;
+        self.p |= (val as u8) << 6;
     }
 
     pub fn get_negative_flag(&self) -> bool {
@@ -136,8 +136,8 @@ impl Registers {
     }
 
     pub fn set_negative_flag(&mut self, val: bool) {
-        self.p = self.p & 0b0111_1111;
-        self.p = self.p | ((val as u8) << 7);
+        self.p &= 0b0111_1111;
+        self.p |= (val as u8) << 7;
     }
 
     pub fn get_pc_address(&self) -> u32 {
@@ -210,11 +210,17 @@ impl Registers {
     }
 
     pub fn reset_rep_byte(&mut self, byte: u8) {
-        self.p = self.p & !byte;
+        self.p &= !byte;
     }
 
     pub fn set_sep_byte(&mut self, byte: u8) {
-        self.p = self.p | byte;
+        self.p |= byte;
+    }
+}
+
+impl Default for Registers {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -417,14 +423,14 @@ mod registers_tests {
         registers.emulation_mode = false;
         registers.set_flags(&[Flags::Carry(true)]);
         registers.exchange_carry_and_emulation();
-        assert_eq!(registers.get_carry_flag(), false);
-        assert_eq!(registers.emulation_mode, true);
+        assert!(!registers.get_carry_flag());
+        assert!(registers.emulation_mode);
 
         registers.emulation_mode = true;
         registers.set_flags(&[Flags::Carry(false)]);
         registers.exchange_carry_and_emulation();
-        assert_eq!(registers.get_carry_flag(), true);
-        assert_eq!(registers.emulation_mode, false);
+        assert!(registers.get_carry_flag());
+        assert!(!registers.emulation_mode);
     }
 
     #[test]

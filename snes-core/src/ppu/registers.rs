@@ -179,10 +179,9 @@ impl PPURegisters {
     }
 
     pub fn _write(&mut self, address: u16, value: u8) {
-        match address {
-            0x2100..=0x213F => self.data[(address as usize) - 0x2100] = value,
-            _ => {},
-        };
+        if let 0x2100..=0x213F = address {
+            self.data[(address as usize) - 0x2100] = value
+        }
     }
 
     pub fn read_external(&self, address: u16) -> u8 {
@@ -240,15 +239,11 @@ impl PPURegisters {
         let increment_when_lo = (register >> 7) != 1;
         let increment_when_hi = !increment_when_lo;
         let current_value = self.get_current_vram_address();
-        if increment_when_hi {
-            if let Some(_) = byte_hi {
-                self.set_current_vram_address(current_value.wrapping_add(amount_to_increment));
-            }
+        if increment_when_hi && byte_hi.is_some() {
+            self.set_current_vram_address(current_value.wrapping_add(amount_to_increment));
         }
-        if increment_when_lo {
-            if let Some(_) = byte_lo {
-                self.set_current_vram_address(current_value.wrapping_add(amount_to_increment));
-            }
+        if increment_when_lo && byte_lo.is_some() {
+            self.set_current_vram_address(current_value.wrapping_add(amount_to_increment));
         }
     }
 
@@ -362,8 +357,7 @@ impl PPURegisters {
         };
         // Most significant bit is unused
         let base_address = (self._read(register) & 0b01111111) >> 2;
-        let result = (base_address as u16) * 0x400;
-        result
+        (base_address as u16) * 0x400
     }
 
     pub fn get_bg_char_base_address(&self, background: Background) -> u16 {
@@ -381,7 +375,13 @@ impl PPURegisters {
         if self.v_count >= 1 && self.v_count <= 224 {
             return false
         }
-        return true
+        true
+    }
+}
+
+impl Default for PPURegisters {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -575,16 +575,16 @@ mod ppu_registers_test {
     fn test_is_vblanking() {
         let mut registers = PPURegisters::new();
         registers.v_count = 339;
-        assert_eq!(registers.is_vblanking(), true);
+        assert!(registers.is_vblanking());
         registers.v_count = 0;
-        assert_eq!(registers.is_vblanking(), true);
+        assert!(registers.is_vblanking());
         registers.v_count = 225;
-        assert_eq!(registers.is_vblanking(), true);
+        assert!(registers.is_vblanking());
         registers.v_count = 224;
-        assert_eq!(registers.is_vblanking(), false);
+        assert!(!registers.is_vblanking());
         registers.v_count = 2;
-        assert_eq!(registers.is_vblanking(), false);
+        assert!(!registers.is_vblanking());
         registers.v_count = 50;
-        assert_eq!(registers.is_vblanking(), false);
+        assert!(!registers.is_vblanking());
     }
 }

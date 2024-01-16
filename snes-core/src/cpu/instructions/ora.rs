@@ -4,7 +4,7 @@ use crate::cpu::cycles;
 use super::{CPUInstruction, read_write_common::{read_8bit_from_address, read_16bit_from_address}};
 use super::decoder_common;
 
-static INSTR_NAME: &'static str = "ORA";
+static INSTR_NAME: &str = "ORA";
 
 pub struct ORA {
     pub addressing_mode: AddressingMode,

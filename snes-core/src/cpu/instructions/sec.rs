@@ -4,7 +4,7 @@ use crate::cpu::cycles;
 use super::CPUInstruction;
 use super::decoder_common;
 
-static INSTR_NAME: &'static str = "SEC";
+static INSTR_NAME: &str = "SEC";
 
 pub struct SEC {}
 
@@ -33,7 +33,7 @@ mod cpu_instructions_tests {
         registers.set_carry_flag(false);
         let instruction = SEC{};
         instruction.execute(&mut registers, &mut bus);
-        assert_eq!(registers.get_carry_flag(), true);
+        assert!(registers.get_carry_flag());
         assert_eq!(registers.pc, 0x0001);
         assert_eq!(registers.cycles, 2);
     }

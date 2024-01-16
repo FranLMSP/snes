@@ -5,7 +5,7 @@ use super::{CPUInstruction, read_write_common::{read_8bit_from_address, read_16b
 use super::decoder_common;
 use super::comp_common;
 
-static INSTR_NAME: &'static str = "CPY";
+static INSTR_NAME: &str = "CPY";
 
 pub struct CPY {
     pub addressing_mode: AddressingMode,
@@ -43,7 +43,7 @@ impl CPUInstruction for CPY8 {
             registers.y as u8,
             read_8bit_from_address(registers, bus, self.addressing_mode),
         );
-        let (bytes, cycles) = cycles::increment_cycles_comp_index(&registers, self.addressing_mode);
+        let (bytes, cycles) = cycles::increment_cycles_comp_index(registers, self.addressing_mode);
         registers.increment_pc(bytes); registers.cycles += cycles;
     }
 
@@ -63,7 +63,7 @@ impl CPUInstruction for CPY16 {
             registers.y,
             read_16bit_from_address(registers, bus, self.addressing_mode),
         );
-        let (bytes, cycles) = cycles::increment_cycles_comp_index(&registers, self.addressing_mode);
+        let (bytes, cycles) = cycles::increment_cycles_comp_index(registers, self.addressing_mode);
         registers.increment_pc(bytes); registers.cycles += cycles;
     }
 

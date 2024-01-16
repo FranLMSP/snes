@@ -4,7 +4,7 @@ use crate::cpu::cycles;
 use super::{CPUInstruction, read_write_common::{write_8bit_to_address, read_8bit_from_address, read_16bit_from_address, write_16bit_to_address}};
 use super::decoder_common;
 
-static INSTR_NAME: &'static str = "LSR";
+static INSTR_NAME: &str = "LSR";
 
 pub struct LSR {
     pub addressing_mode: AddressingMode,
@@ -40,7 +40,7 @@ impl CPUInstruction for LSR8 {
         let (result, affected_flags) = alu::lsr(read_8bit_from_address(registers, bus, self.addressing_mode));
         write_8bit_to_address(registers, bus, self.addressing_mode, result);
         registers.set_flags(&affected_flags);
-        let (bytes, cycles) = cycles::increment_cycles_shift(&registers, self.addressing_mode);
+        let (bytes, cycles) = cycles::increment_cycles_shift(registers, self.addressing_mode);
         registers.increment_pc(bytes); registers.cycles += cycles;
     }
 
@@ -58,7 +58,7 @@ impl CPUInstruction for LSR16 {
         let (result, affected_flags) = alu::lsr(read_16bit_from_address(registers, bus, self.addressing_mode));
         write_16bit_to_address(registers, bus, self.addressing_mode, result);
         registers.set_flags(&affected_flags);
-        let (bytes, cycles) = cycles::increment_cycles_shift(&registers, self.addressing_mode);
+        let (bytes, cycles) = cycles::increment_cycles_shift(registers, self.addressing_mode);
         registers.increment_pc(bytes); registers.cycles += cycles;
     }
 

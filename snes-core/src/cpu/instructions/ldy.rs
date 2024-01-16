@@ -7,7 +7,7 @@ use super::read_write_common::{read_8bit_from_address, read_16bit_from_address};
 use super::{CPUInstruction, bit_common};
 use super::decoder_common;
 
-static INSTR_NAME: &'static str = "LDY";
+static INSTR_NAME: &str = "LDY";
 
 pub struct LDY {
     pub addressing_mode: AddressingMode,
@@ -47,7 +47,7 @@ impl CPUInstruction for LDY8 {
         ]);
         registers.set_low_y(value);
         bit_common::do_bit(registers, registers.y as u8, value, self.addressing_mode);
-        let (bytes, cycles) = cycles::increment_cycles_ld_index(&registers, self.addressing_mode);
+        let (bytes, cycles) = cycles::increment_cycles_ld_index(registers, self.addressing_mode);
         registers.increment_pc(bytes); registers.cycles += cycles;
     }
 
@@ -68,7 +68,7 @@ impl CPUInstruction for LDY16 {
             Flags::Negative(value >> 15 == 1),
             Flags::Zero(value == 0),
         ]);
-        let (bytes, cycles) = cycles::increment_cycles_ld_index(&registers, self.addressing_mode);
+        let (bytes, cycles) = cycles::increment_cycles_ld_index(registers, self.addressing_mode);
         registers.increment_pc(bytes); registers.cycles += cycles;
     }
 

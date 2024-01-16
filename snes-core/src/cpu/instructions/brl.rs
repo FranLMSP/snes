@@ -4,7 +4,7 @@ use super::CPUInstruction;
 use super::decoder_common;
 use crate::cpu::cycles;
 
-static INSTR_NAME: &'static str = "BRL";
+static INSTR_NAME: &str = "BRL";
 
 pub struct BRL {}
 

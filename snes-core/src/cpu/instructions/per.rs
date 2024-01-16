@@ -6,7 +6,7 @@ use super::read_write_common::get_effective_address;
 use super::{CPUInstruction, push_common};
 use super::decoder_common;
 
-static INSTR_NAME: &'static str = "PER";
+static INSTR_NAME: &str = "PER";
 
 pub struct PER {}
 

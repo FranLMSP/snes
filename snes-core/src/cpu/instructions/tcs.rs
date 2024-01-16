@@ -4,7 +4,7 @@ use crate::cpu::{bus::Bus, registers::Registers};
 use super::CPUInstruction;
 use super::decoder_common;
 
-static INSTR_NAME: &'static str = "TCS";
+static INSTR_NAME: &str = "TCS";
 
 pub struct TCS {}
 

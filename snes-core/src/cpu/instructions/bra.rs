@@ -5,7 +5,7 @@ use super::decoder_common;
 use super::branch_common;
 use crate::cpu::cycles;
 
-static INSTR_NAME: &'static str = "BRA";
+static INSTR_NAME: &str = "BRA";
 
 pub struct BRA {}
 

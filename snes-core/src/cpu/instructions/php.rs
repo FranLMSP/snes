@@ -4,7 +4,7 @@ use crate::cpu::cycles;
 use super::{CPUInstruction, push_common};
 use super::decoder_common;
 
-static INSTR_NAME: &'static str = "PHP";
+static INSTR_NAME: &str = "PHP";
 
 pub struct PHP {}
 

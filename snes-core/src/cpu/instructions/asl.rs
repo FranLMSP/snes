@@ -4,7 +4,7 @@ use crate::cpu::cycles;
 use super::CPUInstruction;
 use super::decoder_common;
 
-static INSTR_NAME: &'static str = "ASL";
+static INSTR_NAME: &str = "ASL";
 
 pub struct ASL {
     pub addressing_mode: AddressingMode,
@@ -42,7 +42,7 @@ impl CPUInstruction for ASL8 {
         );
         registers.set_low_a(result);
         registers.set_flags(&affected_flags);
-        let (bytes, cycles) = cycles::increment_cycles_bitwise(&registers, self.addressing_mode);
+        let (bytes, cycles) = cycles::increment_cycles_bitwise(registers, self.addressing_mode);
         registers.increment_pc(bytes); registers.cycles += cycles;
     }
 
@@ -62,7 +62,7 @@ impl CPUInstruction for ASL16 {
         );
         registers.a = result;
         registers.set_flags(&affected_flags);
-        let (bytes, cycles) = cycles::increment_cycles_bitwise(&registers, self.addressing_mode);
+        let (bytes, cycles) = cycles::increment_cycles_bitwise(registers, self.addressing_mode);
         registers.increment_pc(bytes); registers.cycles += cycles;
     }
 

@@ -45,7 +45,7 @@ impl InternalRegisters {
 
     pub fn write(&mut self, address: u16, value: u8, dma: &mut dma::DMA) {
         self._write(address, value);
-        match address {
+        #[allow(clippy::single_match)] match address {
             dma::MDMAEN => dma.prepare_dma_transfer(value),
             _ => {},
         }
@@ -53,8 +53,7 @@ impl InternalRegisters {
 
     fn read_vblank_nmi(&self, ppu_registers: &PPURegisters) -> u8 {
         let byte = self._read(RDNMI);
-        let result = (byte & 0x7F) | ((ppu_registers.vblank_nmi as u8) << 7);
-        result
+        (byte & 0x7F) | ((ppu_registers.vblank_nmi as u8) << 7)
     }
 
     fn read_vblank_nmi_mut(&self, ppu_registers: &mut PPURegisters) -> u8 {
@@ -66,11 +65,17 @@ impl InternalRegisters {
     }
 }
 
+impl Default for InternalRegisters {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 
 #[cfg(test)]
 mod ppu_general_test {
     use super::*;
-    use crate::ppu::ppu::PPU;
+    use crate::ppu::interface::PPU;
 
     #[test]
     fn test_read_vblank_nmi() {
@@ -78,13 +83,13 @@ mod ppu_general_test {
         let mut ppu = PPU::new();
         ppu.registers.h_count = 20;
         ppu.dot_cycle();
-        assert_eq!(registers.read_vblank_nmi(&mut ppu.registers), 0x00);
+        assert_eq!(registers.read_vblank_nmi(&ppu.registers), 0x00);
         ppu.registers.h_count = 339;
         ppu.registers.v_count = 224;
         ppu.dot_cycle();
         assert_eq!(registers.read_vblank_nmi_mut(&mut ppu.registers), 0x80);
         // vblank bit is reset after read
         ppu.dot_cycle();
-        assert_eq!(registers.read_vblank_nmi(&mut ppu.registers), 0x00);
+        assert_eq!(registers.read_vblank_nmi(&ppu.registers), 0x00);
     }
 }

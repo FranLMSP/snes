@@ -4,7 +4,7 @@ use crate::cpu::cycles;
 use super::CPUInstruction;
 use super::decoder_common;
 
-static INSTR_NAME: &'static str = "CLC";
+static INSTR_NAME: &str = "CLC";
 
 pub struct CLC {}
 

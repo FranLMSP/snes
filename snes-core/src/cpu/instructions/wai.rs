@@ -4,7 +4,7 @@ use crate::cpu::cycles;
 use super::CPUInstruction;
 use super::decoder_common;
 
-static INSTR_NAME: &'static str = "WAI";
+static INSTR_NAME: &str = "WAI";
 
 pub struct WAI {}
 
@@ -34,7 +34,7 @@ mod cpu_instructions_tests {
         let instruction = WAI{};
         instruction.execute(&mut registers, &mut bus);
         assert_eq!(registers.pc, 0x0001);
-        assert_eq!(registers.is_cpu_waiting_interrupt, true);
+        assert!(registers.is_cpu_waiting_interrupt);
         assert_eq!(registers.cycles, 3);
     }
 }

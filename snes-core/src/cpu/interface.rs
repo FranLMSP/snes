@@ -39,7 +39,7 @@ impl CPU {
             self.registers.increment_pc(bytes); self.registers.cycles += cycles;
             return false;
         }
-        return true;
+        true
     }
 
     pub fn tick(&mut self, bus: &mut Bus) {
@@ -49,5 +49,11 @@ impl CPU {
         let opcode = bus.read(self.registers.get_pc_address());
         let instruction = map_opcode_to_instruction(opcode);
         instruction.execute(&mut self.registers, bus);
+    }
+}
+
+impl Default for CPU {
+    fn default() -> Self {
+        Self::new()
     }
 }

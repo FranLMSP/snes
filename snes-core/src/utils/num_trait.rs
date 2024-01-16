@@ -92,8 +92,7 @@ macro_rules! define_impl {
             fn ror(&self, carry: bool) -> $t {
                 let mut result = ((* self) >> 1);
                 if carry {
-                    result = result |
-                    ((<$t>::MAX) & !(<$t>::MAX >> 1))
+                    result |= (<$t>::MAX) & !(<$t>::MAX >> 1)
                 }
                 result
             }

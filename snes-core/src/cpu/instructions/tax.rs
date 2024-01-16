@@ -4,7 +4,7 @@ use crate::cpu::{bus::Bus, registers::Registers};
 use super::CPUInstruction;
 use super::decoder_common;
 
-static INSTR_NAME: &'static str = "TAX";
+static INSTR_NAME: &str = "TAX";
 
 pub struct TAX {}
 
@@ -78,8 +78,8 @@ mod cpu_instructions_tests {
         registers.set_16bit_index(false);
         let instruction = TAX8{};
         instruction.execute(&mut registers, &mut bus);
-        assert_eq!(registers.get_negative_flag(), true);
-        assert_eq!(registers.get_zero_flag(), false);
+        assert!(registers.get_negative_flag());
+        assert!(!registers.get_zero_flag());
         assert_eq!(registers.x, 0x00FF);
         assert_eq!(registers.pc, 0x0001);
         assert_eq!(registers.cycles, 2);
@@ -97,8 +97,8 @@ mod cpu_instructions_tests {
         registers.set_16bit_index(true);
         let instruction = TAX16{};
         instruction.execute(&mut registers, &mut bus);
-        assert_eq!(registers.get_negative_flag(), true);
-        assert_eq!(registers.get_zero_flag(), false);
+        assert!(registers.get_negative_flag());
+        assert!(!registers.get_zero_flag());
         assert_eq!(registers.x, 0xF0F0);
         assert_eq!(registers.pc, 0x0001);
         assert_eq!(registers.cycles, 2);

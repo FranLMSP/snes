@@ -6,7 +6,7 @@ use super::read_write_common::read_8bit_from_address;
 use super::CPUInstruction;
 use super::decoder_common;
 
-static INSTR_NAME: &'static str = "SEP";
+static INSTR_NAME: &str = "SEP";
 
 pub struct SEP {}
 

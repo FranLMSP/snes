@@ -5,7 +5,7 @@ use super::decoder_common;
 use super::push_common;
 use crate::cpu::cycles;
 
-static INSTR_NAME: &'static str = "BRK";
+static INSTR_NAME: &str = "BRK";
 
 pub struct BRK {}
 
@@ -22,15 +22,5 @@ impl CPUInstruction for BRK {
 
     fn mnemonic(&self, _registers: &Registers, _bus: &Bus, opcode: u8) -> String {
         decoder_common::mnemonic_single_byte_instr(opcode, INSTR_NAME)
-    }
-}
-
-
-#[cfg(test)]
-mod cpu_instructions_tests {
-    use super::*;
-
-    #[test]
-    fn test() {
     }
 }

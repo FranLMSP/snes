@@ -4,7 +4,7 @@ use crate::cpu::cycles;
 use super::CPUInstruction;
 use super::decoder_common;
 
-static INSTR_NAME: &'static str = "CLI";
+static INSTR_NAME: &str = "CLI";
 
 pub struct CLI {}
 

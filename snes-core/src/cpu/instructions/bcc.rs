@@ -4,7 +4,7 @@ use super::CPUInstruction;
 use super::decoder_common;
 use super::branch_common;
 
-static INSTR_NAME: &'static str = "BCC";
+static INSTR_NAME: &str = "BCC";
 
 pub struct BCC {}
 

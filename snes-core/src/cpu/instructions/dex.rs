@@ -4,7 +4,7 @@ use crate::cpu::cycles;
 use super::{CPUInstruction, dec_common};
 use super::decoder_common;
 
-static INSTR_NAME: &'static str = "DEX";
+static INSTR_NAME: &str = "DEX";
 
 pub struct DEX {}
 

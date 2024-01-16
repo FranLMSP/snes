@@ -19,7 +19,7 @@ impl LoROM {
 }
 
 impl ROM for LoROM {
-    fn load(&mut self, filename: &String) -> std::io::Result<bool> {
+    fn load(&mut self, filename: &str) -> std::io::Result<bool> {
         load_rom(filename, &mut self.data)
     }
 
@@ -32,4 +32,10 @@ impl ROM for LoROM {
     }
 
     fn write(&mut self, _address: u32, _value: u8) {}
+}
+
+impl Default for LoROM {
+    fn default() -> Self {
+        Self::new()
+    }
 }

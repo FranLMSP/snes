@@ -22,6 +22,5 @@ pub fn do_branch(nearlabel: u8, registers: &mut Registers) -> bool {
         registers.increment_pc(nearlabel as u16);
     }
     let new_pc = registers.get_pc_address();
-    let page_boundary_crossed = (old_pc & 0xFF00) != (new_pc & 0xFF00);
-    return page_boundary_crossed
+    (old_pc & 0xFF00) != (new_pc & 0xFF00)
 }

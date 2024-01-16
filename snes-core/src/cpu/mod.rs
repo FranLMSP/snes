@@ -1,5 +1,5 @@
-pub mod cpu;
-pub use cpu::CPU;
+pub mod interface;
+pub use interface::CPU;
 pub mod bus;
 pub mod registers;
 pub mod dma;

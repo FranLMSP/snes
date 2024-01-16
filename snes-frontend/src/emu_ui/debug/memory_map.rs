@@ -52,10 +52,10 @@ fn build_inputs(ui: &mut egui::Ui, input_values: &mut MemoryMapInputs, input_res
         sanitize_input(&mut input_values.page_end, true);
         sanitize_input(&mut input_values.address_start, false);
         sanitize_input(&mut input_values.address_end, false);
-        input_result.page_start = format!("{}", input_values.page_start);
-        input_result.page_end = format!("{}", input_values.page_end);
-        input_result.address_start = format!("{}", input_values.address_start);
-        input_result.address_end = format!("{}", input_values.address_end);
+        input_result.page_start = input_values.page_start.to_string();
+        input_result.page_end = input_values.page_end.to_string();
+        input_result.address_start = input_values.address_start.to_string();
+        input_result.address_end = input_values.address_end.to_string();
     }
 }
 

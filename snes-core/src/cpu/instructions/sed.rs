@@ -4,7 +4,7 @@ use crate::cpu::cycles;
 use super::CPUInstruction;
 use super::decoder_common;
 
-static INSTR_NAME: &'static str = "SED";
+static INSTR_NAME: &str = "SED";
 
 pub struct SED {}
 
@@ -33,7 +33,7 @@ mod cpu_instructions_tests {
         registers.set_decimal_mode_flag(false);
         let instruction = SED{};
         instruction.execute(&mut registers, &mut bus);
-        assert_eq!(registers.get_decimal_mode_flag(), true);
+        assert!(registers.get_decimal_mode_flag());
         assert_eq!(registers.pc, 0x0001);
         assert_eq!(registers.cycles, 2);
     }

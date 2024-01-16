@@ -1,3 +1,3 @@
-pub mod ppu;
-pub use ppu::PPU;
+pub mod interface;
+pub use interface::PPU;
 pub mod registers;

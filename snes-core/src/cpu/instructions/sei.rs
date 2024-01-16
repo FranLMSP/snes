@@ -4,7 +4,7 @@ use crate::cpu::cycles;
 use super::CPUInstruction;
 use super::decoder_common;
 
-static INSTR_NAME: &'static str = "SEI";
+static INSTR_NAME: &str = "SEI";
 
 pub struct SEI {}
 
@@ -33,7 +33,7 @@ mod cpu_instructions_tests {
         registers.set_irq_disable_flag(false);
         let instruction = SEI{};
         instruction.execute(&mut registers, &mut bus);
-        assert_eq!(registers.get_irq_disable_flag(), true);
+        assert!(registers.get_irq_disable_flag());
         assert_eq!(registers.pc, 0x0001);
         assert_eq!(registers.cycles, 2);
     }

@@ -4,7 +4,7 @@ use crate::cpu::cycles;
 use super::{CPUInstruction, pull_common};
 use super::decoder_common;
 
-static INSTR_NAME: &'static str = "PLX";
+static INSTR_NAME: &str = "PLX";
 
 pub struct PLX {}
 
@@ -49,8 +49,8 @@ mod cpu_instructions_tests {
         assert_eq!(registers.x, 0x1234);
         assert_eq!(registers.sp, 0x1FC);
         assert_eq!(registers.pc, 0x0001);
-        assert_eq!(registers.get_negative_flag(), false);
-        assert_eq!(registers.get_zero_flag(), false);
+        assert!(!registers.get_negative_flag());
+        assert!(!registers.get_zero_flag());
         assert_eq!(registers.cycles, 5);
     }
 }

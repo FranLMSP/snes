@@ -6,7 +6,7 @@ use super::read_write_common::{write_8bit_to_address, write_16bit_to_address};
 use super::CPUInstruction;
 use super::decoder_common;
 
-static INSTR_NAME: &'static str = "STX";
+static INSTR_NAME: &str = "STX";
 
 pub struct STX {
     pub addressing_mode: AddressingMode,

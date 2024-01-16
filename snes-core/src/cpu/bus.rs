@@ -34,7 +34,7 @@ impl Bus {
     }
 
     fn read_wram(&self, address: u32) -> u8 {
-        return self.wram[(address & 0xFFFF) as usize];
+        self.wram[(address & 0xFFFF) as usize]
     }
 
     fn write_wram(&mut self, address: u32, value: u8) {
@@ -107,6 +107,12 @@ impl Bus {
             MemoryMap::Joypad => {},  // TODO: Placeholder
             MemoryMap::Cartridge => self.rom.write(address, value),
         }
+    }
+}
+
+impl Default for Bus {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

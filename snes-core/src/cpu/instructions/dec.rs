@@ -4,7 +4,7 @@ use crate::cpu::cycles;
 use super::{CPUInstruction, dec_common, read_write_common::{read_8bit_from_address, write_8bit_to_address, read_16bit_from_address, write_16bit_to_address}};
 use super::decoder_common;
 
-static INSTR_NAME: &'static str = "DEC";
+static INSTR_NAME: &str = "DEC";
 
 pub struct DEC {
     pub addressing_mode: AddressingMode,
@@ -42,7 +42,7 @@ impl CPUInstruction for DEC8 {
             read_8bit_from_address(registers, bus, self.addressing_mode),
         ) as u8;
         write_8bit_to_address(registers, bus, self.addressing_mode, result);
-        let (bytes, cycles) = cycles::increment_cycles_inc_dec(&registers, self.addressing_mode);
+        let (bytes, cycles) = cycles::increment_cycles_inc_dec(registers, self.addressing_mode);
         registers.increment_pc(bytes); registers.cycles += cycles;
     }
 
@@ -62,7 +62,7 @@ impl CPUInstruction for DEC16 {
             read_16bit_from_address(registers, bus, self.addressing_mode),
         ) as u16;
         write_16bit_to_address(registers, bus, self.addressing_mode, result);
-        let (bytes, cycles) = cycles::increment_cycles_inc_dec(&registers, self.addressing_mode);
+        let (bytes, cycles) = cycles::increment_cycles_inc_dec(registers, self.addressing_mode);
         registers.increment_pc(bytes); registers.cycles += cycles;
     }
 

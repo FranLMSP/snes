@@ -6,7 +6,7 @@ use super::read_write_common::{read_8bit_from_address, write_8bit_to_address, re
 use super::CPUInstruction;
 use super::decoder_common;
 
-static INSTR_NAME: &'static str = "TRB";
+static INSTR_NAME: &str = "TRB";
 
 pub struct TRB {
     pub addressing_mode: AddressingMode,
@@ -68,15 +68,5 @@ impl CPUInstruction for TRB16 {
 
     fn mnemonic(&self, registers: &Registers, bus: &Bus, opcode: u8) -> String {
         decoder_common::mnemonic_arithmetic(true, opcode, INSTR_NAME, self.addressing_mode, registers, bus)
-    }
-}
-
-
-#[cfg(test)]
-mod cpu_instructions_tests {
-    use super::*;
-
-    #[test]
-    fn test() {
     }
 }

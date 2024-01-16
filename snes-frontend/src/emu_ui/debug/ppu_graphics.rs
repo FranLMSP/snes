@@ -24,7 +24,7 @@ fn build_bg_preview_window(ctx: &Context, bgdebug: &mut BgDebug, registers: &PPU
             egui::ScrollArea::both().show(ui, |ui| {
                 ui.label("Charset");
                 compute_2bpp_bg_char_framebuffer(bgdebug.background, &mut bgdebug.char_framebuffer, registers);
-                paint_texture(ui, &mut bgdebug.char_texture, &mut bgdebug.char_framebuffer, 16 * 8, 8 * 8);
+                paint_texture(ui, &mut bgdebug.char_texture, &bgdebug.char_framebuffer, 16 * 8, 8 * 8);
                 // ui.label("Background");
                 // paint_texture(ui, &mut bgdebug.bg_texture, &mut bgdebug.bg_framebuffer, MAX_BG_WIDTH, MAX_BG_HEIGHT);
             });
@@ -142,7 +142,7 @@ fn initialize_bg_texture(ctx: &Context, bgdebug: &mut BgDebug) {
     if !bgdebug.is_enabled {
         return;
     }
-    if let None = bgdebug.bg_texture {
+    if bgdebug.bg_texture.is_none() {
         println!("Initializing BG texture {:?}", bgdebug.background);
         bgdebug.bg_texture = Some(
             ctx.load_texture(
@@ -152,7 +152,7 @@ fn initialize_bg_texture(ctx: &Context, bgdebug: &mut BgDebug) {
             )
         );
     }
-    if let None = bgdebug.char_texture {
+    if bgdebug.char_texture.is_none() {
         println!("Initializing Char texture {:?}", bgdebug.background);
         bgdebug.char_texture = Some(
             ctx.load_texture(

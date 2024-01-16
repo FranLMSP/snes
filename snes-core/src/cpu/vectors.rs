@@ -1,8 +1,8 @@
-use super::{cpu::CPU, instructions::{phk::PHK, CPUInstruction, php::PHP, push_common}};
+use super::{interface::CPU, instructions::{phk::PHK, CPUInstruction, php::PHP, push_common}};
 use crate::cpu::bus::Bus;
 
-#[derive(Copy, Clone)]
-enum Vector {
+
+#[allow(clippy::upper_case_acronyms, dead_code)] enum Vector {
     Reset,
     COP,
     Break,
@@ -79,6 +79,6 @@ mod cpu_vectors_tests {
         cpu.registers.is_cpu_stopped = true;
         // TODO: test that the PC register got the right vector
         cpu.reset_vector(&mut bus);
-        assert_eq!(cpu.registers.is_cpu_stopped, false);
+        assert!(!cpu.registers.is_cpu_stopped);
     }
 }

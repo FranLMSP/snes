@@ -4,7 +4,7 @@ use crate::cpu::cycles;
 use super::{CPUInstruction, read_write_common::{read_8bit_from_address, read_16bit_from_address}};
 use super::decoder_common;
 
-static INSTR_NAME: &'static str = "EOR";
+static INSTR_NAME: &str = "EOR";
 
 pub struct EOR {
     pub addressing_mode: AddressingMode,
@@ -41,7 +41,7 @@ impl CPUInstruction for EOR8 {
         let (result, affected_flags) = alu::eor(registers.a as u8, value);
         registers.set_low_a(result);
         registers.set_flags(&affected_flags);
-        let (bytes, cycles) = cycles::increment_cycles_bitwise(&registers, self.addressing_mode);
+        let (bytes, cycles) = cycles::increment_cycles_bitwise(registers, self.addressing_mode);
         registers.increment_pc(bytes); registers.cycles += cycles;
     }
 
@@ -60,7 +60,7 @@ impl CPUInstruction for EOR16 {
         let (result, affected_flags) = alu::eor(registers.a, value);
         registers.a = result;
         registers.set_flags(&affected_flags);
-        let (bytes, cycles) = cycles::increment_cycles_bitwise(&registers, self.addressing_mode);
+        let (bytes, cycles) = cycles::increment_cycles_bitwise(registers, self.addressing_mode);
         registers.increment_pc(bytes); registers.cycles += cycles;
     }
 

@@ -4,7 +4,7 @@ use crate::cpu::cycles;
 use super::{CPUInstruction, pull_common};
 use super::decoder_common;
 
-static INSTR_NAME: &'static str = "RTI";
+static INSTR_NAME: &str = "RTI";
 
 pub struct RTI {}
 
@@ -22,15 +22,5 @@ impl CPUInstruction for RTI {
 
     fn mnemonic(&self, _registers: &Registers, _bus: &Bus, opcode: u8) -> String {
         decoder_common::mnemonic_single_byte_instr(opcode, INSTR_NAME)
-    }
-}
-
-
-#[cfg(test)]
-mod cpu_instructions_tests {
-    use super::*;
-
-    #[test]
-    fn test() {
     }
 }
