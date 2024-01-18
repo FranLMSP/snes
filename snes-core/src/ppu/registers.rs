@@ -111,7 +111,7 @@ pub enum BgSize {
     T32x32,
     T64x32, // V Mirror
     T32x64, // H Mirror
-    T64x64, // H Mirror
+    T64x64, // H/V Mirror
 }
 
 impl BgSize {
@@ -266,10 +266,10 @@ impl PPURegisters {
     pub fn get_bg_tile_size(&self, background: Background) -> TileSize {
         let byte = self._read(BGMODE);
         let bit = match background {
-            Background::Bg1 => byte >> 3 & 0b1 == 1, // Bit 4
-            Background::Bg2 => byte >> 4 & 0b1 == 1, // Bit 5
-            Background::Bg3 => byte >> 5 & 0b1 == 1, // Bit 6
-            Background::Bg4 => byte >> 6 & 0b1 == 1, // Bit 7
+            Background::Bg1 => byte >> 4 & 0b1 == 1, // Bit 4
+            Background::Bg2 => byte >> 5 & 0b1 == 1, // Bit 5
+            Background::Bg3 => byte >> 6 & 0b1 == 1, // Bit 6
+            Background::Bg4 => byte >> 7 & 0b1 == 1, // Bit 7
         };
         match bit {
             true => TileSize::P16x16,
