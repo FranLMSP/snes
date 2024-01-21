@@ -103,6 +103,7 @@ pub struct PPUDebugControlOptions {
     pub show_registers: bool,
     pub show_vram: bool,
     pub vram_inputs: VramInputs,
+    pub vram_inputs_result: VramInputs,
     pub backgrounds: [BgDebug; 4],
 }
 
@@ -113,6 +114,7 @@ impl PPUDebugControlOptions {
             show_registers: true,
             show_vram: true,
             vram_inputs: VramInputs::new(),
+            vram_inputs_result: VramInputs::new(),
             backgrounds: [
                 BgDebug::new(PPUBg::Bg1),
                 BgDebug::new(PPUBg::Bg2),

@@ -134,7 +134,8 @@ fn compute_2bpp_bg_background_framebuffer(background: Background, framebuffer: &
     for y in 0..height {
         for x in 0..width {
             let current_tile = (x / tile_size_width) + ((y / tile_size_height) * bg_size_width);
-            let char_index = vram[(tileset_vram_base_address + current_tile) & 0x7FFF] & 0b11_11111111;
+            let tile_byte = vram[tileset_vram_base_address + current_tile];
+            let char_index = tile_byte & 0b11_11111111;
             let current_char_column = x.rem_euclid(tile_size_width);
             let current_char_row = y.rem_euclid(tile_size_height);
             // 8x8 pixels, 2 bitplanes, each word (16bit) holds 8 pixels
@@ -225,7 +226,7 @@ fn paint_texture(ui: &mut Ui, texture: &mut Option<TextureHandle>, framebuffer: 
             TextureOptions::default(),
         );
         let (whole_rect, _) =
-            ui.allocate_exact_size(Vec2::from([width as f32, height as f32]), egui::Sense::focusable_noninteractive());
+            ui.allocate_exact_size(Vec2::from([(width * 2) as f32, (height * 2) as f32]), egui::Sense::focusable_noninteractive());
         egui::Image::new((
             txt.id(),
             txt.size_vec2(),

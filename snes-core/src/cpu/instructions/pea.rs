@@ -19,7 +19,7 @@ impl CPUInstruction for PEA {
     }
 
     fn mnemonic(&self, registers: &Registers, bus: &Bus, opcode: u8) -> String {
-        decoder_common::mnemonic_absolute(opcode, INSTR_NAME, registers, bus)
+        decoder_common::mnemonic_absolute_16bit(opcode, INSTR_NAME, registers, bus)
     }
 }
 

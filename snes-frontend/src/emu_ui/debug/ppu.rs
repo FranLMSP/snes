@@ -164,13 +164,15 @@ fn build_vram_window(ctx: &egui::Context, ppu_debug_options: &mut PPUDebugContro
             if ui.button("Search").clicked() {
                 sanitize_input(&mut ppu_debug_options.vram_inputs.address_start, false);
                 sanitize_input(&mut ppu_debug_options.vram_inputs.address_end, false);
+                ppu_debug_options.vram_inputs_result.address_start = ppu_debug_options.vram_inputs.address_start.to_string();
+                ppu_debug_options.vram_inputs_result.address_end = ppu_debug_options.vram_inputs.address_end.to_string();
             }
 
             ui.separator();
 
             egui::ScrollArea::both().show(ui, |ui| {
-                let address_start = u16::from_str_radix(&ppu_debug_options.vram_inputs.address_start, 16).unwrap();
-                let address_end = u16::from_str_radix(&ppu_debug_options.vram_inputs.address_end, 16).unwrap();
+                let address_start = u16::from_str_radix(&ppu_debug_options.vram_inputs_result.address_start, 16).unwrap();
+                let address_end = u16::from_str_radix(&ppu_debug_options.vram_inputs_result.address_end, 16).unwrap();
                 let mut header = String::from("     | ");
                 for page in 0x00..=0x0F {
                     header = format!("{}  {:02X} ", header, page);

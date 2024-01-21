@@ -10,7 +10,10 @@ pub fn mnemonic_arithmetic(is_16bit: bool, opcode: u8, instr_name: &str, address
             true =>  mnemonic_16bit_immediate(opcode, instr_name, registers, bus),
             false => mnemonic_8bit_immediate(opcode, instr_name, registers, bus),
         },
-        A::Absolute => mnemonic_absolute(opcode, instr_name, registers, bus),
+        A::Absolute => match is_16bit {
+            true => mnemonic_absolute_16bit(opcode, instr_name, registers, bus),
+            false => mnemonic_absolute_8bit(opcode, instr_name, registers, bus),
+        },
         A::AbsoluteLong => mnemonic_absolute_long(opcode, instr_name, registers, bus),
         A::DirectPage => mnemonic_direct_page(opcode, instr_name, registers, bus),
         A::DirectPageIndirect => mnemonic_direct_page_indirect(opcode, instr_name, registers, bus),
@@ -38,14 +41,21 @@ pub fn mnemonic_8bit_immediate(opcode: u8, instr_name: &str, registers: &Registe
 pub fn mnemonic_16bit_immediate(opcode: u8, instr_name: &str, registers: &Registers, bus: &Bus) -> String {
     let next_byte = bus.read_external(registers.get_pc_address() + 1);
     let next_second_byte = bus.read_external(registers.get_pc_address() + 2);
-    let word = (next_byte as u16) | ((next_byte as u16) << 8);
+    let word = (next_byte as u16) | ((next_second_byte as u16) << 8);
     format!("{:02X} {:02X} {:02X} __ | {} #${:04X}", opcode, next_byte, next_second_byte, instr_name, word)
 }
 
-pub fn mnemonic_absolute(opcode: u8, instr_name: &str, registers: &Registers, bus: &Bus) -> String {
+pub fn mnemonic_absolute_8bit(opcode: u8, instr_name: &str, registers: &Registers, bus: &Bus) -> String {
     let next_byte = bus.read_external(registers.get_pc_address() + 1);
     let next_second_byte = bus.read_external(registers.get_pc_address() + 2);
-    let word = (next_byte as u16) | ((next_byte as u16) << 8);
+    let word = (next_byte as u16) | ((next_second_byte as u16) << 8);
+    format!("{:02X} {:02X} {:02X} __ | {} ${:04X}", opcode, next_byte, next_second_byte, instr_name, word)
+}
+
+pub fn mnemonic_absolute_16bit(opcode: u8, instr_name: &str, registers: &Registers, bus: &Bus) -> String {
+    let next_byte = bus.read_external(registers.get_pc_address() + 1);
+    let next_second_byte = bus.read_external(registers.get_pc_address() + 2);
+    let word = (next_byte as u16) | ((next_second_byte as u16) << 8);
     format!("{:02X} {:02X} {:02X} __ | {} ${:04X}", opcode, next_byte, next_second_byte, instr_name, word)
 }
 

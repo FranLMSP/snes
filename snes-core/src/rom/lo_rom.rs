@@ -27,7 +27,7 @@ impl ROM for LoROM {
         let address = LoROM::adjust_address(address);
         match self.data.get(address as usize) {
             Some(byte) => *byte,
-            None => 0xFF,
+            None => 0x00,
         }
     }
 
