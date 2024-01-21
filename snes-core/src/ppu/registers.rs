@@ -393,9 +393,9 @@ mod ppu_registers_test {
     #[test]
     fn test_get_bg_tile_size() {
         let mut registers = PPURegisters::new();
-        registers.write(BGMODE, 0b00000100);
+        registers.write(BGMODE, 0b00000000);
         assert_eq!(registers.get_bg_tile_size(Background::Bg1), TileSize::P8x8);
-        registers.write(BGMODE, 0b00001100);
+        registers.write(BGMODE, 0b00010000);
         assert_eq!(registers.get_bg_tile_size(Background::Bg1), TileSize::P16x16);
     }
 

@@ -1,6 +1,7 @@
 use eframe::egui;
 use snes_core::emulator::Emulator;
 
+mod utils;
 mod emu_ui;
 mod emu_state;
 
@@ -9,6 +10,7 @@ mod emu_state;
 struct SnesEmulatorApp {
     emulator: Emulator,
     state: emu_state::AppState,
+    frame_limit: utils::frame_limiter::FrameLimiter,
 }
 
 impl SnesEmulatorApp {
@@ -25,14 +27,24 @@ impl eframe::App for SnesEmulatorApp {
             // ui::game::build_game_window(ctx);
         });
         if !self.state.emulation_state.is_paused {
-            self.emulator.loop_frame();
+            if self.state.emulation_state.one_tick_per_frame {
+                self.emulator.tick();
+            } else {
+                self.emulator.loop_frame();
+            }
         }
         emu_ui::debug::build_all_debug_options(ctx, &mut self.state.debug_options, &mut self.state.emulation_state, &mut self.emulator);
+        ctx.request_repaint();
+        self.frame_limit.limit();
+        self.frame_limit.reset_timer();
     }
 }
 
 fn main() -> eframe::Result<()> {
-    let native_options = eframe::NativeOptions::default();
+    let native_options = eframe::NativeOptions {
+        vsync: false,
+        ..eframe::NativeOptions::default()
+    };
     eframe::run_native(
         "SNES Emulator",
         native_options,
