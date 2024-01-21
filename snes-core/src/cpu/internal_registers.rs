@@ -57,9 +57,11 @@ impl InternalRegisters {
     }
 
     fn read_vblank_nmi_mut(&self, ppu_registers: &mut PPURegisters) -> u8 {
-        let byte = self._read(RDNMI);
+        let result = self.read_vblank_nmi(ppu_registers);
+        if result == 0x80 {
+            println!("nmi set");
+        }
         // When register is read, bit 7 is cleared
-        let result = (byte & 0x7F) | ((ppu_registers.vblank_nmi as u8) << 7);
         ppu_registers.vblank_nmi = false;
         result
     }

@@ -16,6 +16,12 @@ pub fn build_cpu_debug_controls(ctx: &egui::Context, cpu_debug_options: &mut CPU
         .show(ctx, |ui| {
             ui.monospace("Controls:");
             ui.horizontal(|ui| {
+                if ui.selectable_label(
+                    emulation_state.one_tick_per_frame,
+                    "Tick per frame"
+                ).clicked() {
+                    emulation_state.one_tick_per_frame = !emulation_state.one_tick_per_frame;
+                }
                 let pause_text = if emulation_state.is_paused {"Resume"} else {"Pause"};
                 if ui.button(pause_text).clicked() {
                     emulation_state.is_paused = !emulation_state.is_paused;
