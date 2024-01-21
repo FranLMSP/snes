@@ -27,7 +27,7 @@ fn build_bg_preview_window(ctx: &Context, bgdebug: &mut BgDebug, registers: &PPU
                 paint_texture(ui, &mut bgdebug.char_texture, &bgdebug.char_framebuffer, 16 * 8, 8 * 8);
                 ui.label("Background");
                 compute_2bpp_bg_background_framebuffer(bgdebug.background, &mut bgdebug.bg_framebuffer, registers);
-                paint_texture(ui, &mut bgdebug.bg_texture, &mut bgdebug.bg_framebuffer, MAX_BG_WIDTH, MAX_BG_HEIGHT);
+                paint_texture(ui, &mut bgdebug.bg_texture, &bgdebug.bg_framebuffer, MAX_BG_WIDTH, MAX_BG_HEIGHT);
             });
         });
 }
