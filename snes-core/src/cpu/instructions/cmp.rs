@@ -106,6 +106,7 @@ mod cpu_instructions_tests {
         registers.pc  = 0x0000;
         registers.set_16bit_mode(false);
         registers.set_overflow_flag(false);
+        registers.set_carry_flag(true);
         bus.write(0x000001, 0xB0);
         let instruction = CMP16{addressing_mode: AddressingMode::Immediate};
         instruction.execute(&mut registers, &mut bus);

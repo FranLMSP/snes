@@ -147,6 +147,25 @@ mod cpu_instructions_tests {
         assert_eq!(registers.pc, 0x02);
         assert_eq!(registers.cycles, 2);
         assert!(!registers.get_carry_flag());
+
+        let mut registers = Registers::new();
+        let mut bus = Bus::new();
+        registers.emulation_mode = false;
+        registers.a   = 0x007F;
+        registers.pbr = 0x00;
+        registers.pc  = 0x0000;
+        registers.set_16bit_mode(false);
+        registers.set_carry_flag(true);
+        bus.write(0x000001, 0x7F);
+        let instruction = ADC8BIN{addressing_mode: AddressingMode::Immediate};
+        instruction.execute(&mut registers, &mut bus);
+        assert_eq!(registers.a, 0xFF);
+        assert_eq!(registers.pc, 0x02);
+        assert_eq!(registers.cycles, 2);
+        assert!(registers.get_negative_flag());
+        assert!(registers.get_overflow_flag());
+        assert!(!registers.get_zero_flag());
+        assert!(!registers.get_carry_flag());
     }
 
     #[test]

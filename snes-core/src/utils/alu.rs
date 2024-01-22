@@ -49,12 +49,12 @@ pub fn adc_bcd<T: SnesNum>(target: T, value: T, carry: bool) -> (T, [Flags; 4]) 
 }
 
 pub fn sbc_bin<T: SnesNum>(target: T, value: T, carry: bool) -> (T, [Flags; 4]) {
-    let result = target.sbc_snes(value, carry);
+    let result = target.sbc_snes(value, !carry);
     (result, [
         Negative(result.is_negative()),
         Overflow(target.is_overflow(value, result)),
         Zero(result.is_zero()),
-        Carry(target.sbc_will_carry(value, carry)),
+        Carry(!carry),
     ])
 }
 
@@ -274,33 +274,33 @@ mod alu_tests {
     #[test]
     fn test_dec_bin() {
         // 8 bit
-        let (result, affected_flags) = sbc_bin(1_u8, 1_u8, false);
+        let (result, affected_flags) = sbc_bin(1_u8, 1_u8, true);
         assert_eq!(result, 0);
         assert_eq!(affected_flags, [Negative(false), Overflow(false), Zero(true), Carry(false)]);
 
-        let (result, affected_flags) = sbc_bin(0_u8, 1_u8, false);
+        let (result, affected_flags) = sbc_bin(0_u8, 1_u8, true);
         assert_eq!(result, 0b11111111);
         assert_eq!(affected_flags, [Negative(true), Overflow(true), Zero(false), Carry(true)]);
 
-        let (result, affected_flags) = sbc_bin(0_u8, 1_u8, true);
+        let (result, affected_flags) = sbc_bin(0_u8, 1_u8, false);
         assert_eq!(result, 0b11111110);
         assert_eq!(affected_flags, [Negative(true), Overflow(true), Zero(false), Carry(true)]);
 
         // overflow
-        let (result, affected_flags) = sbc_bin(0x50_u8, 0xB0_u8, false);
+        let (result, affected_flags) = sbc_bin(0x50_u8, 0xB0_u8, true);
         assert_eq!(result, 0xA0);
         assert_eq!(affected_flags, [Negative(true), Overflow(false), Zero(false), Carry(true)]);
         
         // 16 bit
-        let (result, affected_flags) = sbc_bin(1_u16, 1_u16, false);
+        let (result, affected_flags) = sbc_bin(1_u16, 1_u16, true);
         assert_eq!(result, 0);
         assert_eq!(affected_flags, [Negative(false), Overflow(false), Zero(true), Carry(false)]);
 
-        let (result, affected_flags) = sbc_bin(0_u16, 1_u16, false);
+        let (result, affected_flags) = sbc_bin(0_u16, 1_u16, true);
         assert_eq!(result, 0b11111111_11111111);
         assert_eq!(affected_flags, [Negative(true), Overflow(true), Zero(false), Carry(true)]);
 
-        let (result, affected_flags) = sbc_bin(0_u16, 1_u16, true);
+        let (result, affected_flags) = sbc_bin(0_u16, 1_u16, false);
         assert_eq!(result, 0b11111111_11111110);
         assert_eq!(affected_flags, [Negative(true), Overflow(true), Zero(false), Carry(true)]);
     }
