@@ -46,10 +46,10 @@ macro_rules! define_operation {
 macro_rules! define_is_overflow {
     ($t:ty) => {
         fn is_overflow(&self, v: $t, r: $t) -> bool {
-            let target = (*self).is_negative();
-            let value = v.is_negative();
-            let result = r.is_negative();
-            (target ^ result) && (target ^ value)
+            let target_msb = (*self).is_negative();
+            let value_msb = v.is_negative();
+            let result_msb = r.is_negative();
+            (target_msb ^ result_msb) && !(target_msb ^ value_msb)
         }
     }
 }

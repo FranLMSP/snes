@@ -170,11 +170,11 @@ mod alu_tests {
 
         let (result, affected_flags) = adc_bin(200_u8, 155_u8, false);
         assert_eq!(result, 99);
-        assert_eq!(affected_flags, [Negative(false), Overflow(false), Zero(false), Carry(true)]);
+        assert_eq!(affected_flags, [Negative(false), Overflow(true), Zero(false), Carry(true)]);
 
         let (result, affected_flags) = adc_bin(200_u8, 155_u8, true);
         assert_eq!(result, 100);
-        assert_eq!(affected_flags, [Negative(false), Overflow(false), Zero(false), Carry(true)]);
+        assert_eq!(affected_flags, [Negative(false), Overflow(true), Zero(false), Carry(true)]);
 
         let (result, affected_flags) = adc_bin(200_u8, 54_u8, true);
         assert_eq!(result, 255);
@@ -183,6 +183,14 @@ mod alu_tests {
         let (result, affected_flags) = adc_bin(200_u8, 54_u8, true);
         assert_eq!(result, 255);
         assert_eq!(affected_flags, [Negative(true), Overflow(false), Zero(false), Carry(false)]);
+
+        let (result, affected_flags) = adc_bin(0x7F_u8, 0x81_u8, false);
+        assert_eq!(result, 0x00);
+        assert_eq!(affected_flags, [Negative(false), Overflow(false), Zero(true), Carry(true)]);
+
+        let (result, affected_flags) = adc_bin(0x7F_u8, 0x7F_u8, true);
+        assert_eq!(result, 0xFF);
+        assert_eq!(affected_flags, [Negative(true), Overflow(true), Zero(false), Carry(false)]);
 
         // 16 bits
         let (result, affected_flags) = adc_bin(0_u16, 0_u16, false);
@@ -195,11 +203,11 @@ mod alu_tests {
 
         let (result, affected_flags) = adc_bin(65530_u16, 10_u16, false);
         assert_eq!(result, 4);
-        assert_eq!(affected_flags, [Negative(false), Overflow(true), Zero(false), Carry(true)]);
+        assert_eq!(affected_flags, [Negative(false), Overflow(false), Zero(false), Carry(true)]);
 
         let (result, affected_flags) = adc_bin(65530_u16, 10_u16, true);
         assert_eq!(result, 5);
-        assert_eq!(affected_flags, [Negative(false), Overflow(true), Zero(false), Carry(true)]);
+        assert_eq!(affected_flags, [Negative(false), Overflow(false), Zero(false), Carry(true)]);
 
         let (result, affected_flags) = adc_bin(65530_u16, 4_u16, true);
         assert_eq!(result, 65535);
@@ -272,16 +280,16 @@ mod alu_tests {
 
         let (result, affected_flags) = sbc_bin(0_u8, 1_u8, false);
         assert_eq!(result, 0b11111111);
-        assert_eq!(affected_flags, [Negative(true), Overflow(false), Zero(false), Carry(true)]);
+        assert_eq!(affected_flags, [Negative(true), Overflow(true), Zero(false), Carry(true)]);
 
         let (result, affected_flags) = sbc_bin(0_u8, 1_u8, true);
         assert_eq!(result, 0b11111110);
-        assert_eq!(affected_flags, [Negative(true), Overflow(false), Zero(false), Carry(true)]);
+        assert_eq!(affected_flags, [Negative(true), Overflow(true), Zero(false), Carry(true)]);
 
         // overflow
         let (result, affected_flags) = sbc_bin(0x50_u8, 0xB0_u8, false);
         assert_eq!(result, 0xA0);
-        assert_eq!(affected_flags, [Negative(true), Overflow(true), Zero(false), Carry(true)]);
+        assert_eq!(affected_flags, [Negative(true), Overflow(false), Zero(false), Carry(true)]);
         
         // 16 bit
         let (result, affected_flags) = sbc_bin(1_u16, 1_u16, false);
@@ -290,11 +298,11 @@ mod alu_tests {
 
         let (result, affected_flags) = sbc_bin(0_u16, 1_u16, false);
         assert_eq!(result, 0b11111111_11111111);
-        assert_eq!(affected_flags, [Negative(true), Overflow(false), Zero(false), Carry(true)]);
+        assert_eq!(affected_flags, [Negative(true), Overflow(true), Zero(false), Carry(true)]);
 
         let (result, affected_flags) = sbc_bin(0_u16, 1_u16, true);
         assert_eq!(result, 0b11111111_11111110);
-        assert_eq!(affected_flags, [Negative(true), Overflow(false), Zero(false), Carry(true)]);
+        assert_eq!(affected_flags, [Negative(true), Overflow(true), Zero(false), Carry(true)]);
     }
 
     #[test]
@@ -306,7 +314,7 @@ mod alu_tests {
 
         let (result, affected_flags) = sbc_bcd(0x49_u8, 0x50_u8, true);
         assert_eq!(result, 0x99);
-        assert_eq!(affected_flags, [Negative(true), Overflow(false), Zero(false), Carry(false)]);
+        assert_eq!(affected_flags, [Negative(true), Overflow(true), Zero(false), Carry(false)]);
 
         // 16 bit
         let (result, affected_flags) = sbc_bcd(0x4999_u16, 0x4998_u16, false);
@@ -315,7 +323,7 @@ mod alu_tests {
 
         let (result, affected_flags) = sbc_bcd(0x4999_u16, 0x5000_u16, true);
         assert_eq!(result, 0x9999);
-        assert_eq!(affected_flags, [Negative(true), Overflow(false), Zero(false), Carry(false)]);
+        assert_eq!(affected_flags, [Negative(true), Overflow(true), Zero(false), Carry(false)]);
     }
 
     #[test]
