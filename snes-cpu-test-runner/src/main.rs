@@ -90,7 +90,7 @@ fn main() -> Result<()> {
         emulator.cpu.registers.pc = test.initial.pc as u16;
         emulator.cpu.registers.sp = test.initial.s as u16;
         emulator.cpu.registers.p = test.initial.p as u8;
-        emulator.cpu.registers.a = test.initial.p as u16;
+        emulator.cpu.registers.a = test.initial.a as u16;
         emulator.cpu.registers.x = test.initial.x as u16;
         emulator.cpu.registers.y = test.initial.y as u16;
         emulator.cpu.registers.dbr = test.initial.dbr as u8;
@@ -109,7 +109,7 @@ fn main() -> Result<()> {
             emulator.cpu.registers.pc as usize != test.r#final.pc ||
             emulator.cpu.registers.sp as usize != test.r#final.s ||
             emulator.cpu.registers.p as usize != test.r#final.p ||
-            emulator.cpu.registers.a as usize != test.r#final.p ||
+            emulator.cpu.registers.a as usize != test.r#final.a ||
             emulator.cpu.registers.x as usize != test.r#final.x ||
             emulator.cpu.registers.y as usize != test.r#final.y ||
             emulator.cpu.registers.dbr as usize != test.r#final.dbr ||
