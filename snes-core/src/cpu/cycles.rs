@@ -108,6 +108,7 @@ fn common_conditions(cpu_registers: &Registers, addressing_mode: AddressingMode,
 
 fn common_bytes_cycles_arithmetic(addressing_mode: AddressingMode) -> (u16, usize) {
     match addressing_mode {
+        A::Accumulator                      => (1, 2),
         A::Immediate                        => (2, 2),
         A::Absolute                         => (3, 4),
         A::AbsoluteLong                     => (4, 5),

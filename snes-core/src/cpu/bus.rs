@@ -42,6 +42,7 @@ impl Bus {
     }
 
     fn map_address(address: u32) -> MemoryMap {
+        return MemoryMap::Cartridge;
         let (bank, sub_address) = {
             let bank = (address >> 16) as u8;
             let sub_address = address as u16;
