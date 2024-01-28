@@ -8,6 +8,7 @@ pub fn get_effective_address(registers: &Registers, bus: &mut Bus, addressing_mo
             direct_page_register: registers.d,
             stack_pointer: registers.sp,
             x: registers.x, y: registers.y,
+            dbr: registers.dbr,
         }
     )
 }
@@ -21,6 +22,7 @@ pub fn read_8bit_from_address(registers: &Registers, bus: &mut Bus, addressing_m
                 direct_page_register: registers.d,
                 stack_pointer: registers.sp,
                 x: registers.x, y: registers.y,
+                dbr: registers.dbr,
             },
             bus,
         )
@@ -36,6 +38,7 @@ pub fn read_16bit_from_address(registers: &Registers, bus: &mut Bus, addressing_
                 direct_page_register: registers.d,
                 stack_pointer: registers.sp,
                 x: registers.x, y: registers.y,
+                dbr: registers.dbr,
             },
             bus,
         )
@@ -51,6 +54,7 @@ pub fn write_8bit_to_address(registers: &mut Registers, bus: &mut Bus, addressin
                 direct_page_register: registers.d,
                 stack_pointer: registers.sp,
                 x: registers.x, y: registers.y,
+                dbr: registers.dbr,
             },
             bus,
             value,
@@ -67,6 +71,7 @@ pub fn write_16bit_to_address(registers: &mut Registers, bus: &mut Bus, addressi
                 direct_page_register: registers.d,
                 stack_pointer: registers.sp,
                 x: registers.x, y: registers.y,
+                dbr: registers.dbr,
             },
             bus,
             value,

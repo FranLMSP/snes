@@ -174,7 +174,7 @@ impl PPURegisters {
     fn _read(&self, address: u16) -> u8 {
         match address {
             0x2100..=0x213F => self.data[(address as usize) - 0x2100],
-            _ => 0xFF,
+            _ => 0x00,
         }
     }
 

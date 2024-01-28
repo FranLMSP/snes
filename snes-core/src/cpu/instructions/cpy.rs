@@ -95,7 +95,7 @@ mod cpu_instructions_tests {
         assert_eq!(registers.y, 0x01);
         assert_eq!(registers.pc, 0x02);
         assert_eq!(registers.cycles, 2);
-        assert!(!registers.get_carry_flag());
+        assert!(registers.get_carry_flag());
         assert!(registers.get_zero_flag());
     }
 
@@ -119,7 +119,7 @@ mod cpu_instructions_tests {
         assert_eq!(registers.y, 0x50); // check Y is not affected
         assert_eq!(registers.pc, 0x03);
         assert_eq!(registers.cycles, 3);
-        assert!(registers.get_carry_flag());
+        assert!(!registers.get_carry_flag());
         assert!(!registers.get_zero_flag());
         assert!(!registers.get_overflow_flag());
     }

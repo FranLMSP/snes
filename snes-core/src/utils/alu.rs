@@ -12,7 +12,7 @@ pub fn adc_bin<T: SnesNum>(target: T, value: T, carry: bool) -> (T, [Flags; 4]) 
 }
 
 pub fn adc_bcd<T: SnesNum>(target: T, value: T, carry: bool) -> (T, [Flags; 4]) {
-    let original_target = value;
+    let original_target = target;
     let original_value = value;
     let nibble_bytes = target.bytes() * 2;
     let mut is_carry = carry;
@@ -26,8 +26,10 @@ pub fn adc_bcd<T: SnesNum>(target: T, value: T, carry: bool) -> (T, [Flags; 4]) 
     let mut bcd_six_add = 0x06;
     let mut carry_shift = 0;
 
+    let mut is_overflow = false;
     for _ in 0..nibble_bytes {
         result = (target & value_mask) + (value & value_mask) + ((is_carry as u32) << carry_shift) + (result & result_mask);
+        is_overflow = original_target.is_overflow(original_value, T::from_u32(result));
         if result > carry_compare {
             result = result.wrapping_add(bcd_six_add);
         }
@@ -42,57 +44,73 @@ pub fn adc_bcd<T: SnesNum>(target: T, value: T, carry: bool) -> (T, [Flags; 4]) 
     let result = T::from_u32(result);
     (result, [
         Negative(result.is_negative()),
-        Overflow(original_target.is_overflow(original_value, result)),
+        Overflow(is_overflow),
         Zero(result.is_zero()),
         Carry(is_carry),
     ])
 }
 
 pub fn sbc_bin<T: SnesNum>(target: T, value: T, carry: bool) -> (T, [Flags; 4]) {
-    let result = target.sbc_snes(value, carry);
-    (result, [
-        Negative(result.is_negative()),
-        Overflow(target.is_overflow(value, result)),
-        Zero(result.is_zero()),
-        Carry(target.sbc_will_carry(value, carry)),
-    ])
+    adc_bin(target, value.invert(), carry)
 }
 
 pub fn sbc_bcd<T: SnesNum>(target: T, value: T, carry: bool) -> (T, [Flags; 4]) {
-    let original_target = value;
-    let original_value = value;
-    let nibble_bytes = target.bytes() * 2;
-    let mut is_carry = carry;
-    let target = target.to_u32();
-    let value = value.invert().to_u32();
-    let mut result = 0;
-
-    let mut value_mask = 0x0F;
-    let mut result_mask = 0x00;
-    let mut carry_compare = 0x0F;
-    let mut bcd_six_sub = 0x06;
-    let mut carry_shift = 0;
-
-    for _ in 0..nibble_bytes {
-        result = (target & value_mask) + (value & value_mask) + ((is_carry as u32) << carry_shift) + (result & result_mask);
-        if result <= carry_compare {
-            result = result.wrapping_sub(bcd_six_sub);
+    if target.bytes() == 1 {
+        let target = ((target.to_u32() as u16) as i16) & 0xFF;
+        let value = !(value.to_u32() as u16) as i16;
+        let mut carry = if carry {1} else {0};
+        let mut result: i16 = (target & 0x000F) + (value & 0x000F) + carry;
+        if result <= 0x000F {
+            result -= 0x06;
         }
-        is_carry = result > carry_compare;
-        value_mask <<= 4;
-        bcd_six_sub <<= 4;
-        carry_shift += 4;
-        result_mask = (result_mask << 4) | 0xF;
-        carry_compare = (carry_compare << 4) | 0xF;
-    }
+        carry = if result > 0x000F {1} else {0};
+        result = (target & 0x00F0) + (value & 0x00F0) + (carry << 4) + (result & 0x000F);
+        let is_overflow = !(target ^ value) & (target ^ result) & 0x80 != 0;
+        if result <= 0x00FF {
+            result -= 0x60;
+        }
+        let is_carry = result > 0xFF;
+        let result = T::from_u32(result as u32);
+        (result, [
+            Negative(result.is_negative()),
+            Overflow(is_overflow),
+            Zero(result.is_zero()),
+            Carry(is_carry),
+        ])
+    } else {
+        let target = ((target.to_u32() as u16) as i32) & 0xFFFF;
+        let value = !(value.to_u32() as u16) as i32;
+        let mut carry = if carry {1} else {0};
+        let mut result: i32 = (target & 0x000F) + (value & 0x000F) + carry;
+        if result <= 0x000F {
+            result -= 0x0006;
+        }
+        carry = if result > 0x000F {1} else {0};
+        result = (target & 0x00F0) + (value & 0x00F0) + (carry << 4) + (result & 0x000F);
+        if result <= 0x00FF {
+            result -= 0x0060;
+        }
 
-    let result = T::from_u32(result);
-    (result, [
-        Negative(result.is_negative()),
-        Overflow(original_target.is_overflow(original_value, result)),
-        Zero(result.is_zero()),
-        Carry(is_carry),
-    ])
+        carry = if result > 0x00FF {1} else {0};
+        result = (target & 0x0F00) + (value & 0x0F00) + (carry << 8) + (result & 0x00FF);
+        if result <= 0x0FFF {
+            result -= 0x0600;
+        }
+        carry = if result > 0x0FFF {1} else {0};
+        result = (target & 0xF000) + (value & 0xF000) + (carry << 12) + (result & 0x0FFF);
+        let is_overflow = !(target ^ value) & (target ^ result) & 0x8000 != 0;
+        if result <= 0xFFFF {
+            result -= 0x6000;
+        }
+        let is_carry = result > 0xFFFF;
+        let result = T::from_u32((result) as u32);
+        (result, [
+            Negative(result.is_negative()),
+            Overflow(is_overflow),
+            Zero(result.is_zero()),
+            Carry(is_carry),
+        ])
+    }
 }
 
 pub fn and<T: SnesNum>(target: T, value: T) -> (T, [Flags; 2]) {
@@ -170,11 +188,11 @@ mod alu_tests {
 
         let (result, affected_flags) = adc_bin(200_u8, 155_u8, false);
         assert_eq!(result, 99);
-        assert_eq!(affected_flags, [Negative(false), Overflow(false), Zero(false), Carry(true)]);
+        assert_eq!(affected_flags, [Negative(false), Overflow(true), Zero(false), Carry(true)]);
 
         let (result, affected_flags) = adc_bin(200_u8, 155_u8, true);
         assert_eq!(result, 100);
-        assert_eq!(affected_flags, [Negative(false), Overflow(false), Zero(false), Carry(true)]);
+        assert_eq!(affected_flags, [Negative(false), Overflow(true), Zero(false), Carry(true)]);
 
         let (result, affected_flags) = adc_bin(200_u8, 54_u8, true);
         assert_eq!(result, 255);
@@ -183,6 +201,14 @@ mod alu_tests {
         let (result, affected_flags) = adc_bin(200_u8, 54_u8, true);
         assert_eq!(result, 255);
         assert_eq!(affected_flags, [Negative(true), Overflow(false), Zero(false), Carry(false)]);
+
+        let (result, affected_flags) = adc_bin(0x7F_u8, 0x81_u8, false);
+        assert_eq!(result, 0x00);
+        assert_eq!(affected_flags, [Negative(false), Overflow(false), Zero(true), Carry(true)]);
+
+        let (result, affected_flags) = adc_bin(0x7F_u8, 0x7F_u8, true);
+        assert_eq!(result, 0xFF);
+        assert_eq!(affected_flags, [Negative(true), Overflow(true), Zero(false), Carry(false)]);
 
         // 16 bits
         let (result, affected_flags) = adc_bin(0_u16, 0_u16, false);
@@ -195,11 +221,11 @@ mod alu_tests {
 
         let (result, affected_flags) = adc_bin(65530_u16, 10_u16, false);
         assert_eq!(result, 4);
-        assert_eq!(affected_flags, [Negative(false), Overflow(true), Zero(false), Carry(true)]);
+        assert_eq!(affected_flags, [Negative(false), Overflow(false), Zero(false), Carry(true)]);
 
         let (result, affected_flags) = adc_bin(65530_u16, 10_u16, true);
         assert_eq!(result, 5);
-        assert_eq!(affected_flags, [Negative(false), Overflow(true), Zero(false), Carry(true)]);
+        assert_eq!(affected_flags, [Negative(false), Overflow(false), Zero(false), Carry(true)]);
 
         let (result, affected_flags) = adc_bin(65530_u16, 4_u16, true);
         assert_eq!(result, 65535);
@@ -266,35 +292,35 @@ mod alu_tests {
     #[test]
     fn test_dec_bin() {
         // 8 bit
-        let (result, affected_flags) = sbc_bin(1_u8, 1_u8, false);
+        let (result, affected_flags) = sbc_bin(1_u8, 1_u8, true);
         assert_eq!(result, 0);
-        assert_eq!(affected_flags, [Negative(false), Overflow(false), Zero(true), Carry(false)]);
-
-        let (result, affected_flags) = sbc_bin(0_u8, 1_u8, false);
-        assert_eq!(result, 0b11111111);
-        assert_eq!(affected_flags, [Negative(true), Overflow(false), Zero(false), Carry(true)]);
+        assert_eq!(affected_flags, [Negative(false), Overflow(false), Zero(true), Carry(true)]);
 
         let (result, affected_flags) = sbc_bin(0_u8, 1_u8, true);
+        assert_eq!(result, 0b11111111);
+        assert_eq!(affected_flags, [Negative(true), Overflow(false), Zero(false), Carry(false)]);
+
+        let (result, affected_flags) = sbc_bin(0_u8, 1_u8, false);
         assert_eq!(result, 0b11111110);
-        assert_eq!(affected_flags, [Negative(true), Overflow(false), Zero(false), Carry(true)]);
+        assert_eq!(affected_flags, [Negative(true), Overflow(false), Zero(false), Carry(false)]);
 
         // overflow
-        let (result, affected_flags) = sbc_bin(0x50_u8, 0xB0_u8, false);
+        let (result, affected_flags) = sbc_bin(0x50_u8, 0xB0_u8, true);
         assert_eq!(result, 0xA0);
-        assert_eq!(affected_flags, [Negative(true), Overflow(true), Zero(false), Carry(true)]);
+        assert_eq!(affected_flags, [Negative(true), Overflow(true), Zero(false), Carry(false)]);
         
         // 16 bit
-        let (result, affected_flags) = sbc_bin(1_u16, 1_u16, false);
+        let (result, affected_flags) = sbc_bin(1_u16, 1_u16, true);
         assert_eq!(result, 0);
-        assert_eq!(affected_flags, [Negative(false), Overflow(false), Zero(true), Carry(false)]);
-
-        let (result, affected_flags) = sbc_bin(0_u16, 1_u16, false);
-        assert_eq!(result, 0b11111111_11111111);
-        assert_eq!(affected_flags, [Negative(true), Overflow(false), Zero(false), Carry(true)]);
+        assert_eq!(affected_flags, [Negative(false), Overflow(false), Zero(true), Carry(true)]);
 
         let (result, affected_flags) = sbc_bin(0_u16, 1_u16, true);
+        assert_eq!(result, 0b11111111_11111111);
+        assert_eq!(affected_flags, [Negative(true), Overflow(false), Zero(false), Carry(false)]);
+
+        let (result, affected_flags) = sbc_bin(0_u16, 1_u16, false);
         assert_eq!(result, 0b11111111_11111110);
-        assert_eq!(affected_flags, [Negative(true), Overflow(false), Zero(false), Carry(true)]);
+        assert_eq!(affected_flags, [Negative(true), Overflow(false), Zero(false), Carry(false)]);
     }
 
     #[test]

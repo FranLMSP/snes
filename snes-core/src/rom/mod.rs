@@ -1,4 +1,5 @@
 pub mod lo_rom;
+pub mod special_ram_cart;
 
 use std::fs::File;
 use std::io::Read;

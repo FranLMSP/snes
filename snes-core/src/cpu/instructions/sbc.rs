@@ -139,7 +139,8 @@ mod cpu_instructions_tests {
         registers.a   = 0x0040;
         registers.pbr = 0x00;
         registers.pc  = 0x0000;
-        registers.set_memory_select_flag(true);
+        registers.set_16bit_mode(false);
+        registers.set_carry_flag(true);
         bus.write(0x000001, 0x40);
         let instruction = SBC8BIN{addressing_mode: AddressingMode::Immediate};
         instruction.execute(&mut registers, &mut bus);
@@ -147,7 +148,26 @@ mod cpu_instructions_tests {
         assert_eq!(registers.pc, 0x02);
         assert_eq!(registers.cycles, 2);
         assert!(registers.get_zero_flag());
-        assert!(!registers.get_carry_flag());
+        assert!(registers.get_carry_flag());
+
+        let mut registers = Registers::new();
+        let mut bus = Bus::new();
+        registers.emulation_mode = false;
+        registers.a   = 0x007F;
+        registers.pbr = 0x00;
+        registers.pc  = 0x0000;
+        registers.set_16bit_mode(false);
+        registers.set_carry_flag(false);
+        bus.write(0x000001, 0x7E);
+        let instruction = SBC8BIN{addressing_mode: AddressingMode::Immediate};
+        instruction.execute(&mut registers, &mut bus);
+        assert_eq!(registers.a, 0x00);
+        assert_eq!(registers.pc, 0x02);
+        assert_eq!(registers.cycles, 2);
+        assert!(!registers.get_negative_flag());
+        assert!(!registers.get_overflow_flag());
+        assert!(registers.get_zero_flag());
+        assert!(registers.get_carry_flag());
     }
 
     #[test]
@@ -159,6 +179,7 @@ mod cpu_instructions_tests {
         registers.pbr = 0x00;
         registers.pc  = 0x0000;
         registers.set_memory_select_flag(false);
+        registers.set_carry_flag(true);
         bus.write(0x000001, 0x00);
         bus.write(0x000002, 0x40);
         let instruction = SBC16BIN{addressing_mode: AddressingMode::Immediate};
@@ -167,7 +188,7 @@ mod cpu_instructions_tests {
         assert_eq!(registers.pc, 0x03);
         assert_eq!(registers.cycles, 3);
         assert!(registers.get_zero_flag());
-        assert!(!registers.get_carry_flag());
+        assert!(registers.get_carry_flag());
     }
 
     #[test]

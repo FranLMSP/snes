@@ -10,6 +10,7 @@ pub struct Bus {
     pub rom: Box<dyn ROM>,
     pub internal_registers: InternalRegisters,
     pub dma: DMA,
+    pub force_cart_lookup: bool,
 }
 
 #[derive(PartialEq, Debug)]
@@ -30,6 +31,7 @@ impl Bus {
             rom: Box::new(LoROM::new()),
             internal_registers: InternalRegisters::new(),
             dma: DMA::new(),
+            force_cart_lookup: false,
         }
     }
 
@@ -41,7 +43,10 @@ impl Bus {
         self.wram[(address & 0xFFFF) as usize] = value;
     }
 
-    fn map_address(address: u32) -> MemoryMap {
+    fn map_address(&self, address: u32) -> MemoryMap {
+        if self.force_cart_lookup {
+            return MemoryMap::Cartridge;
+        }
         let (bank, sub_address) = {
             let bank = (address >> 16) as u8;
             let sub_address = address as u16;
@@ -64,7 +69,7 @@ impl Bus {
     /// This function is meant to be used by external parts of the code,
     /// for example, to render register info without mutating them
     pub fn read_external(&self, address: u32) -> u8 {
-        let section = Bus::map_address(address);
+        let section = self.map_address(address);
         match section {
             MemoryMap::WRAM => self.read_wram(address),
             MemoryMap::PPU => self.ppu.registers.read_external(address as u16),
@@ -79,7 +84,7 @@ impl Bus {
     }
 
     pub fn read(&mut self, address: u32) -> u8 {
-        let section = Bus::map_address(address);
+        let section = self.map_address(address);
         match section {
             MemoryMap::WRAM => self.read_wram(address),
             MemoryMap::PPU => self.ppu.registers.read(address as u16),
@@ -94,7 +99,7 @@ impl Bus {
     }
 
     pub fn write(&mut self, address: u32, value: u8) {
-        let section = Bus::map_address(address);
+        let section = self.map_address(address);
         match section {
             MemoryMap::WRAM => self.write_wram(address, value),
             MemoryMap::PPU => self.ppu.registers.write(address as u16, value),
@@ -123,44 +128,45 @@ mod bus_tests {
 
     #[test]
     fn test_memory_map() {
-        assert_eq!(Bus::map_address(0x7E0000), MemoryMap::WRAM);
-        assert_eq!(Bus::map_address(0x7F0000), MemoryMap::WRAM);
-        assert_eq!(Bus::map_address(0x7E0500), MemoryMap::WRAM);
-        assert_eq!(Bus::map_address(0x000000), MemoryMap::WRAM);
-        assert_eq!(Bus::map_address(0x3F0000), MemoryMap::WRAM);
-        assert_eq!(Bus::map_address(0x3F1FFF), MemoryMap::WRAM);
-        assert_eq!(Bus::map_address(0x3F0000), MemoryMap::WRAM);
-        assert_eq!(Bus::map_address(0x800000), MemoryMap::WRAM);
-        assert_eq!(Bus::map_address(0xBF0000), MemoryMap::WRAM);
-        assert_eq!(Bus::map_address(0xBF1FFF), MemoryMap::WRAM);
-        assert_eq!(Bus::map_address(0x3F0000), MemoryMap::WRAM);
+        let bus = Bus::new();
+        assert_eq!(bus.map_address(0x7E0000), MemoryMap::WRAM);
+        assert_eq!(bus.map_address(0x7F0000), MemoryMap::WRAM);
+        assert_eq!(bus.map_address(0x7E0500), MemoryMap::WRAM);
+        assert_eq!(bus.map_address(0x000000), MemoryMap::WRAM);
+        assert_eq!(bus.map_address(0x3F0000), MemoryMap::WRAM);
+        assert_eq!(bus.map_address(0x3F1FFF), MemoryMap::WRAM);
+        assert_eq!(bus.map_address(0x3F0000), MemoryMap::WRAM);
+        assert_eq!(bus.map_address(0x800000), MemoryMap::WRAM);
+        assert_eq!(bus.map_address(0xBF0000), MemoryMap::WRAM);
+        assert_eq!(bus.map_address(0xBF1FFF), MemoryMap::WRAM);
+        assert_eq!(bus.map_address(0x3F0000), MemoryMap::WRAM);
 
-        assert_eq!(Bus::map_address(0x002100), MemoryMap::PPU);
-        assert_eq!(Bus::map_address(0x0021FF), MemoryMap::PPU);
-        assert_eq!(Bus::map_address(0x3F2100), MemoryMap::PPU);
-        assert_eq!(Bus::map_address(0x3F21FF), MemoryMap::PPU);
-        assert_eq!(Bus::map_address(0x802100), MemoryMap::PPU);
-        assert_eq!(Bus::map_address(0x8021FF), MemoryMap::PPU);
-        assert_eq!(Bus::map_address(0xBF2100), MemoryMap::PPU);
-        assert_eq!(Bus::map_address(0xBF21FF), MemoryMap::PPU);
+        assert_eq!(bus.map_address(0x002100), MemoryMap::PPU);
+        assert_eq!(bus.map_address(0x0021FF), MemoryMap::PPU);
+        assert_eq!(bus.map_address(0x3F2100), MemoryMap::PPU);
+        assert_eq!(bus.map_address(0x3F21FF), MemoryMap::PPU);
+        assert_eq!(bus.map_address(0x802100), MemoryMap::PPU);
+        assert_eq!(bus.map_address(0x8021FF), MemoryMap::PPU);
+        assert_eq!(bus.map_address(0xBF2100), MemoryMap::PPU);
+        assert_eq!(bus.map_address(0xBF21FF), MemoryMap::PPU);
 
-        assert_eq!(Bus::map_address(0x004200), MemoryMap::CPU);
-        assert_eq!(Bus::map_address(0x00420F), MemoryMap::CPU);
-        assert_eq!(Bus::map_address(0x3F4200), MemoryMap::CPU);
-        assert_eq!(Bus::map_address(0x3F420F), MemoryMap::CPU);
-        assert_eq!(Bus::map_address(0x804200), MemoryMap::CPU);
-        assert_eq!(Bus::map_address(0x80420F), MemoryMap::CPU);
-        assert_eq!(Bus::map_address(0xBF4200), MemoryMap::CPU);
-        assert_eq!(Bus::map_address(0xBF420F), MemoryMap::CPU);
+        assert_eq!(bus.map_address(0x004200), MemoryMap::CPU);
+        assert_eq!(bus.map_address(0x00420F), MemoryMap::CPU);
+        assert_eq!(bus.map_address(0x3F4200), MemoryMap::CPU);
+        assert_eq!(bus.map_address(0x3F420F), MemoryMap::CPU);
+        assert_eq!(bus.map_address(0x804200), MemoryMap::CPU);
+        assert_eq!(bus.map_address(0x80420F), MemoryMap::CPU);
+        assert_eq!(bus.map_address(0xBF4200), MemoryMap::CPU);
+        assert_eq!(bus.map_address(0xBF420F), MemoryMap::CPU);
 
-        assert_eq!(Bus::map_address(0x004016), MemoryMap::Joypad);
-        assert_eq!(Bus::map_address(0x004017), MemoryMap::Joypad);
-        assert_eq!(Bus::map_address(0x3F4016), MemoryMap::Joypad);
-        assert_eq!(Bus::map_address(0x3F4017), MemoryMap::Joypad);
-        assert_eq!(Bus::map_address(0x804016), MemoryMap::Joypad);
-        assert_eq!(Bus::map_address(0x804017), MemoryMap::Joypad);
-        assert_eq!(Bus::map_address(0xBF4016), MemoryMap::Joypad);
-        assert_eq!(Bus::map_address(0xBF4017), MemoryMap::Joypad);
+        assert_eq!(bus.map_address(0x004016), MemoryMap::Joypad);
+        assert_eq!(bus.map_address(0x004017), MemoryMap::Joypad);
+        assert_eq!(bus.map_address(0x3F4016), MemoryMap::Joypad);
+        assert_eq!(bus.map_address(0x3F4017), MemoryMap::Joypad);
+        assert_eq!(bus.map_address(0x804016), MemoryMap::Joypad);
+        assert_eq!(bus.map_address(0x804017), MemoryMap::Joypad);
+        assert_eq!(bus.map_address(0xBF4016), MemoryMap::Joypad);
+        assert_eq!(bus.map_address(0xBF4017), MemoryMap::Joypad);
     }
 
     #[test]
