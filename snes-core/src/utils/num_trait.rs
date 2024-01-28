@@ -1,4 +1,4 @@
-pub trait SnesNum: Copy + Clone + Sized + Eq + PartialEq {
+pub trait SnesNum: Copy + Clone + Sized + Eq + PartialEq + PartialOrd {
     fn add_will_carry(&self, v: Self, carry: bool) -> bool;
     fn sbc_will_carry(&self, v: Self, carry: bool) -> bool;
     fn is_overflow(&self, v: Self, r: Self) -> bool;

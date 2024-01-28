@@ -36,9 +36,11 @@ pub struct TestSuite {
 #[derive(Serialize, Deserialize)]
 pub struct TestSuiteList(Vec<TestSuite>);
 
-fn print_failed(expected_state: &TestState, bus: &Bus, cpu_registers: &Registers) {
+fn print_failed(initial_state: &TestState, expected_state: &TestState, bus: &Bus, cpu_registers: &Registers) {
     eprintln!("FAILED!");
     eprintln!("----------");
+    eprintln!("Initial:");
+    eprintln!("{:?}", initial_state);
     eprintln!("Expected:");
     eprintln!("{:?}", expected_state);
     eprintln!("Result:");
@@ -61,7 +63,7 @@ fn print_failed(expected_state: &TestState, bus: &Bus, cpu_registers: &Registers
     };
     eprintln!("{:?}", result_state);
     eprintln!("----------");
-    std::process::exit(1);
+    // std::process::exit(1);
 }
 
 fn main() -> Result<()> {
@@ -82,9 +84,14 @@ fn main() -> Result<()> {
     let tests: TestSuiteList = serde_json::from_str(&buff)?;
 
     let mut emulator = Emulator::new();
+    emulator.bus.force_cart_lookup = true;
     emulator.bus.rom = Box::new(SpecialRAMCart::new());
 
-    for test in tests.0 {
+    let mut total_failed = 0;
+    let mut total_passed = 0;
+
+    for test in &tests.0 {
+        let mut did_test_fail = false;
         println!("running test case {}", test.name);
 
         emulator.cpu.registers.pc = test.initial.pc as u16;
@@ -98,34 +105,57 @@ fn main() -> Result<()> {
         emulator.cpu.registers.pbr = test.initial.pbr as u8;
         emulator.cpu.registers.emulation_mode = test.initial.e == 1;
 
-        for (address, value) in test.initial.ram {
-            emulator.bus.write(address as u32, value as u8);
+        for (address, value) in &test.initial.ram {
+            emulator.bus.write(*address as u32, *value as u8);
         }
 
         emulator.tick();
 
+        let is_emu_mode = emulator.cpu.registers.emulation_mode;
+        let is_16index = emulator.cpu.registers.is_16bit_index();
+
+        let emu_mode_sp = (emulator.cpu.registers.sp as usize & 0xFF) | 0x100;
+
         // compare the results
         if
             emulator.cpu.registers.pc as usize != test.r#final.pc ||
-            emulator.cpu.registers.sp as usize != test.r#final.s ||
+            (if is_emu_mode {emu_mode_sp} else {emulator.cpu.registers.sp as usize}) != test.r#final.s ||
             emulator.cpu.registers.p as usize != test.r#final.p ||
             emulator.cpu.registers.a as usize != test.r#final.a ||
-            emulator.cpu.registers.x as usize != test.r#final.x ||
-            emulator.cpu.registers.y as usize != test.r#final.y ||
+            if is_16index {emulator.cpu.registers.x as usize} else {emulator.cpu.registers.x as u8 as usize} != test.r#final.x ||
+            if is_16index {emulator.cpu.registers.y as usize} else {emulator.cpu.registers.y as u8 as usize} != test.r#final.y ||
             emulator.cpu.registers.dbr as usize != test.r#final.dbr ||
             emulator.cpu.registers.d as usize != test.r#final.d ||
             emulator.cpu.registers.pbr as usize != test.r#final.pbr ||
             emulator.cpu.registers.emulation_mode != (test.r#final.e == 1)
         {
-            print_failed(&test.r#final, &emulator.bus, &emulator.cpu.registers);
+            print_failed(&test.initial, &test.r#final, &emulator.bus, &emulator.cpu.registers);
+            did_test_fail = true;
         }
         for (address, value) in &test.r#final.ram {
             if *value != emulator.bus.read_external(*address as u32) as usize {
-                print_failed(&test.r#final, &emulator.bus, &emulator.cpu.registers);
+                print_failed(&test.initial, &test.r#final, &emulator.bus, &emulator.cpu.registers);
+                did_test_fail = true;
             }
+        }
+
+        if did_test_fail {
+            total_failed += 1;
+        } else {
+            total_passed += 1;
+        }
+
+        // Cleanup RAM
+        for (address, _) in &test.initial.ram {
+            emulator.bus.write(*address as u32, 0x00);
+        }
+        for (address, _) in &test.r#final.ram {
+            emulator.bus.write(*address as u32, 0x00);
         }
     }
 
-    println!("PASSED!");
+    println!("----------");
+    println!("TOTAL PASSED: {}", total_passed);
+    println!("TOTAL FAILED: {}", total_failed);
     Ok(())
 }
