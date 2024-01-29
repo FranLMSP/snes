@@ -89,7 +89,7 @@ pub fn absolute_long_indexed(bus: &mut Bus, pc_addr: u32, xy: u16) -> u32 {
 /// OPCODE dp,X
 /// OPCODE dp,Y
 pub fn direct_page_indexed(bus: &mut Bus, pc_addr: u32, direct_page_register: u16, xy: u16) -> u32 {
-    direct_page(bus, pc_addr, direct_page_register) + (xy as u32)
+    (direct_page(bus, pc_addr, direct_page_register) + (xy as u32)) & 0xFFFF
 }
 
 /// OPCODE (dp,X)
