@@ -7,7 +7,7 @@ pub struct SpecialRAMCart {
 impl SpecialRAMCart {
     pub fn new() -> Self {
         Self {
-            data: vec![0x00; 0x1000000],
+            data: vec![0x00; 0x100000000],
         }
     }
 }

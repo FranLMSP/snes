@@ -178,8 +178,8 @@ pub fn map_opcode_to_instruction(opcode: u8) -> Box<dyn CPUInstruction> {
         0xA0 => Box::new(LDY{addressing_mode: A::Immediate}),
         0xAC => Box::new(LDY{addressing_mode: A::Absolute}),
         0xA4 => Box::new(LDY{addressing_mode: A::DirectPage}),
-        0xB4 => Box::new(LDY{addressing_mode: A::AbsoluteIndexed(I::Y)}),
-        0xBC => Box::new(LDY{addressing_mode: A::DirectPageIndexed(I::Y)}),
+        0xBC => Box::new(LDY{addressing_mode: A::AbsoluteIndexed(I::X)}),
+        0xB4 => Box::new(LDY{addressing_mode: A::DirectPageIndexed(I::X)}),
         // LSR
         0x4A => Box::new(LSR{addressing_mode: A::Accumulator}),
         0x4E => Box::new(LSR{addressing_mode: A::Absolute}),

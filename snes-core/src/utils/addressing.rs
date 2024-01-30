@@ -21,7 +21,12 @@ pub fn immediate(pc_addr: u32) -> u32 {
 
 /// OPCODE addr
 pub fn absolute(bus: &mut Bus, pc_addr: u32, dbr: u8) -> u32 {
-    let addr = (bus.read(pc_addr + 1) as u32) | ((bus.read(pc_addr + 2) as u32) << 8);
+    let pbr = pc_addr & 0xFF0000;
+    let bus_addr_1 = pbr | ((pc_addr as u16).wrapping_add(1) as u32);
+    let bus_addr_2 = pbr | ((pc_addr as u16).wrapping_add(2) as u32);
+    let addr =
+        (bus.read(bus_addr_1) as u32) |
+        ((bus.read(bus_addr_2) as u32) << 8);
     ((dbr as u32) << 16) | addr
 }
 
@@ -49,7 +54,9 @@ pub fn absolute_indirect_long(bus: &mut Bus, pc_addr: u32, dbr: u8) -> u32 {
 
 /// OPCODE dp
 pub fn direct_page(bus: &mut Bus, pc_addr: u32, direct_page_register: u16) -> u32 {
-    (bus.read(pc_addr + 1) as u16).wrapping_add(direct_page_register) as u32
+    let pbr = pc_addr & 0xFF0000;
+    let bus_addr = pbr | ((pc_addr as u16).wrapping_add(1) as u32);
+    (bus.read(bus_addr) as u16).wrapping_add(direct_page_register) as u32
 }
 
 /// OPCODE (dp)
@@ -142,7 +149,7 @@ impl Display for IndexRegister {
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq)]
 pub enum AddressingMode {
     Accumulator,
     Immediate,

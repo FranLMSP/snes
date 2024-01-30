@@ -96,7 +96,7 @@ fn common_conditions(cpu_registers: &Registers, addressing_mode: AddressingMode,
             },
             // Add 1 byte if <index> = 0 (16-bit index registers)
             Condition::IndexIs16Bit => {
-                if cpu_registers.is_16bit_index() {
+                if addressing_mode == AddressingMode::Immediate && cpu_registers.is_16bit_index() {
                     bytes += 1; cycles += 1;
                 }
             },

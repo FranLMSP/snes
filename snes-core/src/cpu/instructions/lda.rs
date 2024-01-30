@@ -4,7 +4,7 @@ use crate::cpu::{bus::Bus, registers::Registers};
 use crate::utils::addressing::AddressingMode;
 
 use super::read_write_common::{read_8bit_from_address, read_16bit_from_address};
-use super::{CPUInstruction, bit_common};
+use super::CPUInstruction;
 use super::decoder_common;
 
 static INSTR_NAME: &str = "LDA";
@@ -41,12 +41,11 @@ pub struct LDA8 {
 impl CPUInstruction for LDA8 {
     fn execute(&self, registers: &mut Registers, bus: &mut Bus) {
         let value = read_8bit_from_address(registers, bus, self.addressing_mode);
+        registers.set_low_a(value);
         registers.set_flags(&[
             Flags::Negative(value >> 7 == 1),
             Flags::Zero(value == 0),
         ]);
-        registers.set_low_a(value);
-        bit_common::do_bit(registers, registers.a as u8, value, self.addressing_mode);
         let (bytes, cycles) = cycles::increment_cycles_lda(registers, self.addressing_mode);
         registers.increment_pc(bytes); registers.cycles += cycles;
     }
