@@ -1,7 +1,7 @@
 use crate::{cpu::{bus::Bus, registers::Registers}, utils::{alu, addressing::AddressingMode}};
 
 use crate::cpu::cycles;
-use super::CPUInstruction;
+use super::{read_write_common::{read_16bit_from_address, read_8bit_from_address, write_16bit_to_address, write_8bit_to_address}, CPUInstruction};
 use super::decoder_common;
 
 static INSTR_NAME: &str = "ASL";
@@ -13,8 +13,8 @@ pub struct ASL {
 impl ASL {
     fn determine_instruction(&self, registers: &Registers) -> Box<dyn CPUInstruction> {
         match registers.is_16bit_mode() {
-            true => Box::new(ASL8{addressing_mode: self.addressing_mode}),
-            false => Box::new(ASL16{addressing_mode: self.addressing_mode}),
+            true => Box::new(ASL16{addressing_mode: self.addressing_mode}),
+            false => Box::new(ASL8{addressing_mode: self.addressing_mode}),
         }
     }
 }
@@ -36,11 +36,11 @@ pub struct ASL8 {
 }
 
 impl CPUInstruction for ASL8 {
-    fn execute(&self, registers: &mut Registers, _bus: &mut Bus) {
+    fn execute(&self, registers: &mut Registers, bus: &mut Bus) {
         let (result, affected_flags) = alu::asl(
-            registers.a as u8,
+            read_8bit_from_address(registers, bus, self.addressing_mode),
         );
-        registers.set_low_a(result);
+        write_8bit_to_address(registers, bus, self.addressing_mode, result);
         registers.set_flags(&affected_flags);
         let (bytes, cycles) = cycles::increment_cycles_bitwise(registers, self.addressing_mode);
         registers.increment_pc(bytes); registers.cycles += cycles;
@@ -56,11 +56,11 @@ pub struct ASL16 {
 }
 
 impl CPUInstruction for ASL16 {
-    fn execute(&self, registers: &mut Registers, _bus: &mut Bus) {
+    fn execute(&self, registers: &mut Registers, bus: &mut Bus) {
         let (result, affected_flags) = alu::asl(
-            registers.a,
+            read_16bit_from_address(registers, bus, self.addressing_mode)
         );
-        registers.a = result;
+        write_16bit_to_address(registers, bus, self.addressing_mode, result);
         registers.set_flags(&affected_flags);
         let (bytes, cycles) = cycles::increment_cycles_bitwise(registers, self.addressing_mode);
         registers.increment_pc(bytes); registers.cycles += cycles;
