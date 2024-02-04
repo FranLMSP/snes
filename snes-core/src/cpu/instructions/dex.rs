@@ -35,7 +35,7 @@ impl CPUInstruction for DEX8 {
     fn execute(&self, registers: &mut Registers, _bus: &mut Bus) {
         let result = dec_common::do_dec(
             registers,
-            registers.x,
+            registers.x as u8,
         ) as u8;
         registers.set_low_x(result);
         let (bytes, cycles) = cycles::increment_cycles_inc_dec_index();

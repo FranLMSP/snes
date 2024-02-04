@@ -35,7 +35,7 @@ impl CPUInstruction for INY8 {
     fn execute(&self, registers: &mut Registers, _bus: &mut Bus) {
         let result = dec_common::do_inc(
             registers,
-            registers.y,
+            registers.y as u8,
         ) as u8;
         registers.set_low_y(result);
         let (bytes, cycles) = cycles::increment_cycles_inc_dec_index();
