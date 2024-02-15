@@ -85,10 +85,10 @@ mod cpu_instructions_tests {
         registers.pbr = 0x00;
         registers.pc  = 0x0000;
         registers.set_memory_select_flag(true);
-        let instruction = ASL8{addressing_mode: AddressingMode::Immediate};
+        let instruction = ASL8{addressing_mode: AddressingMode::Accumulator};
         instruction.execute(&mut registers, &mut bus);
         assert_eq!(registers.a, 0b10100000);
-        assert_eq!(registers.pc, 0x02);
+        assert_eq!(registers.pc, 0x01);
         assert_eq!(registers.cycles, 2);
         assert!(!registers.get_carry_flag());
         assert!(!registers.get_zero_flag());
@@ -104,10 +104,10 @@ mod cpu_instructions_tests {
         registers.pbr = 0x00;
         registers.pc  = 0x0000;
         registers.set_memory_select_flag(false);
-        let instruction = ASL16{addressing_mode: AddressingMode::Immediate};
+        let instruction = ASL16{addressing_mode: AddressingMode::Accumulator};
         instruction.execute(&mut registers, &mut bus);
         assert_eq!(registers.a, 0b10100000_00000000);
-        assert_eq!(registers.pc, 0x03);
+        assert_eq!(registers.pc, 0x01);
         assert_eq!(registers.cycles, 3);
         assert!(!registers.get_carry_flag());
         assert!(!registers.get_zero_flag());
