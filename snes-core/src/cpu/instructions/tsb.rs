@@ -42,7 +42,7 @@ impl CPUInstruction for TSB8 {
         let value = read_8bit_from_address(registers, bus, self.addressing_mode);
         let result = (registers.a as u8) | value;
         write_8bit_to_address(registers, bus, self.addressing_mode, result);
-        registers.set_zero_flag(result == 0);
+        registers.set_zero_flag(value & (registers.a as u8) == 0);
         let (bytes, cycles) = cycles::increment_cycles_test(registers, self.addressing_mode);
         registers.increment_pc(bytes); registers.cycles += cycles;
     }
@@ -59,12 +59,68 @@ pub struct TSB16 {
 impl CPUInstruction for TSB16 {
     fn execute(&self, registers: &mut Registers, bus: &mut Bus) {
         let value = read_16bit_from_address(registers, bus, self.addressing_mode);
-        let result = registers.a & value;
+        let result = registers.a | value;
         write_16bit_to_address(registers, bus, self.addressing_mode, result);
-        registers.set_zero_flag(result == 0);
+        registers.set_zero_flag(value & registers.a == 0);
+        let (bytes, cycles) = cycles::increment_cycles_test(registers, self.addressing_mode);
+        registers.increment_pc(bytes); registers.cycles += cycles;
     }
 
     fn mnemonic(&self, registers: &Registers, bus: &Bus, opcode: u8) -> String {
         decoder_common::mnemonic_arithmetic(true, opcode, INSTR_NAME, self.addressing_mode, registers, bus)
     }
 }
+
+#[cfg(test)]
+mod cpu_instructions_tests {
+    use super::*;
+
+    #[test]
+    fn test_8bit() {
+        let mut registers = Registers::new();
+        let mut bus = Bus::new();
+        registers.emulation_mode = false;
+        registers.a   = 0b11001100;
+        registers.pbr = 0x00;
+        registers.pc  = 0x0000;
+        registers.p   = 0x00;
+        bus.write(0x000001, 0x03);
+        bus.write(0x000002, 0x00);
+        bus.write(0x000003, 0b11110000);
+        registers.set_16bit_mode(false);
+        let instruction = TSB8{addressing_mode: AddressingMode::Absolute};
+        instruction.execute(&mut registers, &mut bus);
+        assert_eq!(bus.read(0x000003), 0b11111100);
+        assert_eq!(registers.a, 0b11001100);
+        assert_eq!(registers.p, 0b0010_0000);
+        assert_eq!(registers.pc, 0x03);
+        assert_eq!(registers.cycles, 6);
+        assert!(!registers.get_zero_flag());
+    }
+
+    #[test]
+    fn test_16bit() {
+        let mut registers = Registers::new();
+        let mut bus = Bus::new();
+        registers.emulation_mode = false;
+        registers.a   = 0b11001100_11001100;
+        registers.pbr = 0x00;
+        registers.pc  = 0x0000;
+        registers.p   = 0x00;
+        bus.write(0x000001, 0x03);
+        bus.write(0x000002, 0x00);
+        bus.write(0x000003, 0b11110000);
+        bus.write(0x000004, 0b11110000);
+        registers.set_16bit_mode(true);
+        let instruction = TSB16{addressing_mode: AddressingMode::Absolute};
+        instruction.execute(&mut registers, &mut bus);
+        assert_eq!(bus.read(0x000003), 0b11111100);
+        assert_eq!(bus.read(0x000004), 0b11111100);
+        assert_eq!(registers.a, 0b11001100_11001100);
+        assert_eq!(registers.p, 0b0000_0000);
+        assert_eq!(registers.pc, 0x03);
+        assert_eq!(registers.cycles, 7);
+        assert!(!registers.get_zero_flag());
+    }
+}
+
