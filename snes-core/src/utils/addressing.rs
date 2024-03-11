@@ -118,8 +118,9 @@ pub fn direct_page_indirect_long_indexed(bus: &mut Bus, pc_addr: u32, direct_pag
 }
 
 /// OPCODE sr,S
-pub fn stack_relative(bus: &mut Bus, pc_addr: u32, stack_pointer: u16, dbr: u8) -> u32 {
-    absolute_indexed(bus, pc_addr, stack_pointer, dbr) & 0xFFFF
+pub fn stack_relative(bus: &mut Bus, pc_addr: u32, stack_pointer: u16) -> u32 {
+    let operand = bus.read(pc_addr + 1);
+    stack_pointer.wrapping_add(operand as u16) as u32
 }
 
 /// OPCODE (sr,S),X
@@ -193,7 +194,7 @@ impl AddressingMode {
             Self::DirectPageIndexedIndirect(idx) => direct_page_indexed_indirect(bus, p.pc_addr, p.direct_page_register, if idx == X {p.x} else {p.y}, p.dbr),
             Self::DirectPageIndirectIndexed(idx) => direct_page_indirect_indexed(bus, p.pc_addr, p.direct_page_register, if idx == X {p.x} else {p.y}, p.dbr),
             Self::DirectPageIndirectLongIndexed(idx) => direct_page_indirect_long_indexed(bus, p.pc_addr, p.direct_page_register, if idx == X {p.x} else {p.y}),
-            Self::StackRelative => stack_relative(bus, p.pc_addr, p.stack_pointer, p.dbr),
+            Self::StackRelative => stack_relative(bus, p.pc_addr, p.stack_pointer),
             Self::StackRelativeIndirectIndexed(idx) => stack_relative_indirect_indexed(bus, p.pc_addr, p.stack_pointer, if idx == X {p.x} else {p.y}, p.dbr),
         }
     }
@@ -490,15 +491,13 @@ mod addressing_modes_tests {
     fn test_stack_relative() {
         let mut bus = Bus::new();
         let pc_addr = 0x000000;
-        bus.write(pc_addr + 1, 0x01);
-        bus.write(pc_addr + 2, 0x02);
-        assert_eq!(stack_relative(&mut bus, pc_addr, 0x02, 0x00), 0x000203);
+        bus.write(pc_addr + 1, 0x03);
+        assert_eq!(stack_relative(&mut bus, pc_addr, 0x200), 0x000203);
 
         let mut bus = Bus::new();
         let pc_addr = 0x7F0000;
-        bus.write(pc_addr + 1, 0x01);
-        bus.write(pc_addr + 2, 0x02);
-        assert_eq!(stack_relative(&mut bus, pc_addr, 0x02, 0x7F), 0x000203);
+        bus.write(pc_addr + 1, 0x03);
+        assert_eq!(stack_relative(&mut bus, pc_addr, 0x200), 0x000203);
     }
 
     #[test]
