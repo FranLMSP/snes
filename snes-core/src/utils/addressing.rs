@@ -11,6 +11,7 @@ pub struct ResolveAddressParams {
     pub stack_pointer: u16,
     pub x: u16,
     pub y: u16,
+    pub is_16bit_index: bool,
 }
 
 
@@ -31,10 +32,10 @@ pub fn absolute(bus: &mut Bus, pc_addr: u32, dbr: u8) -> u32 {
 }
 
 /// OPCODE (addr)
-pub fn absolute_indirect(bus: &mut Bus, pc_addr: u32, dbr: u8) -> u32 {
-    let addr = absolute(bus, pc_addr, dbr);
-    let dbr = pc_addr & 0xFF0000;
-    dbr | ((bus.read(addr) as u32) << 8) | (bus.read(addr + 1) as u32)
+pub fn absolute_indirect(bus: &mut Bus, pc_addr: u32) -> u32 {
+    let pbr = pc_addr & 0xFF0000;
+    let addr = ((bus.read(pc_addr + 2) as u32) << 8) | (bus.read(pc_addr + 1) as u32);
+    pbr | ((bus.read(addr + 1) as u32) << 8) | (bus.read(addr) as u32)
 }
 
 /// OPCODE long
@@ -45,11 +46,11 @@ pub fn absolute_long(bus: &mut Bus, pc_addr: u32) -> u32 {
 }
 
 /// OPCODE (addr)
-pub fn absolute_indirect_long(bus: &mut Bus, pc_addr: u32, dbr: u8) -> u32 {
-    let addr = absolute(bus, pc_addr, dbr);
-    ((bus.read(addr) as u32) << 16) |
+pub fn absolute_indirect_long(bus: &mut Bus, pc_addr: u32) -> u32 {
+    let addr = (bus.read(pc_addr + 1) as u32) | ((bus.read(pc_addr + 2) as u32) << 8);
+    (bus.read(addr) as u32) | 
     ((bus.read(addr + 1) as u32) << 8) |
-    (bus.read(addr + 2) as u32)
+    ((bus.read(addr + 2) as u32) << 16)
 }
 
 /// OPCODE dp
@@ -79,11 +80,17 @@ pub fn absolute_indexed(bus: &mut Bus, pc_addr: u32, xy: u16, dbr: u8) -> u32 {
     absolute(bus, pc_addr, dbr) + (xy as u32)
 }
 
-/// OPCODE (addr)
-pub fn absolute_indexed_indirect(bus: &mut Bus, pc_addr: u32, xy: u16, dbr: u8) -> u32 {
-    let addr = absolute_indexed(bus, pc_addr, xy, dbr);
-    let dbr = pc_addr & 0xFF0000;
-    dbr | ((bus.read(addr) as u32) << 8) | (bus.read(addr + 1) as u32)
+/// OPCODE (addr,X)
+/// OPCODE (addr,Y)
+pub fn absolute_indexed_indirect(bus: &mut Bus, pc_addr: u32, xy: u16, is_16bit_index: bool) -> u32 {
+    let pbr = pc_addr & 0xFF0000;
+    let operand = (bus.read(pc_addr + 1) as u32) | ((bus.read(pc_addr + 2) as u32) << 8);
+    let mut effective_xy = xy;
+    if !is_16bit_index {
+        effective_xy &= 0xFF;
+    }
+    let addr = pbr | (operand as u16).wrapping_add(effective_xy) as u32;
+    pbr | (bus.read(addr) as u32) | ((bus.read(addr + 1) as u32) << 8)
 }
 
 
@@ -181,14 +188,14 @@ impl AddressingMode {
             Self::Accumulator => p.pc_addr,
             Self::Immediate => immediate(p.pc_addr),
             Self::Absolute => absolute(bus, p.pc_addr, p.dbr),
-            Self::AbsoluteIndirect => absolute_indirect(bus, p.pc_addr, p.dbr),
-            Self::AbsoluteIndirectLong => absolute_indirect_long(bus, p.pc_addr, p.dbr),
+            Self::AbsoluteIndirect => absolute_indirect(bus, p.pc_addr),
+            Self::AbsoluteIndirectLong => absolute_indirect_long(bus, p.pc_addr),
             Self::AbsoluteLong => absolute_long(bus, p.pc_addr),
             Self::DirectPage => direct_page(bus, p.pc_addr, p.direct_page_register),
             Self::DirectPageIndirect => direct_page_indirect(bus, p.pc_addr, p.direct_page_register, p.dbr),
             Self::DirectPageIndirectLong => direct_page_indirect_long(bus, p.pc_addr, p.direct_page_register),
             Self::AbsoluteIndexed(idx) => absolute_indexed(bus, p.pc_addr, if idx == X {p.x} else {p.y}, p.dbr),
-            Self::AbsoluteIndexedIndirect(idx) => absolute_indexed_indirect(bus, p.pc_addr, if idx == X {p.x} else {p.y}, p.dbr),
+            Self::AbsoluteIndexedIndirect(idx) => absolute_indexed_indirect(bus, p.pc_addr, if idx == X {p.x} else {p.y}, p.is_16bit_index),
             Self::AbsoluteLongIndexed(idx) => absolute_long_indexed(bus, p.pc_addr, if idx == X {p.x} else {p.y}),
             Self::DirectPageIndexed(idx) => direct_page_indexed(bus, p.pc_addr, p.direct_page_register, if idx == X {p.x} else {p.y}),
             Self::DirectPageIndexedIndirect(idx) => direct_page_indexed_indirect(bus, p.pc_addr, p.direct_page_register, if idx == X {p.x} else {p.y}, p.dbr),
@@ -254,21 +261,21 @@ mod addressing_modes_tests {
         bus.write(pc_addr + 1, addr);
         bus.write(addr as u32, 0x02);
         bus.write((addr + 1) as u32, 0x01);
-        assert_eq!(absolute_indirect(&mut bus, pc_addr, 0x00), 0x000201);
+        assert_eq!(absolute_indirect(&mut bus, pc_addr), 0x000102);
 
         let pc_addr = 0x7E0010;
         let addr = 0x55;
         bus.write(pc_addr + 1, addr);
         bus.write(addr as u32, 0x02);
         bus.write((addr + 1) as u32, 0x01);
-        assert_eq!(absolute_indirect(&mut bus, pc_addr, 0x00), 0x7E0201);
+        assert_eq!(absolute_indirect(&mut bus, pc_addr), 0x7E0102);
 
         let pc_addr = 0x7E0010;
         let addr = 0x55;
         bus.write(pc_addr + 1, addr);
         bus.write(addr as u32, 0x02);
         bus.write((addr + 1) as u32, 0x01);
-        assert_eq!(absolute_indirect(&mut bus, pc_addr, 0x00), 0x7E0201);
+        assert_eq!(absolute_indirect(&mut bus, pc_addr), 0x7E0102);
     }
 
     #[test]
@@ -297,7 +304,7 @@ mod addressing_modes_tests {
         bus.write(addr as u32, 0x03);
         bus.write((addr + 1) as u32, 0x02);
         bus.write((addr + 2) as u32, 0x01);
-        assert_eq!(absolute_indirect_long(&mut bus, pc_addr, 0x00), 0x030201);
+        assert_eq!(absolute_indirect_long(&mut bus, pc_addr), 0x010203);
     }
 
 
@@ -383,7 +390,7 @@ mod addressing_modes_tests {
         bus.write(pc_addr + 1, addr);
         bus.write(addr as u32, 0x02);
         bus.write((addr + 1) as u32, 0x01);
-        assert_eq!(absolute_indexed_indirect(&mut bus, pc_addr, 0, 0x00), 0x000201);
+        assert_eq!(absolute_indexed_indirect(&mut bus, pc_addr, 0, true), 0x000102);
     }
 
     #[test]
@@ -523,7 +530,7 @@ mod addressing_modes_tests {
         bus.write(pc_addr + 2, 0x10);
         bus.write(0x001020, 0xFE);
         let val = AddressingMode::Absolute.read_8bit(
-            ResolveAddressParams {pc_addr, direct_page_register: 0x00, stack_pointer: 0x00, x: 0x00, y: 0x00, dbr: 0x00},
+            ResolveAddressParams {pc_addr, direct_page_register: 0x00, stack_pointer: 0x00, x: 0x00, y: 0x00, dbr: 0x00, is_16bit_index: true},
             &mut bus,
         );
         assert_eq!(val, 0xFE);
@@ -535,7 +542,7 @@ mod addressing_modes_tests {
         bus.write(0x001020, 0xFF);
         bus.write(0x001021, 0xEE);
         let val = AddressingMode::Absolute.read_16bit(
-            ResolveAddressParams {pc_addr, direct_page_register: 0x00, stack_pointer: 0x00, x: 0x00, y: 0x00, dbr: 0x00},
+            ResolveAddressParams {pc_addr, direct_page_register: 0x00, stack_pointer: 0x00, x: 0x00, y: 0x00, dbr: 0x00, is_16bit_index: true},
             &mut bus,
         );
         assert_eq!(val, 0xEEFF);

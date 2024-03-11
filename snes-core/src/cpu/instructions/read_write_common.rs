@@ -9,6 +9,7 @@ pub fn get_effective_address(registers: &Registers, bus: &mut Bus, addressing_mo
             stack_pointer: registers.sp,
             x: registers.x, y: registers.y,
             dbr: registers.dbr,
+            is_16bit_index: registers.is_16bit_index(),
         }
     )
 }
@@ -23,6 +24,7 @@ pub fn read_8bit_from_address(registers: &Registers, bus: &mut Bus, addressing_m
                 stack_pointer: registers.sp,
                 x: registers.x, y: registers.y,
                 dbr: registers.dbr,
+                is_16bit_index: registers.is_16bit_index(),
             },
             bus,
         )
@@ -39,6 +41,7 @@ pub fn read_16bit_from_address(registers: &Registers, bus: &mut Bus, addressing_
                 stack_pointer: registers.sp,
                 x: registers.x, y: registers.y,
                 dbr: registers.dbr,
+                is_16bit_index: registers.is_16bit_index(),
             },
             bus,
         )
@@ -55,6 +58,7 @@ pub fn write_8bit_to_address(registers: &mut Registers, bus: &mut Bus, addressin
                 stack_pointer: registers.sp,
                 x: registers.x, y: registers.y,
                 dbr: registers.dbr,
+                is_16bit_index: registers.is_16bit_index(),
             },
             bus,
             value,
@@ -72,6 +76,7 @@ pub fn write_16bit_to_address(registers: &mut Registers, bus: &mut Bus, addressi
                 stack_pointer: registers.sp,
                 x: registers.x, y: registers.y,
                 dbr: registers.dbr,
+                is_16bit_index: registers.is_16bit_index(),
             },
             bus,
             value,

@@ -1,5 +1,5 @@
 use crate::cpu::{bus::Bus, registers::Registers};
-use crate::utils::addressing::AddressingMode;
+use crate::utils::addressing::{AddressingMode, IndexRegister};
 
 use super::read_write_common::get_effective_address;
 use super::CPUInstruction;
@@ -15,7 +15,13 @@ pub struct JMP {
 impl CPUInstruction for JMP {
     fn execute(&self, registers: &mut Registers, bus: &mut Bus) {
         let effective_address = get_effective_address(registers, bus, self.addressing_mode);
-        let is_long = matches!(self.addressing_mode, AddressingMode::AbsoluteLong | AddressingMode::AbsoluteIndirectLong);
+        let is_long = matches!(
+            self.addressing_mode,
+            AddressingMode::AbsoluteLong |
+            AddressingMode::AbsoluteIndirectLong |
+            AddressingMode::AbsoluteIndexedIndirect(IndexRegister::X) |
+            AddressingMode::AbsoluteIndexedIndirect(IndexRegister::Y)
+        );
         registers.pc = effective_address as u16;
         if is_long {
             registers.pbr = (effective_address >> 16) as u8;

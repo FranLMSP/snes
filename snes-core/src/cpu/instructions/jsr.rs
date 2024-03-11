@@ -1,5 +1,5 @@
 use crate::cpu::{bus::Bus, registers::Registers};
-use crate::utils::addressing::AddressingMode;
+use crate::utils::addressing::{AddressingMode, IndexRegister};
 
 use super::read_write_common::get_effective_address;
 use super::{CPUInstruction, push_common};
@@ -15,10 +15,15 @@ pub struct JSR {
 impl CPUInstruction for JSR {
     fn execute(&self, registers: &mut Registers, bus: &mut Bus) {
         let effective_address = get_effective_address(registers, bus, self.addressing_mode);
-        let is_long = matches!(self.addressing_mode, AddressingMode::AbsoluteLong | AddressingMode::AbsoluteIndirectLong);
+        let is_long = matches!(
+            self.addressing_mode, AddressingMode::AbsoluteLong |
+            AddressingMode::AbsoluteIndirectLong |
+            AddressingMode::AbsoluteIndexedIndirect(IndexRegister::X) |
+            AddressingMode::AbsoluteIndexedIndirect(IndexRegister::Y)
+        );
         // We need to push the *next* instruction onto the stack
         let (bytes, cycles) = cycles::increment_cycles_jsr(self.addressing_mode);
-        registers.increment_pc(bytes); registers.cycles += cycles;
+        registers.increment_pc(bytes - 1); registers.cycles += cycles;
         let value = registers.get_pc_address();
         if is_long {
             push_common::do_push(registers, bus, &[
@@ -64,7 +69,7 @@ mod cpu_instructions_tests {
         instruction.execute(&mut registers, &mut bus);
         assert_eq!(bus.read(0x1FC), 0x00);
         assert_eq!(bus.read(0x1FB), 0x12);
-        assert_eq!(bus.read(0x1FA), 0x38); // we should store the NEXT instruction
+        assert_eq!(bus.read(0x1FA), 0x37); // we should store the NEXT instruction
         assert_eq!(registers.pbr, 0xAA);
         assert_eq!(registers.pc, 0xBBCC);
         assert_eq!(registers.sp, 0x1F9);
