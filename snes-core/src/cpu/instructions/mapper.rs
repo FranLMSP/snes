@@ -150,7 +150,7 @@ pub fn map_opcode_to_instruction(opcode: u8) -> Box<dyn CPUInstruction> {
         0xDC => Box::new(JMP{addressing_mode: A::AbsoluteIndirectLong}),
         // JSR 
         0x20 => Box::new(JSR{addressing_mode: A::Absolute}),
-        0xFC => Box::new(JSR{addressing_mode: A::AbsoluteIndexedIndirect(I::X)}),
+        0xFC => Box::new(JSR{addressing_mode: A::AbsoluteIndexedIndirect(I::X)}), // TODO: Broken
         0x22 => Box::new(JSR{addressing_mode: A::AbsoluteLong}), // same as JSL
         // LDA
         0xA9 => Box::new(LDA{addressing_mode: A::Immediate}),
@@ -187,9 +187,9 @@ pub fn map_opcode_to_instruction(opcode: u8) -> Box<dyn CPUInstruction> {
         0x5E => Box::new(LSR{addressing_mode: A::AbsoluteIndexed(I::X)}),
         0x56 => Box::new(LSR{addressing_mode: A::DirectPageIndexed(I::X)}),
         // MVN
-        0x54 => Box::new(MVN{}),
+        0x54 => Box::new(MVN{}),  // TODO: Broken
         // MVP
-        0x44 => Box::new(MVP{}),
+        0x44 => Box::new(MVP{}),  // TODO: Broken
         // NOP
         0xEA => Box::new(NOP{}),
         // ORA
