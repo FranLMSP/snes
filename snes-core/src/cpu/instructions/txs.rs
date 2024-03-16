@@ -34,9 +34,7 @@ pub struct TXS8 {}
 impl CPUInstruction for TXS8 {
     fn execute(&self, registers: &mut Registers, _bus: &mut Bus) {
         let result = registers.x as u8;
-        registers.set_low_sp(result);
-        registers.set_negative_flag((result >> 7) == 1);
-        registers.set_zero_flag(result == 0);
+        registers.sp = result as u16;
         let (bytes, cycles) = cycles::increment_cycles_transfer();
         registers.increment_pc(bytes); registers.cycles += cycles;
     }
@@ -52,8 +50,6 @@ impl CPUInstruction for TXS16 {
     fn execute(&self, registers: &mut Registers, _bus: &mut Bus) {
         let result = registers.x;
         registers.sp = result;
-        registers.set_negative_flag((result >> 15) == 1);
-        registers.set_zero_flag(result == 0);
         let (bytes, cycles) = cycles::increment_cycles_transfer();
         registers.increment_pc(bytes); registers.cycles += cycles;
     }

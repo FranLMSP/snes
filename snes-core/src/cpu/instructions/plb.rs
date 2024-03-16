@@ -10,7 +10,7 @@ pub struct PLB {}
 
 impl CPUInstruction for PLB {
     fn execute(&self, registers: &mut Registers, bus: &mut Bus) {
-        registers.dbr = pull_common::do_pull(registers, bus, 1)[0];
+        registers.dbr = pull_common::do_pull(registers, bus, 1, true)[0];
         let (bytes, cycles) = cycles::increment_cycles_plb();
         registers.increment_pc(bytes); registers.cycles += cycles;
     }

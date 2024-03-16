@@ -10,7 +10,7 @@ pub struct RTS {}
 
 impl CPUInstruction for RTS {
     fn execute(&self, registers: &mut Registers, bus: &mut Bus) {
-        let bytes = pull_common::do_pull(registers, bus, 2);
+        let bytes = pull_common::do_pull(registers, bus, 2, false);
         // Low byte of PC is pulled first, then high byte
         registers.pc = (bytes[0] as u16) | ((bytes[1] as u16) << 8);
         let (bytes, cycles) = cycles::increment_cycles_return_subroutine();
@@ -39,7 +39,7 @@ mod cpu_instructions_tests {
         let instruction = RTS{};
         instruction.execute(&mut registers, &mut bus);
         assert_eq!(registers.pbr, 0x00);
-        assert_eq!(registers.pc, 0x1234);
+        assert_eq!(registers.pc, 0x1235);
         assert_eq!(registers.cycles, 6);
     }
 }

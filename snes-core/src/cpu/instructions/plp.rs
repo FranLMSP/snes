@@ -10,7 +10,7 @@ pub struct PLP {}
 
 impl CPUInstruction for PLP {
     fn execute(&self, registers: &mut Registers, bus: &mut Bus) {
-        let bytes = pull_common::do_pull(registers, bus, 1);
+        let bytes = pull_common::do_pull(registers, bus, 1, true);
         registers.p = bytes[0];
         let (bytes, cycles) = cycles::increment_cycles_plp();
         registers.increment_pc(bytes); registers.cycles += cycles;

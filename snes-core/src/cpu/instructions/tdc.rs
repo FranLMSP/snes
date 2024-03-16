@@ -12,7 +12,7 @@ impl CPUInstruction for TDC {
     fn execute(&self, registers: &mut Registers, _bus: &mut Bus) {
         let result = registers.d;
         registers.a = result;
-        registers.set_negative_flag((result >> 7) == 1);
+        registers.set_negative_flag((result >> 15) == 1);
         registers.set_zero_flag(result == 0);
         let (bytes, cycles) = cycles::increment_cycles_transfer();
         registers.increment_pc(bytes); registers.cycles += cycles;

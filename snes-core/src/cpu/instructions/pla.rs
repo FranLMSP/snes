@@ -11,10 +11,10 @@ pub struct PLA {}
 impl CPUInstruction for PLA {
     fn execute(&self, registers: &mut Registers, bus: &mut Bus) {
         if registers.is_16bit_mode() {
-            let bytes = pull_common::do_pull(registers, bus, 2);
+            let bytes = pull_common::do_pull(registers, bus, 2, true);
             registers.a = (bytes[0] as u16) | ((bytes[1] as u16) << 8);
         } else {
-            let bytes = pull_common::do_pull(registers, bus, 1);
+            let bytes = pull_common::do_pull(registers, bus, 1, true);
             registers.set_low_a(bytes[0]);
         }
         let (bytes, cycles) = cycles::increment_cycles_pla(registers.is_16bit_mode());

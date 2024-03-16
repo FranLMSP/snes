@@ -11,9 +11,11 @@ pub struct TCS {}
 impl CPUInstruction for TCS {
     fn execute(&self, registers: &mut Registers, _bus: &mut Bus) {
         let result = registers.a;
-        registers.sp = result;
-        registers.set_negative_flag((result >> 7) == 1);
-        registers.set_zero_flag(result == 0);
+        if registers.emulation_mode {
+            registers.set_low_sp(result as u8);
+        } else {
+            registers.sp = result;
+        }
         let (bytes, cycles) = cycles::increment_cycles_transfer();
         registers.increment_pc(bytes); registers.cycles += cycles;
     }
@@ -37,7 +39,7 @@ mod cpu_instructions_tests {
         registers.sp = 0x0000;
         let instruction = TCS{};
         instruction.execute(&mut registers, &mut bus);
-        assert_eq!(registers.sp, 0xF0F0);
+        assert_eq!(registers.sp, 0x00F0);
         assert_eq!(registers.pc, 0x0001);
         assert_eq!(registers.cycles, 2);
     }

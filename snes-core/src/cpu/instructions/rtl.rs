@@ -10,7 +10,7 @@ pub struct RTL {}
 
 impl CPUInstruction for RTL {
     fn execute(&self, registers: &mut Registers, bus: &mut Bus) {
-        let bytes = pull_common::do_pull(registers, bus, 3);
+        let bytes = pull_common::do_pull(registers, bus, 3, false);
         // Low byte of PC is pulled first, then high byte and then PBR
         registers.pc = (bytes[0] as u16) | ((bytes[1] as u16) << 8);
         registers.pbr = bytes[2];
@@ -41,7 +41,7 @@ mod cpu_instructions_tests {
         let instruction = RTL{};
         instruction.execute(&mut registers, &mut bus);
         assert_eq!(registers.pbr, 0x12);
-        assert_eq!(registers.pc, 0x3456);
+        assert_eq!(registers.pc, 0x3457);
         assert_eq!(registers.cycles, 6);
     }
 }

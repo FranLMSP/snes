@@ -11,10 +11,10 @@ pub struct PLY {}
 impl CPUInstruction for PLY {
     fn execute(&self, registers: &mut Registers, bus: &mut Bus) {
         if registers.is_16bit_index() {
-            let bytes = pull_common::do_pull(registers, bus, 2);
+            let bytes = pull_common::do_pull(registers, bus, 2, true);
             registers.y = (bytes[0] as u16) | ((bytes[1] as u16) << 8);
         } else {
-            let bytes = pull_common::do_pull(registers, bus, 1);
+            let bytes = pull_common::do_pull(registers, bus, 1, true);
             registers.set_low_y(bytes[0]);
         }
         let (bytes, cycles) = cycles::increment_cycles_pl_index(registers.is_16bit_index());

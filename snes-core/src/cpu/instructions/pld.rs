@@ -10,7 +10,7 @@ pub struct PLD {}
 
 impl CPUInstruction for PLD {
     fn execute(&self, registers: &mut Registers, bus: &mut Bus) {
-        let bytes = pull_common::do_pull(registers, bus, 2);
+        let bytes = pull_common::do_pull(registers, bus, 2, true);
         registers.d = (bytes[0] as u16) | ((bytes[1] as u16) << 8);
         let (bytes, cycles) = cycles::increment_cycles_pld();
         registers.increment_pc(bytes); registers.cycles += cycles;

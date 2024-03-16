@@ -10,11 +10,15 @@ pub struct RTI {}
 
 impl CPUInstruction for RTI {
     fn execute(&self, registers: &mut Registers, bus: &mut Bus) {
-        registers.p = pull_common::do_pull(registers, bus, 1)[0];
-        let pc_bytes = pull_common::do_pull(registers, bus, 2);
-        registers.pc = (pc_bytes[0] as u16) | ((pc_bytes[1] as u16) << 8);
-        if !registers.emulation_mode {
-            registers.pbr = pull_common::do_pull(registers, bus, 1)[0];
+        if registers.emulation_mode {
+            registers.p = pull_common::do_pull(registers, bus, 1, false)[0];
+            let pc_bytes = pull_common::do_pull(registers, bus, 2, false);
+            registers.pc = (pc_bytes[0] as u16) | ((pc_bytes[1] as u16) << 8);
+        } else {
+            registers.p = pull_common::do_pull(registers, bus, 1, false)[0];
+            let pc_bytes = pull_common::do_pull(registers, bus, 2, false);
+            registers.pc = (pc_bytes[0] as u16) | ((pc_bytes[1] as u16) << 8);
+            registers.pbr = pull_common::do_pull(registers, bus, 1, false)[0];
         }
         let (bytes, cycles) = cycles::increment_cycles_return_interrupt(registers.emulation_mode);
         registers.increment_pc(bytes); registers.cycles += cycles;

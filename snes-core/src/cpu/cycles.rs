@@ -384,7 +384,7 @@ pub fn increment_cycles_sep() -> (u16, usize) {
 }
 
 pub fn increment_cycles_return_subroutine() -> (u16, usize) {
-    (0, 6)
+    (1, 6)
 }
 
 pub fn increment_cycles_return_interrupt(is_emulation_mode: bool) -> (u16, usize) {

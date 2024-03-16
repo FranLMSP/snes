@@ -76,8 +76,13 @@ pub fn direct_page_indirect_long(bus: &mut Bus, pc_addr: u32, direct_page_regist
 
 /// OPCODE addr,X
 /// OPCODE addr,Y
-pub fn absolute_indexed(bus: &mut Bus, pc_addr: u32, xy: u16, dbr: u8) -> u32 {
-    absolute(bus, pc_addr, dbr) + (xy as u32)
+pub fn absolute_indexed(bus: &mut Bus, pc_addr: u32, xy: u16, dbr: u8, is_16bit_index: bool) -> u32 {
+    let operand = (bus.read(pc_addr + 1) as u16) | ((bus.read(pc_addr + 2) as u16) << 8);
+    let mut effective_yx = xy;
+    if !is_16bit_index {
+        effective_yx &= 0xFF;
+    }
+    (((dbr as u32) << 16) | (operand as u32)) + (effective_yx as u32)
 }
 
 /// OPCODE (addr,X)
@@ -96,8 +101,15 @@ pub fn absolute_indexed_indirect(bus: &mut Bus, pc_addr: u32, xy: u16, is_16bit_
 
 /// OPCODE long,X
 /// OPCODE long,Y
-pub fn absolute_long_indexed(bus: &mut Bus, pc_addr: u32, xy: u16) -> u32 {
-    absolute_long(bus, pc_addr) + (xy as u32)
+pub fn absolute_long_indexed(bus: &mut Bus, pc_addr: u32, xy: u16, is_16bit_index: bool) -> u32 {
+    let operand = (bus.read(pc_addr + 1) as u32) |
+        ((bus.read(pc_addr + 2) as u32) << 8) |
+        ((bus.read(pc_addr + 3) as u32) << 16);
+    let mut effective_xy = xy;
+    if !is_16bit_index {
+        effective_xy &= 0xFF;
+    }
+    operand + (effective_xy as u32)
 }
 
 /// OPCODE dp,X
@@ -194,9 +206,9 @@ impl AddressingMode {
             Self::DirectPage => direct_page(bus, p.pc_addr, p.direct_page_register),
             Self::DirectPageIndirect => direct_page_indirect(bus, p.pc_addr, p.direct_page_register, p.dbr),
             Self::DirectPageIndirectLong => direct_page_indirect_long(bus, p.pc_addr, p.direct_page_register),
-            Self::AbsoluteIndexed(idx) => absolute_indexed(bus, p.pc_addr, if idx == X {p.x} else {p.y}, p.dbr),
+            Self::AbsoluteIndexed(idx) => absolute_indexed(bus, p.pc_addr, if idx == X {p.x} else {p.y}, p.dbr, p.is_16bit_index),
             Self::AbsoluteIndexedIndirect(idx) => absolute_indexed_indirect(bus, p.pc_addr, if idx == X {p.x} else {p.y}, p.is_16bit_index),
-            Self::AbsoluteLongIndexed(idx) => absolute_long_indexed(bus, p.pc_addr, if idx == X {p.x} else {p.y}),
+            Self::AbsoluteLongIndexed(idx) => absolute_long_indexed(bus, p.pc_addr, if idx == X {p.x} else {p.y}, p.is_16bit_index),
             Self::DirectPageIndexed(idx) => direct_page_indexed(bus, p.pc_addr, p.direct_page_register, if idx == X {p.x} else {p.y}),
             Self::DirectPageIndexedIndirect(idx) => direct_page_indexed_indirect(bus, p.pc_addr, p.direct_page_register, if idx == X {p.x} else {p.y}, p.dbr),
             Self::DirectPageIndirectIndexed(idx) => direct_page_indirect_indexed(bus, p.pc_addr, p.direct_page_register, if idx == X {p.x} else {p.y}, p.dbr),
@@ -373,13 +385,13 @@ mod addressing_modes_tests {
         let pc_addr = 0x000000;
         bus.write(pc_addr + 1, 0x01);
         bus.write(pc_addr + 2, 0x02);
-        assert_eq!(absolute_indexed(&mut bus, pc_addr, 0x02, 0x00), 0x000203);
+        assert_eq!(absolute_indexed(&mut bus, pc_addr, 0x02, 0x00, true), 0x000203);
 
         let mut bus = Bus::new();
         let pc_addr = 0x7F0000;
         bus.write(pc_addr + 1, 0x01);
         bus.write(pc_addr + 2, 0x02);
-        assert_eq!(absolute_indexed(&mut bus, pc_addr, 0x02, 0x7F), 0x7F0203);
+        assert_eq!(absolute_indexed(&mut bus, pc_addr, 0x02, 0x7F, true), 0x7F0203);
     }
 
     #[test]
@@ -400,14 +412,14 @@ mod addressing_modes_tests {
         bus.write(pc_addr + 1, 0x01);
         bus.write(pc_addr + 2, 0x02);
         bus.write(pc_addr + 3, 0x03);
-        assert_eq!(absolute_long_indexed(&mut bus, pc_addr, 0x02), 0x030203);
+        assert_eq!(absolute_long_indexed(&mut bus, pc_addr, 0x02, true), 0x030203);
 
         let mut bus = Bus::new();
         let pc_addr = 0x7E0010;
         bus.write(pc_addr + 1, 0x01);
         bus.write(pc_addr + 2, 0x02);
         bus.write(pc_addr + 3, 0x03);
-        assert_eq!(absolute_long_indexed(&mut bus, pc_addr, 0x02), 0x030203);
+        assert_eq!(absolute_long_indexed(&mut bus, pc_addr, 0x02, true), 0x030203);
     }
 
     #[test]
