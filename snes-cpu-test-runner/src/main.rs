@@ -1,5 +1,6 @@
 use snes_core::cpu::bus::Bus;
 use snes_core::cpu::registers::Registers;
+use snes_core::cpu::CPU;
 /// https://github.com/TomHarte/ProcessorTests/tree/main/65816
 
 use snes_core::emulator::Emulator;
@@ -91,6 +92,7 @@ fn main() -> Result<()> {
     let mut total_passed = 0;
 
     for test in &tests.0 {
+        emulator.cpu = CPU::new();
         let mut did_test_fail = false;
         println!("running test case {}", test.name);
 
@@ -110,6 +112,9 @@ fn main() -> Result<()> {
         }
 
         emulator.tick();
+        while emulator.cpu.registers.is_moving {
+            emulator.tick();
+        }
 
         let is_emu_mode = emulator.cpu.registers.emulation_mode;
         let is_16index = emulator.cpu.registers.is_16bit_index();

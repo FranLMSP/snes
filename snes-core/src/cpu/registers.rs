@@ -13,6 +13,8 @@ pub struct Registers {
     pub emulation_mode: bool,
     pub is_cpu_stopped: bool,
     pub is_cpu_waiting_interrupt: bool,
+    pub is_moving: bool, // TODO: refactor these states with an enum
+    pub is_move_next: bool, // TODO: refactor these states with an enum
     pub cycles: usize,
 }
 
@@ -31,6 +33,8 @@ impl Registers {
             emulation_mode: true,
             is_cpu_stopped: false,
             is_cpu_waiting_interrupt: false,
+            is_moving: false,
+            is_move_next: false,
             cycles: 0,
         }
     }

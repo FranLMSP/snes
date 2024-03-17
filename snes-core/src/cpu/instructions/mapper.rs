@@ -187,9 +187,9 @@ pub fn map_opcode_to_instruction(opcode: u8) -> Box<dyn CPUInstruction> {
         0x5E => Box::new(LSR{addressing_mode: A::AbsoluteIndexed(I::X)}),
         0x56 => Box::new(LSR{addressing_mode: A::DirectPageIndexed(I::X)}),
         // MVN
-        0x54 => Box::new(MVN{}),  // TODO: Broken
+        0x54 => Box::new(MVN{}),
         // MVP
-        0x44 => Box::new(MVP{}),  // TODO: Broken
+        0x44 => Box::new(MVP{}),
         // NOP
         0xEA => Box::new(NOP{}),
         // ORA

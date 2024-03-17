@@ -1,4 +1,4 @@
-use super::{registers::Registers, bus::Bus, cycles, dma, instructions::mapper::map_opcode_to_instruction};
+use super::{bus::Bus, cycles, dma, instructions::{mapper::map_opcode_to_instruction, move_common}, registers::Registers};
 
 pub struct CPU {
     pub registers: Registers,
@@ -37,6 +37,11 @@ impl CPU {
             // TODO: check for interrupts here
             let (bytes, cycles) = cycles::increment_cycles_while_stopped();
             self.registers.increment_pc(bytes); self.registers.cycles += cycles;
+            return false;
+        }
+        if self.registers.is_moving {
+            let is_next = self.registers.is_move_next;
+            move_common::tick_move(&mut self.registers, bus, is_next);
             return false;
         }
         true
