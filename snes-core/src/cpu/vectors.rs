@@ -1,4 +1,4 @@
-use super::{interface::CPU, instructions::{phk::PHK, CPUInstruction, php::PHP, push_common}};
+use super::{instructions::{phk::PHK, php::PHP, push_common, CPUInstruction}, interface::CPU, internal_registers::RDNMI};
 use crate::cpu::bus::Bus;
 
 
@@ -38,13 +38,6 @@ impl CPU {
         self.registers.is_cpu_stopped = false;
     }
 
-    fn get_vector_from_interrupts(&self) -> Option<Vector> {
-        if self.registers.get_irq_disable_flag() {
-            return None;
-        }
-        Some(Vector::Reset)
-    }
-
     fn push_emulation_interrupt(&mut self, bus: &mut Bus) {
         if !self.registers.emulation_mode {
             PHK{}.execute(&mut self.registers, bus);
@@ -57,14 +50,22 @@ impl CPU {
         PHP{}.execute(&mut self.registers, bus);
     }
 
-    pub fn handle_interrupts(&mut self, bus: &mut Bus) {
+    fn handle_interrupt(&mut self, bus: &mut Bus, vector: Vector) {
         self.push_emulation_interrupt(bus);
-        if let Some(vector) = self.get_vector_from_interrupts() {
-            let effective_vector = vector.get_base_address();
-            self.registers.pc = effective_vector as u16;
-            self.registers.pbr = (effective_vector >> 16) as u8;
+        let effective_vector = vector.get_base_address();
+        self.registers.pc = effective_vector as u16;
+        self.registers.pbr = (effective_vector >> 16) as u8;
+    }
+
+    pub fn check_interrupts(&mut self, bus: &mut Bus) {
+        let rdnmi_byte = bus.read(RDNMI as u32);
+        if rdnmi_byte >> 7 != 0 {
+            self.registers.is_cpu_waiting_interrupt = false;
+            self.handle_interrupt(bus, Vector::NMI);
+            return;
         }
     }
+
 }
 
 

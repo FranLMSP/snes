@@ -3,6 +3,7 @@ use super::registers::PPURegisters;
 pub struct PPU {
     framebuffer: Vec<u8>,
     pub registers: PPURegisters,
+    was_vblank_nmi_set: bool,
 }
 
 impl PPU {
@@ -10,6 +11,7 @@ impl PPU {
         Self {
             framebuffer: vec![],
             registers: PPURegisters::new(),
+            was_vblank_nmi_set: false,
         }
     }
 
@@ -28,10 +30,12 @@ impl PPU {
         if self.registers.h_count > 339 {
             self.registers.h_count = 0;
             self.registers.v_count += 1;
-            if self.registers.v_count > 224 {
+            if self.registers.v_count > 224 && !self.was_vblank_nmi_set {
                 self.registers.vblank_nmi = true;
+                self.was_vblank_nmi_set = true;
             }
             if self.registers.v_count > 261 {
+                self.was_vblank_nmi_set = false;
                 self.registers.v_count = 0;
             }
         }
