@@ -25,7 +25,7 @@ impl CPUInstruction for JSR {
         let (bytes, cycles) = cycles::increment_cycles_jsr(self.addressing_mode);
         registers.increment_pc(bytes - 1); registers.cycles += cycles;
         let value = registers.get_pc_address();
-        if is_long {
+        if matches!(self.addressing_mode, AddressingMode::AbsoluteLong) {
             push_common::do_push(registers, bus, &[
                 (value >> 16) as u8,
                 (value >> 8) as u8,
