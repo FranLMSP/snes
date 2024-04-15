@@ -1,4 +1,4 @@
-use super::{interface::CPU, instructions::{phk::PHK, CPUInstruction, php::PHP, push_common}};
+use super::{instructions::push_common, interface::CPU, internal_registers::RDNMI};
 use crate::cpu::bus::Bus;
 
 
@@ -38,33 +38,40 @@ impl CPU {
         self.registers.is_cpu_stopped = false;
     }
 
-    fn get_vector_from_interrupts(&self) -> Option<Vector> {
-        if self.registers.get_irq_disable_flag() {
-            return None;
-        }
-        Some(Vector::Reset)
-    }
-
-    fn push_emulation_interrupt(&mut self, bus: &mut Bus) {
+    fn push_interrupt(&mut self, bus: &mut Bus) {
+        let pbr = self.registers.pbr;
         if !self.registers.emulation_mode {
-            PHK{}.execute(&mut self.registers, bus);
+            push_common::do_push(&mut self.registers, bus, &[pbr]);
         }
         let values = [
             (self.registers.pc >> 8) as u8,
             self.registers.pc as u8,
         ];
         push_common::do_push(&mut self.registers, bus, &values);
-        PHP{}.execute(&mut self.registers, bus);
+        let p = self.registers.p;
+        push_common::do_push(&mut self.registers, bus, &[p]);
     }
 
-    pub fn handle_interrupts(&mut self, bus: &mut Bus) {
-        self.push_emulation_interrupt(bus);
-        if let Some(vector) = self.get_vector_from_interrupts() {
-            let effective_vector = vector.get_base_address();
-            self.registers.pc = effective_vector as u16;
-            self.registers.pbr = (effective_vector >> 16) as u8;
+    fn handle_interrupt(&mut self, bus: &mut Bus, vector: Vector) {
+        self.push_interrupt(bus);
+        let base_address = vector.get_base_address();
+        let effective_vector = CPU::get_vector(base_address, bus);
+        self.registers.pc = effective_vector;
+        self.registers.pbr = 0x00;
+    }
+
+    pub fn check_interrupts(&mut self, bus: &mut Bus) {
+        let rdnmi_byte = bus.read(RDNMI as u32);
+        if rdnmi_byte >> 7 != 0 {
+            self.registers.is_cpu_waiting_interrupt = false;
+            self.handle_interrupt(bus, Vector::NMI);
+        }
+        if !self.registers.get_irq_disable_flag() && bus.ppu.is_irq_set {
+            self.registers.is_cpu_waiting_interrupt = false;
+            self.handle_interrupt(bus, Vector::IRQ);
         }
     }
+
 }
 
 

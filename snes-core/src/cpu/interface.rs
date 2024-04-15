@@ -34,9 +34,9 @@ impl CPU {
             return false;
         }
         if self.registers.is_cpu_waiting_interrupt {
-            // TODO: check for interrupts here
-            let (bytes, cycles) = cycles::increment_cycles_while_stopped();
-            self.registers.increment_pc(bytes); self.registers.cycles += cycles;
+            self.check_interrupts(bus);
+            let (_, cycles) = cycles::increment_cycles_while_stopped();
+            self.registers.cycles += cycles;
             return false;
         }
         if self.registers.is_moving {
