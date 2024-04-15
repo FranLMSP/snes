@@ -4,6 +4,7 @@ pub struct PPU {
     framebuffer: Vec<u8>,
     pub registers: PPURegisters,
     was_vblank_nmi_set: bool,
+    pub is_irq_set: bool,
 }
 
 impl PPU {
@@ -12,6 +13,7 @@ impl PPU {
             framebuffer: vec![],
             registers: PPURegisters::new(),
             was_vblank_nmi_set: false,
+            is_irq_set: false,
         }
     }
 
