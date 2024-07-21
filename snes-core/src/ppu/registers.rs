@@ -88,6 +88,9 @@ pub const STAT78: u16       = 0x213F;  // PPU1 Status and PPU1 Version Number
 pub const MAX_BG_WIDTH: usize  = 16 * 64;
 pub const MAX_BG_HEIGHT: usize = 16 * 64;
 
+pub const MAX_TV_WIDTH: usize  = 512;
+pub const MAX_TV_HEIGHT: usize = 448;
+
 
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum TileSize {
