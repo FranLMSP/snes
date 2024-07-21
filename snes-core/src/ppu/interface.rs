@@ -3,7 +3,7 @@ use super::registers::{PPURegisters, MAX_TV_HEIGHT, MAX_TV_WIDTH};
 const FRAMEBUFFER_SIZE: usize = MAX_TV_HEIGHT * MAX_TV_WIDTH * 4;
 
 pub struct PPU {
-    framebuffer: [u8; FRAMEBUFFER_SIZE],
+    framebuffer: Vec<u8>,
     pub registers: PPURegisters,
     was_vblank_nmi_set: bool,
     pub is_irq_set: bool,
@@ -12,7 +12,7 @@ pub struct PPU {
 impl PPU {
     pub fn new() -> Self {
         Self {
-            framebuffer: [0xFF; FRAMEBUFFER_SIZE],
+            framebuffer: vec![0; FRAMEBUFFER_SIZE],
             registers: PPURegisters::new(),
             was_vblank_nmi_set: false,
             is_irq_set: false,
