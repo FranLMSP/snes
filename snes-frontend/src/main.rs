@@ -24,8 +24,14 @@ impl eframe::App for SnesEmulatorApp {
         egui::CentralPanel::default().show(ctx, |ui| {
             emu_ui::menu::build_menu_bar(&mut self.emulator, ui, &mut self.state);
             ui.separator();
-            // ui::game::build_game_window(ctx);
         });
+        emu_ui::game::initialize_game_texture(ctx, &mut self.state.game_tv_texture);
+        emu_ui::game::build_game_window(
+            ctx,
+            &mut self.state.game_tv_texture,
+            self.emulator.bus.ppu.framebuffer(),
+        );
+        emu_ui::debug::build_all_debug_options(ctx, &mut self.state.debug_options, &mut self.state.emulation_state, &mut self.emulator);
         if !self.state.emulation_state.is_paused {
             if self.state.emulation_state.one_tick_per_frame {
                 self.emulator.tick();
@@ -33,7 +39,6 @@ impl eframe::App for SnesEmulatorApp {
                 self.emulator.loop_frame();
             }
         }
-        emu_ui::debug::build_all_debug_options(ctx, &mut self.state.debug_options, &mut self.state.emulation_state, &mut self.emulator);
         ctx.request_repaint();
         self.frame_limit.limit();
         self.frame_limit.reset_timer();
