@@ -16,8 +16,8 @@ pub struct DebugOptions {
 impl DebugOptions {
     pub fn new() -> Self {
         Self {
-            enable_debugging: true,
-            show_debug_options_window: true,
+            enable_debugging: false,
+            show_debug_options_window: false,
             memory_map_conrtrol_options: MemoryMapControlOptions::new(),
             cpu_debug_control_options: CPUDebugControlOptions::new(),
             ppu_debug_control_options: PPUDebugControlOptions::new(),
