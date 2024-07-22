@@ -375,10 +375,26 @@ impl PPURegisters {
     }
 
     pub fn is_vblanking(&self) -> bool {
-        if self.v_count >= 1 && self.v_count <= 224 {
-            return false
-        }
-        true
+        !(self.v_count >= 1 && self.v_count <= 224)
+    }
+
+    pub fn is_hblanking(&self) -> bool {
+        !(self.h_count >= 22 && self.h_count <= 277)
+    }
+
+    pub fn get_current_res(&self) -> (u16, u16) {
+        let w = if self.is_true_high_res_mode_enabled() {512} else {256};
+        let h = if self.is_interlace_mode_enabled() {448} else {224};
+        (w, h)
+    }
+
+    pub fn is_interlace_mode_enabled(&self) -> bool {
+        self._read(SETINI) & 0x01 == 0b1
+    }
+
+    pub fn is_true_high_res_mode_enabled(&self) -> bool {
+        let current_bg_mode = self._read(BGMODE);
+        current_bg_mode == 5 || current_bg_mode == 6
     }
 }
 
@@ -589,5 +605,71 @@ mod ppu_registers_test {
         assert!(!registers.is_vblanking());
         registers.v_count = 50;
         assert!(!registers.is_vblanking());
+    }
+
+    #[test]
+    fn test_is_hblanking() {
+        let mut registers = PPURegisters::new();
+        registers.h_count = 0;
+        assert!(registers.is_hblanking());
+        registers.h_count = 20;
+        assert!(registers.is_hblanking());
+        registers.h_count = 21;
+        assert!(registers.is_hblanking());
+        registers.h_count = 278;
+        assert!(registers.is_hblanking());
+        registers.h_count = 300;
+        assert!(registers.is_hblanking());
+        registers.h_count = 22;
+        assert!(!registers.is_hblanking());
+        registers.h_count = 100;
+        assert!(!registers.is_hblanking());
+        registers.h_count = 277;
+        assert!(!registers.is_hblanking());
+    }
+
+    #[test]
+    fn test_is_interlace_mode_enabled() {
+        let mut registers = PPURegisters::new();
+        registers._write(SETINI, 0x01);
+        assert!(registers.is_interlace_mode_enabled());
+        registers._write(SETINI, 0x00);
+        assert!(!registers.is_interlace_mode_enabled());
+    }
+
+    #[test]
+    fn test_is_true_high_res_mode_enabled() {
+        let mut registers = PPURegisters::new();
+        registers._write(BGMODE, 1);
+        assert!(!registers.is_true_high_res_mode_enabled());
+        registers._write(BGMODE, 2);
+        assert!(!registers.is_true_high_res_mode_enabled());
+        registers._write(BGMODE, 3);
+        assert!(!registers.is_true_high_res_mode_enabled());
+        registers._write(BGMODE, 4);
+        assert!(!registers.is_true_high_res_mode_enabled());
+        registers._write(BGMODE, 5);
+        assert!(registers.is_true_high_res_mode_enabled());
+        registers._write(BGMODE, 6);
+        assert!(registers.is_true_high_res_mode_enabled());
+        registers._write(BGMODE, 7);
+        assert!(!registers.is_true_high_res_mode_enabled());
+    }
+
+    #[test]
+    fn test_get_current_res() {
+        let mut registers = PPURegisters::new();
+        registers._write(BGMODE, 1);
+        registers._write(SETINI, 0x00);
+        assert_eq!(registers.get_current_res(), (256, 224));
+        registers._write(BGMODE, 1);
+        registers._write(SETINI, 0x01);
+        assert_eq!(registers.get_current_res(), (256, 448));
+        registers._write(BGMODE, 5);
+        registers._write(SETINI, 0x00);
+        assert_eq!(registers.get_current_res(), (512, 224));
+        registers._write(BGMODE, 6);
+        registers._write(SETINI, 0x01);
+        assert_eq!(registers.get_current_res(), (512, 448));
     }
 }

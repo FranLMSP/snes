@@ -12,7 +12,7 @@ pub struct PPU {
 impl PPU {
     pub fn new() -> Self {
         Self {
-            framebuffer: vec![0; FRAMEBUFFER_SIZE],
+            framebuffer: vec![0xFF; FRAMEBUFFER_SIZE],
             registers: PPURegisters::new(),
             was_vblank_nmi_set: false,
             is_irq_set: false,
@@ -26,6 +26,9 @@ impl PPU {
     }
 
     pub fn dot_cycle(&mut self) {
+        if !self.registers.is_vblanking() && !self.registers.is_hblanking() {
+            self.put_pixel(self.compute_pixel())
+        }
         self.increment_hv_count();
     }
 
@@ -50,6 +53,29 @@ impl PPU {
 
     pub fn framebuffer(&self) -> &[u8] {
         &self.framebuffer
+    }
+
+    fn compute_pixel(&self) -> (u8, u8, u8) {
+        if self.registers.is_hblanking() || self.registers.is_hblanking() {
+            return (0x00, 0x00, 0x00)
+        }
+        (0xFF, 0x00, 0xFF)
+    }
+
+    fn put_pixel(&mut self, pixel: (u8, u8, u8)) {
+        let fb_index = self.get_pixel_index();
+        self.framebuffer[fb_index]     = pixel.0;
+        self.framebuffer[fb_index + 1] = pixel.1;
+        self.framebuffer[fb_index + 2] = pixel.2;
+    }
+
+    fn get_pixel_index(&self) -> usize {
+        let h_count = self.registers.h_count as usize;
+        let v_count = self.registers.v_count as usize;
+        return (
+            (h_count - 22) +
+            ((v_count - 1) * MAX_TV_WIDTH)
+        ) * 4
     }
 }
 
@@ -80,5 +106,39 @@ mod ppu_general_test {
         ppu.increment_hv_count();
         assert_eq!(ppu.registers.h_count, 0);
         assert_eq!(ppu.registers.v_count, 0);
+    }
+
+    #[test]
+    fn test_get_current_pixel_index() {
+        let mut ppu = PPU::new();
+        ppu.registers.v_count = 1;
+        ppu.registers.h_count = 22;
+        assert_eq!(ppu.get_pixel_index(), 0);
+        ppu.registers.v_count = 1;
+        ppu.registers.h_count = 23;
+        assert_eq!(ppu.get_pixel_index(), 4);
+        ppu.registers.v_count = 1;
+        ppu.registers.h_count = 24;
+        assert_eq!(ppu.get_pixel_index(), 8);
+        ppu.registers.v_count = 2;
+        ppu.registers.h_count = 22;
+        assert_eq!(ppu.get_pixel_index(), 2048);
+        ppu.registers.v_count = 2;
+        ppu.registers.h_count = 23;
+        assert_eq!(ppu.get_pixel_index(), 2052);
+        ppu.registers.v_count = 2;
+        ppu.registers.h_count = 24;
+        assert_eq!(ppu.get_pixel_index(), 2056);
+    }
+
+    #[test]
+    fn test_put_pixel() {
+        let mut ppu = PPU::new();
+        ppu.registers.v_count = 2;
+        ppu.registers.h_count = 22;
+        ppu.put_pixel((11, 22, 33));
+        assert_eq!(ppu.framebuffer[2048], 11);
+        assert_eq!(ppu.framebuffer[2049], 22);
+        assert_eq!(ppu.framebuffer[2050], 33);
     }
 }
