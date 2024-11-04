@@ -147,6 +147,13 @@ pub enum Background {
 }
 
 
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub enum CGRamDataReadFlipflop{
+    FirstAccess, // Lower 8 bits
+    SecondAccess, // Upper 8 bits
+}
+
+
 pub struct PPURegisters {
     data: [u8; 64],
     vram: [u16; 0x8000],
@@ -154,6 +161,7 @@ pub struct PPURegisters {
     pub vblank_nmi: bool,
     pub h_count: u16,
     pub v_count: u16,
+    cgram_data_read_flipflop: CGRamDataReadFlipflop
 }
 
 impl PPURegisters {
@@ -165,6 +173,7 @@ impl PPURegisters {
             vblank_nmi: false,
             h_count: 0,
             v_count: 0,
+            cgram_data_read_flipflop: CGRamDataReadFlipflop::FirstAccess,
         }
     }
 
@@ -202,6 +211,10 @@ impl PPURegisters {
         match address {
             VMDATAH => self.handle_vram_addr_auto_increment(Some(result), None),
             VMDATAL => self.handle_vram_addr_auto_increment(None, Some(result)),
+            RDCGRAM => {
+                let value = self.get_rdcgram();
+                self._write(RDCGRAM, value);
+            },
             _ => {},
         };
         self._read(address)
@@ -218,6 +231,11 @@ impl PPURegisters {
                 self.handle_write_vram(None, Some(value));
             },
             RDVRAML | RDVRAMH => {},
+            CGADD => {
+                self._write(address, value);
+                self.cgram_data_read_flipflop = CGRamDataReadFlipflop::FirstAccess;
+            },
+            CGDATA => self.write_cgram(value),
             _ => self._write(address, value),
         };
     }
@@ -401,6 +419,48 @@ impl PPURegisters {
     pub fn is_true_high_res_mode_enabled(&self) -> bool {
         let current_bg_mode = self._read(BGMODE);
         current_bg_mode == 5 || current_bg_mode == 6
+    }
+
+    fn get_cgram_index(&self) -> u8 {
+        self._read(CGADD)
+    }
+
+    fn handle_cgram_flipflop(&mut self) {
+        match self.cgram_data_read_flipflop {
+            CGRamDataReadFlipflop::FirstAccess => {
+                self.cgram_data_read_flipflop = CGRamDataReadFlipflop::SecondAccess;
+            },
+            CGRamDataReadFlipflop::SecondAccess => {
+                let current_index = self._read(CGADD);
+                self._write(CGADD, current_index.wrapping_add(1));
+                self.cgram_data_read_flipflop = CGRamDataReadFlipflop::FirstAccess;
+            },
+        };
+    }
+
+    fn get_rdcgram(&mut self) -> u8 {
+        let cgram_index = self.get_cgram_index() as usize;
+        let value = match self.cgram_data_read_flipflop {
+            CGRamDataReadFlipflop::FirstAccess => self.cgram[cgram_index] as u8,
+            CGRamDataReadFlipflop::SecondAccess => (self.cgram[cgram_index] >> 8) as u8,
+        };
+        self.handle_cgram_flipflop();
+        value
+    }
+
+    fn write_cgram(&mut self, data: u8) {
+        let cgram_index = self.get_cgram_index() as usize;
+        match self.cgram_data_read_flipflop {
+            CGRamDataReadFlipflop::FirstAccess => {
+                let current_value = self.cgram[cgram_index];
+                self.cgram[cgram_index] = (current_value & 0xFF00) | (data as u16);
+            },
+            CGRamDataReadFlipflop::SecondAccess => {
+                let current_value = self.cgram[cgram_index];
+                self.cgram[cgram_index] = (current_value & 0x00FF) | ((data as u16) << 8);
+            },
+        };
+        self.handle_cgram_flipflop();
     }
 }
 
@@ -677,5 +737,95 @@ mod ppu_registers_test {
         registers._write(BGMODE, 6);
         registers._write(SETINI, 0x01);
         assert_eq!(registers.get_current_res(), (512, 448));
+    }
+
+    #[test]
+    fn test_get_cgram_index() {
+        let mut registers = PPURegisters::new();
+        registers._write(CGADD, 0x00);
+        assert_eq!(registers.get_cgram_index(), 0x00);
+        registers._write(CGADD, 0x10);
+        assert_eq!(registers.get_cgram_index(), 0x10);
+        registers._write(CGADD, 0xFF);
+        assert_eq!(registers.get_cgram_index(), 0xFF);
+        registers._write(CGADD, 0xAB);
+        assert_eq!(registers.get_cgram_index(), 0xAB);
+    }
+
+    #[test]
+    fn test_handle_cgram_flipflop() {
+        let mut registers = PPURegisters::new();
+        registers.cgram_data_read_flipflop = CGRamDataReadFlipflop::FirstAccess;
+        registers.handle_cgram_flipflop();
+        assert_eq!(
+            registers.cgram_data_read_flipflop,
+            CGRamDataReadFlipflop::SecondAccess,
+        );
+
+        registers.cgram_data_read_flipflop = CGRamDataReadFlipflop::SecondAccess;
+        registers.handle_cgram_flipflop();
+        assert_eq!(
+            registers.cgram_data_read_flipflop,
+            CGRamDataReadFlipflop::FirstAccess,
+        );
+
+        // When CGADD is written to, the flipflop is reset to first access
+        registers.cgram_data_read_flipflop = CGRamDataReadFlipflop::FirstAccess;
+        registers.write(CGADD, 0x00);
+        assert_eq!(
+            registers.cgram_data_read_flipflop,
+            CGRamDataReadFlipflop::FirstAccess,
+        );
+
+        registers.cgram_data_read_flipflop = CGRamDataReadFlipflop::SecondAccess;
+        registers.write(CGADD, 0x00);
+        assert_eq!(
+            registers.cgram_data_read_flipflop,
+            CGRamDataReadFlipflop::FirstAccess,
+        );
+    }
+
+    #[test]
+    fn test_rdcgram_registers() {
+        let mut registers = PPURegisters::new();
+        registers.cgram_data_read_flipflop = CGRamDataReadFlipflop::FirstAccess;
+        registers.cgram[0x10] = 0x1234;
+        registers._write(CGADD, 0x10);
+        let first_access_value = registers.read(RDCGRAM);
+        assert_eq!(first_access_value, 0x34);
+        assert_eq!(
+            registers.cgram_data_read_flipflop,
+            CGRamDataReadFlipflop::SecondAccess,
+        );
+
+        let second_access_value = registers.read(RDCGRAM);
+        assert_eq!(registers._read(CGADD), 0x11);
+        assert_eq!(second_access_value, 0x12);
+        assert_eq!(
+            registers.cgram_data_read_flipflop,
+            CGRamDataReadFlipflop::FirstAccess,
+        );
+    }
+
+    #[test]
+    fn test_cgdata_registers() {
+        let mut registers = PPURegisters::new();
+        registers.cgram_data_read_flipflop = CGRamDataReadFlipflop::FirstAccess;
+        registers.cgram[0x10] = 0x0000;
+        registers._write(CGADD, 0x10);
+        registers.write(CGDATA, 0x34);
+        assert_eq!(registers.cgram[0x10], 0x0034);
+        assert_eq!(
+            registers.cgram_data_read_flipflop,
+            CGRamDataReadFlipflop::SecondAccess,
+        );
+
+        registers.write(CGDATA, 0x12);
+        assert_eq!(registers._read(CGADD), 0x11);
+        assert_eq!(registers.cgram[0x10], 0x1234);
+        assert_eq!(
+            registers.cgram_data_read_flipflop,
+            CGRamDataReadFlipflop::FirstAccess,
+        );
     }
 }
