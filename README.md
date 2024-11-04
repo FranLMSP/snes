@@ -1,5 +1,5 @@
 # SNES
-Work in progress experimental SNES emulator written in Rust.
+Work in progress SNES emulator written in Rust.
 
 ![Emulator](screenshots/screenshot.png)
 

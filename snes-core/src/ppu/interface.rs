@@ -88,6 +88,7 @@ impl PPU {
         // 5. get the tile information from vram
         // 6. get character index for the tile
         // 7. calculate the vram address of the character
+        // 7.1: TODO: consider that the character vram address also depends on the background's BPP mode
         // TODO: consider that each tile can be mirrored either vertically or horizontally. Keep this in mind when fetching the character information from vram
         // 8. look up color palette
         // ----
@@ -176,7 +177,7 @@ impl PPU {
     fn get_pixel_index(&self) -> usize {
         let h_count = self.registers.h_count as usize;
         let v_count = self.registers.v_count as usize;
-        return (
+        (
             (h_count - 22) +
             ((v_count - 1) * MAX_TV_WIDTH)
         ) * 4
