@@ -1,4 +1,5 @@
 use super::registers::{PPURegisters, Background, MAX_TV_HEIGHT, MAX_TV_WIDTH};
+use crate::utils::color::rgb555_to_rgb888;
 
 const FRAMEBUFFER_SIZE: usize = MAX_TV_HEIGHT * MAX_TV_WIDTH * 4;
 
@@ -98,7 +99,7 @@ impl PPU {
         let (tile_size_width, tile_size_height) = self.registers.get_bg_tile_size(background).to_usize();
         let vram = self.registers.vram();
         let x = (self.registers.h_count as usize) - 22; // H count ranges from 0 to 339. Pixels become visible at 22.
-        let y = (self.registers.v_count as usize) - 1; // V count ranges from 0 to 261 (depending on the region). Pixels become visible at 1.
+        let y = (self.registers.v_count as usize) - 1; // V count ranges from 0 to 261 (depending on the region and video mode). Pixels become visible at 1.
 
         let current_tile = (x / tile_size_width) + ((y / tile_size_height) * bg_size_width);
         let tile_byte = vram[tileset_vram_base_address + current_tile];
@@ -116,15 +117,16 @@ impl PPU {
         let msb_bitplane= (vram_word >> 8) as u8;
 
         let pixels = Self::mix_pixel_bitplanes(lsb_bitplane, msb_bitplane);
-        let effective_pixel = pixels[current_char_column];
+        let effective_pixel_index = pixels[current_char_column];
 
-        return match effective_pixel {
-            0b00 => (0xFF, 0xFF, 0xFF),
-            0b01 => (0xAC, 0xAC, 0xAC),
-            0b10 => (0x56, 0x56, 0x56),
-            0b11 => (0x00, 0x00, 0x00),
-            _ => unreachable!(),
-        }
+        // TODO: this cgram lookup is experimental, it will eventually be replaced by actual cgram lookup
+        let base_cgram_address: u8 = 0x00;
+        let rgb555_pixel = self.registers.read_cgram(base_cgram_address.wrapping_add(effective_pixel_index));
+        rgb555_to_rgb888((
+            (rgb555_pixel & 0b11111) as u8,
+            ((rgb555_pixel >> 5) & 0b11111) as u8,
+            ((rgb555_pixel >> 10) & 0b11111) as u8,
+        ))
     }
 
     fn mix_pixel_bitplanes(lsb_bitplane: u8, msb_bitplane: u8) -> [u8; 8] {
