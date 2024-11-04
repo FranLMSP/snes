@@ -76,7 +76,7 @@ impl PPU {
         // (0xFF, 0x00, 0xFF)
     }
 
-    // TODO: wrte tests for this function
+    // TODO: wirte tests for this function
     fn compute_background_pixel(&self, background: Background) -> (u8, u8, u8) {
         // 0. detect video mode?
         // 1. get base tileset vram address
@@ -127,7 +127,6 @@ impl PPU {
         }
     }
 
-    // TODO: write tests
     fn mix_pixel_bitplanes(lsb_bitplane: u8, msb_bitplane: u8) -> [u8; 8] {
         [
             (
@@ -243,5 +242,29 @@ mod ppu_general_test {
         assert_eq!(ppu.framebuffer[2048], 11);
         assert_eq!(ppu.framebuffer[2049], 22);
         assert_eq!(ppu.framebuffer[2050], 33);
+    }
+
+    #[test]
+    fn test_mix_pixel_bitplanes() {
+        assert_eq!(
+            PPU::mix_pixel_bitplanes(0b00000000, 0b00000000),
+            [0b00, 0b00, 0b00, 0b00, 0b00, 0b00, 0b00, 0b00],
+        );
+        assert_eq!(
+            PPU::mix_pixel_bitplanes(0b11111111, 0b11111111),
+            [0b11, 0b11, 0b11, 0b11, 0b11, 0b11, 0b11, 0b11],
+        );
+        assert_eq!(
+            PPU::mix_pixel_bitplanes(0b11111111, 0b00000000),
+            [0b01, 0b01, 0b01, 0b01, 0b01, 0b01, 0b01, 0b01],
+        );
+        assert_eq!(
+            PPU::mix_pixel_bitplanes(0b00000000, 0b11111111),
+            [0b10, 0b10, 0b10, 0b10, 0b10, 0b10, 0b10, 0b10],
+        );
+        assert_eq!(
+            PPU::mix_pixel_bitplanes(0b11110000, 0b00001111),
+            [0b01, 0b01, 0b01, 0b01, 0b10, 0b10, 0b10, 0b10],
+        );
     }
 }

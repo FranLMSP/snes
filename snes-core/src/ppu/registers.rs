@@ -45,7 +45,7 @@ pub const M7Y: u16          = 0x2120;  // Rotation/Scaling Center Coordinate Y (
 
 // PPU CGRAM
 pub const CGADD: u16        = 0x2121;  // Palette CGRAM Address
-pub const CGDATA: u16       = 0x2122;  // Palette CGRAM Address
+pub const CGDATA: u16       = 0x2122;  // Palette CGRAM data write
 
 // PPU Window
 pub const W12SEL: u16       = 0x2123;  // Window BG1/BG2 Mask Settings (W)
