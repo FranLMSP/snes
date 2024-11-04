@@ -150,6 +150,7 @@ pub enum Background {
 pub struct PPURegisters {
     data: [u8; 64],
     vram: [u16; 0x8000],
+    cgram: [u16; 256],
     pub vblank_nmi: bool,
     pub h_count: u16,
     pub v_count: u16,
@@ -160,6 +161,7 @@ impl PPURegisters {
         Self {
             data: [0x00; 64],
             vram: [0; 0x8000],
+            cgram: [0; 256],
             vblank_nmi: false,
             h_count: 0,
             v_count: 0,
@@ -172,6 +174,10 @@ impl PPURegisters {
 
     pub fn vram(&self) -> &[u16] {
         &self.vram
+    }
+
+    pub fn cgram(&self) -> &[u16] {
+        &self.cgram
     }
 
     fn _read(&self, address: u16) -> u8 {
