@@ -1,5 +1,6 @@
-use eframe::egui;
+use eframe::egui::{self, Color32, Rect, Ui, Vec2};
 use snes_core::ppu::registers::PPURegisters;
+use snes_core::utils::color::rgb555_to_rgb888;
 
 use crate::emu_state::debug_options::PPUDebugControlOptions;
 use crate::emu_ui::debug::common::sanitize_input;
@@ -45,6 +46,7 @@ pub fn build_ppu_debug_controls(ctx: &egui::Context, ppu_debug_options: &mut PPU
 
     build_ppu_registers_window(ctx, ppu_debug_options, ppu_registers);
     build_vram_window(ctx, ppu_debug_options, ppu_registers);
+    build_cgram_window(ctx, ppu_debug_options, ppu_registers);
 }
 
 fn build_ppu_registers_window(ctx: &egui::Context, ppu_debug_options: &mut PPUDebugControlOptions, ppu_registers: &PPURegisters) {
@@ -194,4 +196,67 @@ fn build_vram_window(ctx: &egui::Context, ppu_debug_options: &mut PPUDebugContro
                 }
             });
         });
+}
+
+fn build_cgram_window(ctx: &egui::Context, ppu_debug_options: &mut PPUDebugControlOptions, ppu_registers: &PPURegisters) {
+    if !ppu_debug_options.show_cgram {
+        return;
+    }
+    egui::Window::new("CGRAM Viewer")
+        .open(&mut ppu_debug_options.show_cgram)
+        .default_width(610.0)
+        .max_width(610.0)
+        .show(ctx, |ui| {
+            egui::ScrollArea::both().show(ui, |ui| {
+                let address_start = 0x00;
+                let address_end = 0xFF;
+                let mut header = String::from("     | ");
+                for page in 0x00..=0x0F {
+                    header = format!("{}  {:02X} ", header, page);
+                }
+                ui.monospace(header);
+                let mut divider = String::from("-----|-");
+                for _ in 0x00..=0x0F {
+                    divider = format!("{}-----", divider);
+                }
+                ui.monospace(divider);
+                let vector = (address_start..=address_end).collect::<Vec<u16>>();
+                let chunks = vector.chunks(0x10);
+                for row in chunks {
+                    let mut address_row = format!("{:04X} | ", row[0]);
+                    for address in row {
+                        address_row = format!("{}{:04X} ", address_row, ppu_registers.cgram()[((*address) & 0x7FFF) as usize]);
+                    }
+                    ui.monospace(address_row);
+                }
+            });
+
+            ui.separator();
+
+            ui.horizontal(|ui| {
+                ui.label("0x00: ");
+                paint_cgram_color_address(ui, 0x00, ppu_registers);
+                ui.label("0x01: ");
+                paint_cgram_color_address(ui, 0x01, ppu_registers);
+                ui.label("0x02: ");
+                paint_cgram_color_address(ui, 0x02, ppu_registers);
+            });
+        });
+}
+
+fn paint_cgram_color_address(ui: &mut Ui, address: u8, ppu_registers: &PPURegisters) {
+    let rgb555_value = ppu_registers.read_cgram(address);
+    let rgb888_value = rgb555_to_rgb888((
+        (rgb555_value & 0b11111) as u8,
+        ((rgb555_value >> 5) & 0b11111) as u8,
+        ((rgb555_value >> 10) & 0b11111) as u8,
+    ));
+    paint_square_color(ui, rgb888_value);
+}
+
+fn paint_square_color(ui: &mut Ui, color: (u8, u8, u8)) {
+    let (_, painter) = ui.allocate_painter(Vec2::splat(15.0), egui::Sense::hover());
+    let square_color = Color32::from_rgb(color.0, color.1, color.2);
+    let rect = Rect::EVERYTHING;
+    painter.rect_filled(rect, 0.0, square_color);
 }

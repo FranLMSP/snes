@@ -448,6 +448,10 @@ impl PPURegisters {
         value
     }
 
+    pub fn read_cgram(&self, address: u8) -> u16 {
+        self.cgram[address as usize]
+    }
+
     fn write_cgram(&mut self, data: u8) {
         let cgram_index = self.get_cgram_index() as usize;
         match self.cgram_data_read_flipflop {
