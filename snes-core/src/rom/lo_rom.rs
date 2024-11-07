@@ -20,6 +20,7 @@ impl LoROM {
 
 impl ROM for LoROM {
     fn load(&mut self, filename: &str) -> std::io::Result<bool> {
+        self.data = vec![];
         load_rom(filename, &mut self.data)
     }
 
