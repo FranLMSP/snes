@@ -94,6 +94,7 @@ impl PPU {
         // ----
         // possible optimizations:
         // - Fetch all of the necessary data before starting to render the scanline
+        // - Pre-render each background in a framebuffer and only update the framebuffer if either the tileset or charset changes
         let tileset_vram_base_address = self.registers.get_bg_tile_base_address(background) as usize;
         let charset_vram_base_address = self.registers.get_bg_char_base_address(background) as usize;
         let (bg_size_width, _) = self.registers.get_bg_size(background).to_usize();
