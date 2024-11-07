@@ -223,7 +223,7 @@ fn paint_texture(ui: &mut Ui, texture: &mut Option<TextureHandle>, framebuffer: 
     if let Some(txt) = texture {
         txt.set(
             ColorImage::from_rgba_premultiplied([width, height], framebuffer),
-            TextureOptions::default(),
+            TextureOptions::LINEAR,
         );
         let (whole_rect, _) =
             ui.allocate_exact_size(Vec2::from([(width * 2) as f32, (height * 2) as f32]), egui::Sense::focusable_noninteractive());

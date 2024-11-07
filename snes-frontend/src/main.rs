@@ -30,6 +30,7 @@ impl eframe::App for SnesEmulatorApp {
             ctx,
             &mut self.state.game_tv_texture,
             self.emulator.bus.ppu.framebuffer(),
+            self.emulator.bus.ppu.registers.get_current_res(),
         );
         emu_ui::debug::build_all_debug_options(ctx, &mut self.state.debug_options, &mut self.state.emulation_state, &mut self.emulator);
         if !self.state.emulation_state.is_paused {
