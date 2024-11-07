@@ -9,11 +9,11 @@ edition = "2021"
 snes-core = { path = "../snes-core" }
 
 # Frontend stuff
-eframe = "0.26.0"
+eframe = "0.29.1"
 env_logger = "0.10.1"
 rfd = "0.12.1"
 regex = "1.10.2"
-wgpu = "0.19.0"
+wgpu = "23.0.0"
 
 [features]
 wgpu = ["eframe/wgpu"]

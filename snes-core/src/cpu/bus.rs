@@ -35,6 +35,12 @@ impl Bus {
         }
     }
 
+    pub fn hard_reset(&mut self) {
+        self.wram = [0; 0x10000];
+        self.internal_registers = InternalRegisters::new();
+        self.dma = DMA::new();
+    }
+
     fn read_wram(&self, address: u32) -> u8 {
         self.wram[(address & 0xFFFF) as usize]
     }

@@ -34,7 +34,7 @@ pub fn build_cpu_debug_controls(ctx: &egui::Context, cpu_debug_options: &mut CPU
             ui.monospace("Vectors:");
             ui.horizontal(|ui| {
                 if ui.button("Reset").clicked() {
-                    emulator.reset();
+                    emulator.reset_vector();
                 }
             });
             ui.separator();

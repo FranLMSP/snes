@@ -34,8 +34,14 @@ impl Emulator {
         }
     }
 
-    pub fn reset(&mut self) {
+    pub fn reset_vector(&mut self) {
         self.cpu.reset_vector(&mut self.bus);
+    }
+
+    pub fn hard_reset(&mut self) {
+        self.cpu = CPU::new();
+        self.bus.hard_reset();
+        self.reset_vector();
     }
 }
 
