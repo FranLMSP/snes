@@ -15,7 +15,6 @@ pub fn build_menu_bar(emulator: &mut Emulator, ui: &mut egui::Ui, state: &mut Ap
                             emulator.hard_reset();
                             state.emulation_state.is_paused = false;
                             state.emulation_state.one_tick_per_frame = false;
-                            emulator.reset_vector();
                             println!("Loaded ROM");
                         },
                         Err(err) => println!("Error loading the ROM: {}", err),

@@ -53,6 +53,6 @@ fn main() -> eframe::Result<()> {
     eframe::run_native(
         "SNES Emulator",
         native_options,
-        Box::new(|cc| Box::new(SnesEmulatorApp::new(cc))),
+        Box::new(|cc| Ok(Box::new(SnesEmulatorApp::new(cc)))),
     )
 }

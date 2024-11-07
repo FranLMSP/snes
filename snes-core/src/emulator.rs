@@ -40,7 +40,8 @@ impl Emulator {
 
     pub fn hard_reset(&mut self) {
         self.cpu = CPU::new();
-        self.bus = Bus::new();
+        self.bus.hard_reset();
+        self.reset_vector();
     }
 }
 
