@@ -12,6 +12,10 @@ impl CPUInstruction for PLP {
     fn execute(&self, registers: &mut Registers, bus: &mut Bus) {
         let bytes = pull_common::do_pull(registers, bus, 1, true);
         registers.p = bytes[0];
+        if registers.emulation_mode {
+            registers.set_memory_select_flag(true);
+            registers.set_index_register_select_flag(true);
+        }
         let (bytes, cycles) = cycles::increment_cycles_plp();
         registers.increment_pc(bytes); registers.cycles += cycles;
     }

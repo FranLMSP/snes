@@ -116,7 +116,7 @@ fn main() -> Result<()> {
             emulator.tick();
         }
 
-        let is_emu_mode = emulator.cpu.registers.emulation_mode;
+        let is_emu_mode = emulator.cpu.registers.emulation_mode || (test.initial.e == 1);
         let is_16index = emulator.cpu.registers.is_16bit_index();
 
         let emu_mode_sp = (emulator.cpu.registers.sp as usize & 0xFF) | 0x100;

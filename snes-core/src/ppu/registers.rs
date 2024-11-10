@@ -263,6 +263,16 @@ impl PPURegisters {
             0b11 => 128,
             _ => unreachable!(),
         };
+        let address_translation_rotate = match (register >> 2) & 0b11 {
+            0b00 => 0,
+            0b01 => 8,
+            0b10 => 9,
+            0b11 => 10,
+            _ => unreachable!(),
+        };
+        if address_translation_rotate > 0 {
+            // TODO: implement address translation
+        }
         let increment_when_lo = (register >> 7) != 1;
         let increment_when_hi = !increment_when_lo;
         let current_value = self.get_current_vram_address();
