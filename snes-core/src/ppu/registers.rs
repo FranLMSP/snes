@@ -274,6 +274,7 @@ impl PPURegisters {
             _ => unreachable!(),
         };
         if address_translation_rotate > 0 {
+            println!("ADDRESS ROTATE {}", address_translation_rotate);
             // TODO: implement address translation
         }
         let increment_when_lo = (register >> 7) == 0;

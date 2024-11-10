@@ -190,7 +190,8 @@ fn build_vram_window(ctx: &egui::Context, ppu_debug_options: &mut PPUDebugContro
                 for row in chunks {
                     let mut address_row = format!("{:04X} | ", row[0]);
                     for address in row {
-                        address_row = format!("{}{:04X} ", address_row, ppu_registers.vram()[((*address) & 0x7FFF) as usize]);
+                        let effective_vram_address = ((*address) & 0x7FFF) as usize;
+                        address_row = format!("{}{:04X} ", address_row, ppu_registers.vram()[effective_vram_address]);
                     }
                     ui.monospace(address_row);
                 }

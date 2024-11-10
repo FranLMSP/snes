@@ -10,11 +10,14 @@ pub struct XCE {}
 
 impl CPUInstruction for XCE {
     fn execute(&self, registers: &mut Registers, _bus: &mut Bus) {
-        let did_mode_change = registers.emulation_mode != registers.get_carry_flag();
         registers.exchange_carry_and_emulation();
-        if did_mode_change {
+        if registers.emulation_mode {
             registers.set_memory_select_flag(true);
             registers.set_index_register_select_flag(true);
+            registers.x &= 0xFF;
+            registers.y &= 0xFF;
+            registers.sp &= 0xFF;
+            registers.sp |= 0x100;
         }
         let (bytes, cycles) = cycles::increment_cycles_exchange();
         registers.increment_pc(bytes); registers.cycles += cycles;

@@ -15,6 +15,11 @@ impl CPUInstruction for PLP {
         if registers.emulation_mode {
             registers.set_memory_select_flag(true);
             registers.set_index_register_select_flag(true);
+        } else {
+            if !registers.is_16bit_index() {
+                registers.x &= 0xFF;
+                registers.y &= 0xFF;
+            }
         }
         let (bytes, cycles) = cycles::increment_cycles_plp();
         registers.increment_pc(bytes); registers.cycles += cycles;
