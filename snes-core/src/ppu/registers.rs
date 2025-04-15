@@ -209,8 +209,8 @@ impl PPURegisters {
     pub fn read(&mut self, address: u16) -> u8 {
         let result = self._read(address);
         match address {
-            VMDATAH => self.handle_vram_addr_auto_increment(Some(result), None),
-            VMDATAL => self.handle_vram_addr_auto_increment(None, Some(result)),
+            VMDATAH | RDVRAMH => self.handle_vram_addr_auto_increment(Some(result), None),
+            VMDATAL | RDVRAML => self.handle_vram_addr_auto_increment(None, Some(result)),
             RDCGRAM => {
                 let value = self.get_rdcgram();
                 self._write(RDCGRAM, value);
@@ -230,6 +230,9 @@ impl PPURegisters {
                 self._write(address, value);
                 self.handle_write_vram(None, Some(value));
             },
+            VMADDH | VMADDL => {
+                self._write(address, value);
+            },
             RDVRAML | RDVRAMH => {},
             CGADD => {
                 self._write(address, value);
@@ -241,14 +244,14 @@ impl PPURegisters {
     }
 
     fn handle_write_vram(&mut self, byte_hi: Option<u8>, byte_lo: Option<u8>) {
-        let address = (((self.read(VMADDH) as u16) << 8) | (self.read(VMADDL) as u16)) & 0x7FFF;
-        let current_word = self.vram[address as usize];
+        let address = (self.get_current_vram_address() & 0x7FFF) as usize;
+        let current_word = self.vram[address];
         if let Some(byte) = byte_hi {
-            self.vram[address as usize] = (current_word & 0x00FF) | ((byte as u16) << 8);
+            self.vram[address] = (current_word & 0x00FF) | ((byte as u16) << 8);
             self._write(RDVRAMH, byte);
         }
         if let Some(byte) = byte_lo {
-            self.vram[address as usize] = (current_word & 0xFF00) | (byte as u16);
+            self.vram[address] = (current_word & 0xFF00) | (byte as u16);
             self._write(RDVRAML, byte);
         }
         self.handle_vram_addr_auto_increment(byte_hi, byte_lo);
@@ -263,7 +266,18 @@ impl PPURegisters {
             0b11 => 128,
             _ => unreachable!(),
         };
-        let increment_when_lo = (register >> 7) != 1;
+        let address_translation_rotate = match (register >> 2) & 0b11 {
+            0b00 => 0,
+            0b01 => 8,
+            0b10 => 9,
+            0b11 => 10,
+            _ => unreachable!(),
+        };
+        if address_translation_rotate > 0 {
+            println!("ADDRESS ROTATE {}", address_translation_rotate);
+            // TODO: implement address translation
+        }
+        let increment_when_lo = (register >> 7) == 0;
         let increment_when_hi = !increment_when_lo;
         let current_value = self.get_current_vram_address();
         if increment_when_hi && byte_hi.is_some() {
@@ -279,9 +293,8 @@ impl PPURegisters {
     }
 
     fn set_current_vram_address(&mut self, value: u16) {
-        let bytes = value.to_be_bytes();
-        self._write(VMADDH, bytes[0]);
-        self._write(VMADDL, bytes[1]);
+        self._write(VMADDH, (value >> 8) as u8);
+        self._write(VMADDL, value as u8);
     }
 
     ///  7    BG4 Tile Size (0=8x8, 1=16x16)  ;\(BgMode0..4: variable 8x8 or 16x16)

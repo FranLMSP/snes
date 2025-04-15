@@ -190,7 +190,8 @@ fn build_vram_window(ctx: &egui::Context, ppu_debug_options: &mut PPUDebugContro
                 for row in chunks {
                     let mut address_row = format!("{:04X} | ", row[0]);
                     for address in row {
-                        address_row = format!("{}{:04X} ", address_row, ppu_registers.vram()[((*address) & 0x7FFF) as usize]);
+                        let effective_vram_address = ((*address) & 0x7FFF) as usize;
+                        address_row = format!("{}{:04X} ", address_row, ppu_registers.vram()[effective_vram_address]);
                     }
                     ui.monospace(address_row);
                 }
@@ -233,14 +234,16 @@ fn build_cgram_window(ctx: &egui::Context, ppu_debug_options: &mut PPUDebugContr
 
             ui.separator();
 
-            ui.horizontal(|ui| {
-                ui.label("0x00: ");
-                paint_cgram_color_address(ui, 0x00, ppu_registers);
-                ui.label("0x01: ");
-                paint_cgram_color_address(ui, 0x01, ppu_registers);
-                ui.label("0x02: ");
-                paint_cgram_color_address(ui, 0x02, ppu_registers);
-            });
+            let mut address: u8 = 0x00;
+            for row in 0x00..=0x0F {
+                ui.horizontal(|ui| {
+                    ui.label(format!("0x{:02X}: ", row));
+                    for _ in 0x00..=0x0F {
+                        paint_cgram_color_address(ui, address, ppu_registers);
+                        address = address.wrapping_add(1);
+                    }
+                });
+            }
         });
 }
 

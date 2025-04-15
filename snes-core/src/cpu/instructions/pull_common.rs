@@ -6,7 +6,11 @@ pub fn do_pull(registers: &mut Registers, bus: &mut Bus, count: usize, alter_fla
     let mut is_zero = true;
     for _ in 0..count {
         registers.increment_sp(1);
-        let byte = bus.read(registers.sp as u32);
+        let mut address = registers.sp;
+        if registers.emulation_mode {
+            address = (registers.sp | 0x100) & 0x1FF
+        }
+        let byte = bus.read(address as u32);
         if byte != 0 {
             is_zero = false;
         }

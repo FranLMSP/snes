@@ -17,6 +17,34 @@ pub struct Registers {
     pub is_move_next: bool, // TODO: refactor these states with an enum
     pub cycles: usize,
 }
+/*
+P register flags
+
+Emulation mode:
+NV-BDIZC
+N - Negative
+V - Overflow
+-
+B - Break Instruction
+D - Decimal Mode
+I - IRQ Disable
+Z - Zero
+C - Carry
+
+Native Mode
+       E - Emulation Mode
+NVMXDIZC
+
+N - Negative
+V - Overflow
+M - Memory/Accumulator Select
+X - Index Register Select
+D - Decimal Mode
+I - IRQ Disable
+Z - Zero
+C - Carry
+
+*/
 
 impl Registers {
     pub fn new() -> Self {
@@ -214,7 +242,11 @@ impl Registers {
     }
 
     pub fn reset_rep_byte(&mut self, byte: u8) {
-        self.p &= !byte;
+        let mut effective_byte = byte;
+        if self.emulation_mode {
+            effective_byte &= 0b1100_1111;
+        }
+        self.p &= !effective_byte;
     }
 
     pub fn set_sep_byte(&mut self, byte: u8) {
@@ -440,6 +472,7 @@ mod registers_tests {
     #[test]
     fn test_reset_rep_byte() {
         let mut registers = Registers::new();
+        registers.emulation_mode = false;
         registers.p = 0xFF;
         registers.reset_rep_byte(0b0000_0001);
         assert_eq!(registers.p,  0b1111_1110);
